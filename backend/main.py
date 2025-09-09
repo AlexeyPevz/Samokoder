@@ -132,7 +132,7 @@ async def create_project(
         user_api_keys = {
             row['provider']: row['api_key_decrypted'] 
             for row in user_keys_response.data
-        }
+        } if user_keys_response.data else {}
         
         # Создаем обертку GPT-Pilot
         pilot_wrapper = SamokoderGPTPilot(project_id, user_id, user_api_keys)
@@ -396,7 +396,7 @@ async def load_project_to_memory(project_id: str, user_id: str):
         user_api_keys = {
             row['provider']: row['api_key_decrypted']
             for row in user_keys_response.data
-        }
+        } if user_keys_response.data else {}
         
         # Создаем wrapper
         pilot_wrapper = SamokoderGPTPilot(project_id, user_id, user_api_keys)

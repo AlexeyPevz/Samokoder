@@ -52,26 +52,22 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             "exp": user.exp
         }
         
-    except jwt.ExpiredSignatureError:
+    except Exception as jwt_error:
+        # Supabase может возвращать разные типы ошибок
+        if "expired" in str(jwt_error).lower():
+            detail = "Токен истек"
+        elif "invalid" in str(jwt_error).lower():
+            detail = "Недействительный токен"
+        else:
+            detail = f"Ошибка аутентификации: {str(jwt_error)}"
+            
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Токен истек",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    except jwt.JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Недействительный токен",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Ошибка аутентификации: {str(e)}",
+            detail=detail,
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-async def get_current_user_optional(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Optional[Dict]:
+async def get_current_user_optional(credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))) -> Optional[Dict]:
     """
     Получает текущего пользователя, но не требует аутентификации
     Возвращает None если пользователь не аутентифицирован

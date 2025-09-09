@@ -10,12 +10,13 @@ import zipfile
 # Добавляем путь к GPT-Pilot в sys.path
 sys.path.append(str(Path(__file__).parent.parent.parent / "samokoder-core"))
 
-from core.agents.orchestrator import Orchestrator
-from core.db.models.project import Project
-from core.config.user_settings import UserSettings
-from core.llm.openai_client import OpenAIClient
-from core.llm.anthropic_client import AnthropicClient
-from core.llm.groq_client import GroqClient
+# Импорты GPT-Pilot будут добавлены после настройки
+# from core.agents.orchestrator import Orchestrator
+# from core.db.models.project import Project
+# from core.config.user_settings import UserSettings
+# from core.llm.openai_client import OpenAIClient
+# from core.llm.anthropic_client import AnthropicClient
+# from core.llm.groq_client import GroqClient
 
 class SamokoderGPTPilot:
     """
@@ -80,10 +81,14 @@ class SamokoderGPTPilot:
             }
             
             # Создаем объект проекта GPT-Pilot
-            self.project = Project(project_config)
+            # self.project = Project(project_config)
             
             # Инициализируем оркестратор
-            self.orchestrator = Orchestrator(self.project)
+            # self.orchestrator = Orchestrator(self.project)
+            
+            # Временно создаем заглушки
+            self.project = {"config": project_config}
+            self.orchestrator = None
             
             return {
                 'project_id': self.project_id,
