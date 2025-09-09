@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379"
     
     # Security
-    secret_key: str = "your-secret-key-here"
+    secret_key: str = "QvXgcQGd8pz8YETjvWhCLnAJ5SHD2A6uQzBn3_5dNaE"
     access_token_expire_minutes: int = 30
     
     # Database

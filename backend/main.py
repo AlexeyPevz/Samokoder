@@ -10,9 +10,9 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import logging
 
-from config.settings_fixed import settings
+from config.settings import settings
 from backend.services.gpt_pilot_wrapper_v2 import SamokoderGPTPilot
-from backend.auth.dependencies_fixed import get_current_user
+from backend.auth.dependencies import get_current_user
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
