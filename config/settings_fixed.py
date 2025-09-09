@@ -110,3 +110,6 @@ try:
 except ValueError as e:
     print(f"⚠️ Configuration warning: {e}")
     print("Some features may not work correctly.")
+except Exception as e:
+    print(f"⚠️ Configuration error: {e}")
+    print("Please check your configuration.")

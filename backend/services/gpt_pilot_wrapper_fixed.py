@@ -92,6 +92,8 @@ class SamokoderGPTPilot:
             }
             
         except Exception as e:
+            # Логируем ошибку
+            print(f"Error initializing project {self.project_id}: {e}")
             return {
                 'project_id': self.project_id,
                 'status': 'error',
@@ -284,6 +286,8 @@ export default {component_name};'''
                 }
             
         except Exception as e:
+            # Логируем ошибку
+            print(f"Error in chat_with_agents: {e}")
             yield {
                 'type': 'error',
                 'message': f'Ошибка в работе агентов: {str(e)}',
@@ -362,6 +366,8 @@ export default {component};'''
             }
             
         except Exception as e:
+            # Логируем ошибку
+            print(f"Error in generate_full_app: {e}")
             yield {
                 'type': 'error',
                 'message': f'Ошибка генерации: {str(e)}',
@@ -417,6 +423,10 @@ export default {component};'''
         except UnicodeDecodeError:
             # Если бинарный файл, возвращаем info
             return f"[Бинарный файл: {full_path.name}, размер: {full_path.stat().st_size} байт]"
+        except Exception as e:
+            # Логируем ошибку
+            print(f"Error reading file {file_path}: {e}")
+            raise FileNotFoundError(f"Ошибка чтения файла {file_path}: {str(e)}")
     
     def create_zip_export(self) -> Path:
         """Создает ZIP архив проекта"""
@@ -426,32 +436,43 @@ export default {component};'''
         zip_filename = f"{self.project_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
         zip_path = export_path / zip_filename
         
-        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for file_path in self.workspace.rglob('*'):
-                if file_path.is_file() and not any(exclude in str(file_path) for exclude in ['.git', 'node_modules', '__pycache__']):
-                    arcname = file_path.relative_to(self.workspace)
-                    zipf.write(file_path, arcname)
-        
-        return zip_path
+        try:
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for file_path in self.workspace.rglob('*'):
+                    if file_path.is_file() and not any(exclude in str(file_path) for exclude in ['.git', 'node_modules', '__pycache__']):
+                        arcname = file_path.relative_to(self.workspace)
+                        zipf.write(file_path, arcname)
+            
+            return zip_path
+        except Exception as e:
+            # Логируем ошибку
+            print(f"Error creating zip export: {e}")
+            raise Exception(f"Ошибка создания ZIP архива: {str(e)}")
     
     async def restore_from_workspace(self):
         """Восстанавливает состояние проекта из workspace"""
-        # Проверяем, есть ли файлы в workspace
-        if self.workspace.exists() and any(self.workspace.iterdir()):
-            # Восстанавливаем состояние проекта
-            self.project = {
-                'config': {
-                    'app': {
-                        'app_name': 'Restored Project',
-                        'app_type': 'web',
-                        'description': 'Восстановленный проект'
+        try:
+            # Проверяем, есть ли файлы в workspace
+            if self.workspace.exists() and any(self.workspace.iterdir()):
+                # Восстанавливаем состояние проекта
+                self.project = {
+                    'config': {
+                        'app': {
+                            'app_name': 'Restored Project',
+                            'app_type': 'web',
+                            'description': 'Восстановленный проект'
+                        },
+                        'workspace': str(self.workspace),
+                        'user_id': self.user_id
                     },
-                    'workspace': str(self.workspace),
-                    'user_id': self.user_id
-                },
-                'status': 'restored',
-                'created_at': datetime.now().isoformat()
-            }
-        else:
-            # Если workspace пустой, создаем базовую структуру
+                    'status': 'restored',
+                    'created_at': datetime.now().isoformat()
+                }
+            else:
+                # Если workspace пустой, создаем базовую структуру
+                await self._create_basic_project_structure('Restored Project', 'Восстановленный проект')
+        except Exception as e:
+            # Логируем ошибку
+            print(f"Error restoring from workspace: {e}")
+            # Создаем базовую структуру в случае ошибки
             await self._create_basic_project_structure('Restored Project', 'Восстановленный проект')

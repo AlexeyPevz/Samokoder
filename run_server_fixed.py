@@ -69,6 +69,7 @@ def main():
     except Exception as e:
         print(f"❌ Ошибка подключения к Supabase: {e}")
         print("Проверьте правильность SUPABASE_URL и SUPABASE_ANON_KEY")
+        logger.error(f"Supabase connection error: {e}")
         return
     
     # Проверяем доступность GPT-Pilot
@@ -81,8 +82,13 @@ def main():
     
     # Проверяем директории
     for dir_path in [settings.export_storage_path, settings.workspace_storage_path]:
-        Path(dir_path).mkdir(parents=True, exist_ok=True)
-        print(f"✅ Директория {dir_path} готова")
+        try:
+            Path(dir_path).mkdir(parents=True, exist_ok=True)
+            print(f"✅ Директория {dir_path} готова")
+        except Exception as e:
+            print(f"❌ Ошибка создания директории {dir_path}: {e}")
+            logger.error(f"Directory creation error: {e}")
+            return
     
     # Запускаем сервер
     try:

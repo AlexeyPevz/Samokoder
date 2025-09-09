@@ -10,9 +10,9 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import logging
 
-from config.settings import settings
+from config.settings_fixed import settings
 from backend.services.gpt_pilot_wrapper_fixed import SamokoderGPTPilot
-from backend.auth.dependencies import get_current_user
+from backend.auth.dependencies_fixed import get_current_user
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -209,6 +209,9 @@ async def create_project(
         
     except Exception as e:
         logger.error(f"Error creating project: {e}")
+        # Очищаем активные проекты в случае ошибки
+        if project_id in active_projects:
+            del active_projects[project_id]
         raise HTTPException(status_code=500, detail=f"Ошибка создания проекта: {str(e)}")
 
 @app.get("/api/projects/{project_id}")
@@ -295,6 +298,9 @@ async def chat_with_project(
         except Exception as e:
             logger.error(f"Error in chat stream: {e}")
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+        finally:
+            # Очищаем ресурсы если нужно
+            pass
     
     return StreamingResponse(
         stream_response(),
@@ -352,6 +358,9 @@ async def generate_project(
                 logger.error(f"Error updating project status on error: {update_error}")
             
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+        finally:
+            # Очищаем ресурсы если нужно
+            pass
     
     return StreamingResponse(
         stream_generation(),

@@ -4,7 +4,7 @@ from supabase import create_client, Client
 from typing import Dict, Optional
 from datetime import datetime
 
-from config.settings import settings
+from config.settings_fixed import settings
 
 # Supabase клиент для проверки токенов
 supabase: Client = create_client(
