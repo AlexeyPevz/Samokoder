@@ -3,14 +3,21 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from supabase import create_client, Client
 from typing import Dict, Optional
 from datetime import datetime
+import logging
 
 from config.settings_fixed import settings
 
-# Supabase клиент для проверки токенов
-supabase: Client = create_client(
-    settings.supabase_url, 
-    settings.supabase_service_role_key  # Используем service role для проверки токенов
-)
+logger = logging.getLogger(__name__)
+
+# Supabase клиент для проверки токенов (с проверкой URL)
+try:
+    supabase: Client = create_client(
+        settings.supabase_url, 
+        settings.supabase_service_role_key  # Используем service role для проверки токенов
+    )
+except Exception as e:
+    logger.warning(f"Supabase client creation failed: {e}")
+    supabase = None
 
 security = HTTPBearer()
 
@@ -23,6 +30,13 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         token = credentials.credentials
         
         # Проверяем токен через Supabase
+        if supabase is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Supabase service unavailable",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
         response = supabase.auth.get_user(token)
         
         if not response.user:
@@ -86,6 +100,12 @@ def require_subscription_tier(required_tier: str):
     async def check_subscription(current_user: Dict = Depends(get_current_user)) -> Dict:
         try:
             # Получаем профиль пользователя из базы
+            if supabase is None:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Supabase service unavailable"
+                )
+            
             response = supabase.table("profiles").select("subscription_tier").eq("id", current_user["id"]).single().execute()
             
             if not response.data:
@@ -128,6 +148,12 @@ def require_api_credits(min_credits: float = 0.01):
     async def check_credits(current_user: Dict = Depends(get_current_user)) -> Dict:
         try:
             # Получаем баланс кредитов пользователя
+            if supabase is None:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Supabase service unavailable"
+                )
+            
             response = supabase.table("profiles").select("api_credits_balance").eq("id", current_user["id"]).single().execute()
             
             if not response.data:
@@ -161,6 +187,12 @@ def validate_user_permissions(required_permissions: list):
     async def check_permissions(current_user: Dict = Depends(get_current_user)) -> Dict:
         try:
             # Получаем профиль пользователя из базы
+            if supabase is None:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Supabase service unavailable"
+                )
+            
             response = supabase.table("profiles").select("subscription_tier").eq("id", current_user["id"]).single().execute()
             
             if not response.data:

@@ -35,11 +35,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Supabase клиент
-supabase: Client = create_client(
-    settings.supabase_url, 
-    settings.supabase_anon_key
-)
+# Supabase клиент (с проверкой URL)
+try:
+    supabase: Client = create_client(
+        settings.supabase_url, 
+        settings.supabase_anon_key
+    )
+except Exception as e:
+    logger.warning(f"Supabase client creation failed: {e}")
+    supabase = None
 
 # Хранилище активных проектов (в продакшне использовать Redis)
 active_projects: Dict[str, SamokoderGPTPilot] = {}

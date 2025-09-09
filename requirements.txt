@@ -44,7 +44,6 @@ jsonschema==4.19.2
 pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
-httpx>=0.24.0,<0.25.0
 
 # Разработка
 black==23.11.0
@@ -54,7 +53,6 @@ mypy==1.7.1
 
 # Безопасность
 bcrypt==4.1.2
-python-multipart==0.0.6
 
 # Кэширование
 redis==5.0.1
