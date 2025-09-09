@@ -43,23 +43,31 @@ structlog.configure(
 # Получаем логгер
 logger = structlog.get_logger()
 
-# Prometheus метрики
-REQUEST_COUNT = Counter(
-    'api_requests_total', 
-    'Total API requests',
-    ['method', 'endpoint', 'status_code']
-)
-
-REQUEST_DURATION = Histogram(
-    'api_request_duration_seconds',
-    'API request duration in seconds',
-    ['method', 'endpoint']
-)
-
-ACTIVE_CONNECTIONS = Gauge(
-    'api_active_connections',
-    'Number of active connections'
-)
+# Prometheus метрики (с проверкой на дублирование)
+try:
+    REQUEST_COUNT = Counter(
+        'api_requests_total', 
+        'Total API requests',
+        ['method', 'endpoint', 'status_code']
+    )
+    REQUEST_DURATION = Histogram(
+        'api_request_duration_seconds',
+        'API request duration in seconds',
+        ['method', 'endpoint']
+    )
+    ACTIVE_CONNECTIONS = Gauge(
+        'api_active_connections',
+        'Number of active connections'
+    )
+except ValueError as e:
+    if "Duplicated timeseries" in str(e):
+        # Метрики уже созданы, получаем существующие
+        from prometheus_client import REGISTRY
+        REQUEST_COUNT = next(iter([m for m in REGISTRY.collect() if m.name == 'api_requests_total']), None)
+        REQUEST_DURATION = next(iter([m for m in REGISTRY.collect() if m.name == 'api_request_duration_seconds']), None)
+        ACTIVE_CONNECTIONS = next(iter([m for m in REGISTRY.collect() if m.name == 'api_active_connections']), None)
+    else:
+        raise
 
 AI_REQUESTS = Counter(
     'ai_requests_total',

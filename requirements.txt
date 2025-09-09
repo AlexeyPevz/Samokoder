@@ -59,5 +59,3 @@ redis==5.0.1
 
 # Load testing
 locust==2.17.0
-
-# Additional monitoring
