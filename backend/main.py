@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 import logging
 
 from config.settings_fixed import settings
-from backend.services.gpt_pilot_wrapper_fixed import SamokoderGPTPilot
+from backend.services.gpt_pilot_wrapper_v2 import SamokoderGPTPilot
 from backend.auth.dependencies_fixed import get_current_user
 
 # Настройка логирования
