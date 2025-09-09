@@ -12,7 +12,9 @@ import logging
 
 from config.settings import settings
 from backend.services.gpt_pilot_wrapper_v2 import SamokoderGPTPilot
+from backend.services.ai_service import get_ai_service
 from backend.auth.dependencies import get_current_user
+from backend.monitoring import monitoring, monitoring_middleware, get_metrics_response
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -34,6 +36,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Мониторинг middleware
+app.middleware("http")(monitoring_middleware)
 
 # Supabase клиент (с проверкой URL)
 try:
@@ -63,25 +68,26 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Проверка здоровья сервиса"""
-    try:
-        # Проверяем подключение к Supabase
-        supabase.table("profiles").select("id").limit(1).execute()
-        
-        return {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat(),
-            "active_projects": len(active_projects),
-            "database": "connected"
-        }
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return {
-            "status": "unhealthy",
-            "timestamp": datetime.now().isoformat(),
-            "active_projects": len(active_projects),
-            "database": "disconnected",
-            "error": str(e)
-        }
+    return monitoring.get_health_status()
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus метрики"""
+    return get_metrics_response()
+
+@app.get("/health/detailed")
+async def detailed_health_check():
+    """Детальная проверка здоровья всех компонентов"""
+    from backend.monitoring import check_external_services_health
+    
+    health_status = monitoring.get_health_status()
+    external_services = await check_external_services_health()
+    
+    return {
+        **health_status,
+        "external_services": external_services,
+        "active_projects": len(active_projects)
+    }
 
 # === АУТЕНТИФИКАЦИЯ ===
 
@@ -463,6 +469,160 @@ async def export_project(
     except Exception as e:
         logger.error(f"Error exporting project: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка экспорта: {str(e)}")
+
+# === AI СЕРВИС ===
+
+@app.post("/api/ai/chat")
+async def ai_chat(
+    chat_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Чат с AI через централизованный сервис"""
+    
+    if not chat_data.get("message"):
+        raise HTTPException(status_code=400, detail="Сообщение обязательно")
+    
+    try:
+        # Получаем API ключи пользователя
+        user_keys_response = supabase.table("user_api_keys").select("*").eq("user_id", current_user["id"]).eq("is_active", True).execute()
+        user_api_keys = {
+            row['provider']: row['api_key_decrypted'] 
+            for row in user_keys_response.data
+        } if user_keys_response.data else {}
+        
+        # Создаем AI сервис
+        ai_service = get_ai_service(current_user["id"], user_api_keys)
+        
+        # Формируем сообщения
+        messages = [
+            {"role": "system", "content": "Ты - AI помощник для создания приложений. Отвечай кратко и по делу."},
+            {"role": "user", "content": chat_data["message"]}
+        ]
+        
+        # Выполняем запрос
+        response = await ai_service.route_request(
+            messages=messages,
+            model=chat_data.get("model"),
+            provider=chat_data.get("provider"),
+            project_id=chat_data.get("project_id", ""),
+            max_tokens=chat_data.get("max_tokens", 4096),
+            temperature=chat_data.get("temperature", 0.7)
+        )
+        
+        # Логируем AI запрос
+        monitoring.log_ai_request(
+            provider=response.provider.value,
+            model=response.model,
+            tokens=response.tokens_used,
+            cost=response.cost_usd,
+            success=response.success
+        )
+        
+        if not response.success:
+            raise HTTPException(status_code=500, detail=f"AI ошибка: {response.error}")
+        
+        return {
+            "content": response.content,
+            "provider": response.provider.value,
+            "model": response.model,
+            "tokens_used": response.tokens_used,
+            "cost_usd": response.cost_usd,
+            "response_time": response.response_time
+        }
+        
+    except Exception as e:
+        logger.error(f"AI chat error: {e}")
+        monitoring.log_error(e, {"user_id": current_user["id"], "action": "ai_chat"})
+        raise HTTPException(status_code=500, detail=f"Ошибка AI чата: {str(e)}")
+
+@app.get("/api/ai/usage")
+async def get_ai_usage(current_user: dict = Depends(get_current_user)):
+    """Получение статистики использования AI"""
+    
+    try:
+        # Получаем API ключи пользователя
+        user_keys_response = supabase.table("user_api_keys").select("*").eq("user_id", current_user["id"]).eq("is_active", True).execute()
+        user_api_keys = {
+            row['provider']: row['api_key_decrypted'] 
+            for row in user_keys_response.data
+        } if user_keys_response.data else {}
+        
+        # Создаем AI сервис
+        ai_service = get_ai_service(current_user["id"], user_api_keys)
+        
+        # Получаем статистику
+        stats = await ai_service.get_usage_stats()
+        
+        return stats
+        
+    except Exception as e:
+        logger.error(f"AI usage stats error: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка получения статистики: {str(e)}")
+
+@app.get("/api/ai/providers")
+async def get_ai_providers():
+    """Получение списка доступных AI провайдеров"""
+    
+    return {
+        "providers": [
+            {
+                "id": "openrouter",
+                "name": "OpenRouter",
+                "description": "Доступ к множеству AI моделей",
+                "website": "https://openrouter.ai",
+                "requires_key": True,
+                "free_models": ["deepseek/deepseek-v3", "qwen/qwen-2.5-coder-32b"]
+            },
+            {
+                "id": "openai",
+                "name": "OpenAI",
+                "description": "GPT-4o и GPT-4o-mini",
+                "website": "https://openai.com",
+                "requires_key": True,
+                "free_models": []
+            },
+            {
+                "id": "anthropic",
+                "name": "Anthropic",
+                "description": "Claude 3 Haiku и Sonnet",
+                "website": "https://anthropic.com",
+                "requires_key": True,
+                "free_models": []
+            },
+            {
+                "id": "groq",
+                "name": "Groq",
+                "description": "Быстрые Llama модели",
+                "website": "https://groq.com",
+                "requires_key": True,
+                "free_models": ["llama-3-8b-8192", "llama-3-70b-8192"]
+            }
+        ]
+    }
+
+@app.post("/api/ai/validate-keys")
+async def validate_ai_keys(
+    keys_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Проверка валидности API ключей"""
+    
+    try:
+        # Создаем AI сервис с предоставленными ключами
+        ai_service = get_ai_service(current_user["id"], keys_data)
+        
+        # Проверяем все ключи
+        validation_results = await ai_service.validate_all_keys()
+        
+        return {
+            "validation_results": validation_results,
+            "valid_keys": [k for k, v in validation_results.items() if v],
+            "invalid_keys": [k for k, v in validation_results.items() if not v]
+        }
+        
+    except Exception as e:
+        logger.error(f"AI keys validation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка проверки ключей: {str(e)}")
 
 # === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
 

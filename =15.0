@@ -1,0 +1,11 @@
+Defaulting to user installation because normal site-packages is not writeable
+Requirement already satisfied: websockets in /home/ubuntu/.local/lib/python3.13/site-packages (12.0)
+Collecting websockets
+  Using cached websockets-15.0.1-cp313-cp313-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.8 kB)
+Using cached websockets-15.0.1-cp313-cp313-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (182 kB)
+Installing collected packages: websockets
+  Attempting uninstall: websockets
+    Found existing installation: websockets 12.0
+    Uninstalling websockets-12.0:
+      Successfully uninstalled websockets-12.0
+Successfully installed websockets-15.0.1

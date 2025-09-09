@@ -1,0 +1,216 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PYTHON_VERSION: "3.9"
+  NODE_VERSION: "18"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio pytest-cov
+    
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    
+    - name: Type check with mypy
+      run: |
+        pip install mypy
+        mypy backend/ --ignore-missing-imports
+    
+    - name: Run unit tests
+      run: |
+        pytest tests/ -v --cov=backend --cov-report=xml --cov-report=html
+    
+    - name: Run comprehensive tests
+      run: |
+        python comprehensive_test.py
+    
+    - name: Run E2E tests
+      run: |
+        python test_e2e_comprehensive.py
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        API_ENCRYPTION_KEY: ${{ secrets.API_ENCRYPTION_KEY }}
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install bandit safety
+    
+    - name: Run Bandit security scan
+      run: |
+        bandit -r backend/ -f json -o bandit-report.json
+        bandit -r backend/ -ll
+    
+    - name: Run Safety check
+      run: |
+        safety check --json --output safety-report.json
+        safety check
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Build Docker image
+      run: |
+        docker build -t samokoder:${{ github.sha }} .
+        docker tag samokoder:${{ github.sha }} samokoder:latest
+    
+    - name: Test Docker image
+      run: |
+        docker run --rm -d -p 8000:8000 --name samokoder-test samokoder:${{ github.sha }}
+        sleep 10
+        curl -f http://localhost:8000/health || exit 1
+        docker stop samokoder-test
+    
+    - name: Save Docker image
+      uses: actions/upload-artifact@v3
+      with:
+        name: docker-image
+        path: /tmp/docker-image.tar
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Здесь будет реальный деплой на staging
+        # Например, через Docker, Kubernetes, или cloud provider
+    
+    - name: Run smoke tests
+      run: |
+        echo "Running smoke tests on staging..."
+        # Здесь будут smoke тесты на staging окружении
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: [build, deploy-staging]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production environment..."
+        # Здесь будет реальный деплой на production
+        # Например, через Docker, Kubernetes, или cloud provider
+    
+    - name: Run production health checks
+      run: |
+        echo "Running production health checks..."
+        # Здесь будут health checks на production
+    
+    - name: Notify deployment
+      run: |
+        echo "Production deployment completed successfully!"
+        # Здесь будет уведомление о деплое (Slack, email, etc.)
+
+  performance:
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install locust
+    
+    - name: Run load tests
+      run: |
+        locust -f load_tests/locustfile.py --headless -u 10 -r 2 -t 30s --html load_test_report.html
+    
+    - name: Upload load test report
+      uses: actions/upload-artifact@v3
+      with:
+        name: load-test-report
+        path: load_test_report.html
