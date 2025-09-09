@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Request
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
@@ -8,15 +8,10 @@ import os
 import uuid
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
-import logging
 
-from config.settings_fixed import settings
-from backend.services.gpt_pilot_wrapper_fixed import SamokoderGPTPilot
-from backend.auth.dependencies_fixed import get_current_user
-
-# Настройка логирования
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from config.settings import settings
+from backend.services.gpt_pilot_wrapper import SamokoderGPTPilot
+from backend.auth.dependencies import get_current_user
 
 # Создаем FastAPI приложение
 app = FastAPI(
@@ -59,25 +54,11 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Проверка здоровья сервиса"""
-    try:
-        # Проверяем подключение к Supabase
-        supabase.table("profiles").select("id").limit(1).execute()
-        
-        return {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat(),
-            "active_projects": len(active_projects),
-            "database": "connected"
-        }
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return {
-            "status": "unhealthy",
-            "timestamp": datetime.now().isoformat(),
-            "active_projects": len(active_projects),
-            "database": "disconnected",
-            "error": str(e)
-        }
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "active_projects": len(active_projects)
+    }
 
 # === АУТЕНТИФИКАЦИЯ ===
 
@@ -85,16 +66,12 @@ async def health_check():
 async def login(credentials: dict):
     """Вход через Supabase Auth"""
     try:
-        if not credentials.get("email") or not credentials.get("password"):
-            raise HTTPException(status_code=400, detail="Email и пароль обязательны")
-        
         response = supabase.auth.sign_in_with_password({
             "email": credentials["email"],
             "password": credentials["password"]
         })
         
         if response.user:
-            logger.info(f"User {response.user.email} logged in successfully")
             return {
                 "message": "Успешный вход",
                 "user": response.user,
@@ -104,7 +81,6 @@ async def login(credentials: dict):
             raise HTTPException(status_code=401, detail="Неверные учетные данные")
             
     except Exception as e:
-        logger.error(f"Login error: {e}")
         raise HTTPException(status_code=401, detail=f"Ошибка входа: {str(e)}")
 
 @app.post("/api/auth/logout")
@@ -112,10 +88,8 @@ async def logout(current_user: dict = Depends(get_current_user)):
     """Выход из системы"""
     try:
         supabase.auth.sign_out()
-        logger.info(f"User {current_user.get('email')} logged out")
         return {"message": "Успешный выход"}
     except Exception as e:
-        logger.error(f"Logout error: {e}")
         raise HTTPException(status_code=400, detail=f"Ошибка выхода: {str(e)}")
 
 @app.get("/api/auth/user")
@@ -134,18 +108,11 @@ async def get_projects(current_user: dict = Depends(get_current_user)):
     try:
         response = supabase.table("projects").select("*").eq("user_id", current_user["id"]).order("created_at", desc=True).execute()
         
-        if not response.data:
-            return {
-                "projects": [],
-                "total_count": 0
-            }
-        
         return {
             "projects": response.data,
             "total_count": len(response.data)
         }
     except Exception as e:
-        logger.error(f"Error getting projects: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка получения проектов: {str(e)}")
 
 @app.post("/api/projects")
@@ -155,10 +122,6 @@ async def create_project(
     background_tasks: BackgroundTasks = None
 ):
     """Создать новый проект"""
-    
-    # Валидация входных данных
-    if not project_data.get("name") or not project_data.get("description"):
-        raise HTTPException(status_code=400, detail="Название и описание проекта обязательны")
     
     project_id = str(uuid.uuid4())
     user_id = current_user["id"]
@@ -198,8 +161,6 @@ async def create_project(
         # Сохраняем активный проект
         active_projects[project_id] = pilot_wrapper
         
-        logger.info(f"Project {project_id} created successfully for user {user_id}")
-        
         return {
             "project_id": project_id,
             "status": "created",
@@ -208,10 +169,6 @@ async def create_project(
         }
         
     except Exception as e:
-        logger.error(f"Error creating project: {e}")
-        # Очищаем активные проекты в случае ошибки
-        if project_id in active_projects:
-            del active_projects[project_id]
         raise HTTPException(status_code=500, detail=f"Ошибка создания проекта: {str(e)}")
 
 @app.get("/api/projects/{project_id}")
@@ -233,7 +190,6 @@ async def get_project(
         }
         
     except Exception as e:
-        logger.error(f"Error getting project {project_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка получения проекта: {str(e)}")
 
 @app.delete("/api/projects/{project_id}")
@@ -257,12 +213,9 @@ async def delete_project(
         # Удаляем из базы
         supabase.table("projects").delete().eq("id", project_id).execute()
         
-        logger.info(f"Project {project_id} deleted successfully")
-        
         return {"message": "Проект успешно удален"}
         
     except Exception as e:
-        logger.error(f"Error deleting project {project_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка удаления проекта: {str(e)}")
 
 # === ЧАТ И ГЕНЕРАЦИЯ ===
@@ -275,10 +228,6 @@ async def chat_with_project(
 ):
     """Отправить сообщение агентам проекта"""
     
-    # Валидация входных данных
-    if not chat_data.get("message"):
-        raise HTTPException(status_code=400, detail="Сообщение обязательно")
-    
     if project_id not in active_projects:
         # Загружаем проект из базы если не в памяти
         await load_project_to_memory(project_id, current_user["id"])
@@ -289,18 +238,11 @@ async def chat_with_project(
     pilot_wrapper = active_projects[project_id]
     
     async def stream_response():
-        try:
-            async for update in pilot_wrapper.chat_with_agents(
-                message=chat_data["message"],
-                context=chat_data.get("context", "chat")
-            ):
-                yield f"data: {json.dumps(update)}\n\n"
-        except Exception as e:
-            logger.error(f"Error in chat stream: {e}")
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
-        finally:
-            # Очищаем ресурсы если нужно
-            pass
+        async for update in pilot_wrapper.chat_with_agents(
+            message=chat_data["message"],
+            context=chat_data.get("context", "chat")
+        ):
+            yield f"data: {json.dumps(update)}\n\n"
     
     return StreamingResponse(
         stream_response(),
@@ -327,13 +269,10 @@ async def generate_project(
     pilot_wrapper = active_projects[project_id]
     
     # Обновляем статус в базе
-    try:
-        supabase.table("projects").update({
-            "status": "generating",
-            "updated_at": datetime.now().isoformat()
-        }).eq("id", project_id).execute()
-    except Exception as e:
-        logger.error(f"Error updating project status: {e}")
+    supabase.table("projects").update({
+        "status": "generating",
+        "updated_at": datetime.now().isoformat()
+    }).eq("id", project_id).execute()
     
     async def stream_generation():
         try:
@@ -347,20 +286,13 @@ async def generate_project(
             }).eq("id", project_id).execute()
             
         except Exception as e:
-            logger.error(f"Error in generation stream: {e}")
             # Обновляем статус при ошибке
-            try:
-                supabase.table("projects").update({
-                    "status": "error",
-                    "updated_at": datetime.now().isoformat()
-                }).eq("id", project_id).execute()
-            except Exception as update_error:
-                logger.error(f"Error updating project status on error: {update_error}")
+            supabase.table("projects").update({
+                "status": "error",
+                "updated_at": datetime.now().isoformat()
+            }).eq("id", project_id).execute()
             
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
-        finally:
-            # Очищаем ресурсы если нужно
-            pass
     
     return StreamingResponse(
         stream_generation(),
@@ -387,18 +319,13 @@ async def get_project_files(
         raise HTTPException(status_code=404, detail="Проект не найден или не активен")
     
     pilot_wrapper = active_projects[project_id]
+    file_tree = pilot_wrapper.get_project_files()
     
-    try:
-        file_tree = pilot_wrapper.get_project_files()
-        
-        return {
-            "project_id": project_id,
-            "files": file_tree,
-            "updated_at": datetime.now().isoformat()
-        }
-    except Exception as e:
-        logger.error(f"Error getting project files: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка получения файлов: {str(e)}")
+    return {
+        "project_id": project_id,
+        "files": file_tree,
+        "updated_at": datetime.now().isoformat()
+    }
 
 @app.get("/api/projects/{project_id}/files/{file_path:path}")
 async def get_file_content(
@@ -425,9 +352,6 @@ async def get_file_content(
         }
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Файл не найден")
-    except Exception as e:
-        logger.error(f"Error getting file content: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка получения файла: {str(e)}")
 
 # === ЭКСПОРТ ===
 
@@ -445,20 +369,13 @@ async def export_project(
         raise HTTPException(status_code=404, detail="Проект не найден или не активен")
     
     pilot_wrapper = active_projects[project_id]
+    zip_path = pilot_wrapper.create_zip_export()
     
-    try:
-        zip_path = pilot_wrapper.create_zip_export()
-        
-        logger.info(f"Project {project_id} exported successfully")
-        
-        return FileResponse(
-            zip_path,
-            media_type="application/zip",
-            filename=f"samokoder_project_{project_id}.zip"
-        )
-    except Exception as e:
-        logger.error(f"Error exporting project: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка экспорта: {str(e)}")
+    return FileResponse(
+        zip_path,
+        media_type="application/zip",
+        filename=f"samokoder_project_{project_id}.zip"
+    )
 
 # === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
 
@@ -490,35 +407,13 @@ async def load_project_to_memory(project_id: str, user_id: str):
         
         active_projects[project_id] = pilot_wrapper
         
-        logger.info(f"Project {project_id} loaded to memory successfully")
-        
     except Exception as e:
-        logger.error(f"Error loading project to memory: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка загрузки проекта: {str(e)}")
-
-# === MIDDLEWARE ДЛЯ ЛОГИРОВАНИЯ ===
-
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    """Middleware для логирования запросов"""
-    start_time = datetime.now()
-    
-    response = await call_next(request)
-    
-    process_time = (datetime.now() - start_time).total_seconds()
-    
-    logger.info(
-        f"{request.method} {request.url.path} - "
-        f"Status: {response.status_code} - "
-        f"Time: {process_time:.3f}s"
-    )
-    
-    return response
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        "backend.main_fixed:app",
+        "backend.main:app",
         host=settings.host,
         port=settings.port,
         reload=settings.debug

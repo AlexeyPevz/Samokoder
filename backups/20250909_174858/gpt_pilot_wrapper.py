@@ -10,10 +10,17 @@ import zipfile
 # Добавляем путь к GPT-Pilot в sys.path
 sys.path.append(str(Path(__file__).parent.parent.parent / "samokoder-core"))
 
+# Импорты GPT-Pilot будут добавлены после настройки
+# from core.agents.orchestrator import Orchestrator
+# from core.db.models.project import Project
+# from core.config.user_settings import UserSettings
+# from core.llm.openai_client import OpenAIClient
+# from core.llm.anthropic_client import AnthropicClient
+# from core.llm.groq_client import GroqClient
+
 class SamokoderGPTPilot:
     """
     Обертка над GPT-Pilot для интеграции с SaaS платформой Самокодер
-    Исправленная версия с правильной интеграцией
     """
     
     def __init__(self, project_id: str, user_id: str, user_api_keys: Dict[str, str]):
@@ -73,16 +80,15 @@ class SamokoderGPTPilot:
                 'user_id': self.user_id
             }
             
-            # Временно создаем заглушки до полной интеграции GPT-Pilot
-            self.project = {
-                'config': project_config,
-                'status': 'initialized',
-                'created_at': datetime.now().isoformat()
-            }
-            self.orchestrator = None
+            # Создаем объект проекта GPT-Pilot
+            # self.project = Project(project_config)
             
-            # Создаем базовую структуру проекта
-            await self._create_basic_project_structure(app_name, app_description)
+            # Инициализируем оркестратор
+            # self.orchestrator = Orchestrator(self.project)
+            
+            # Временно создаем заглушки
+            self.project = {"config": project_config}
+            self.orchestrator = None
             
             return {
                 'project_id': self.project_id,
@@ -92,8 +98,6 @@ class SamokoderGPTPilot:
             }
             
         except Exception as e:
-            # Логируем ошибку
-            print(f"Error initializing project {self.project_id}: {e}")
             return {
                 'project_id': self.project_id,
                 'status': 'error',
@@ -101,105 +105,10 @@ class SamokoderGPTPilot:
                 'message': f'Ошибка инициализации проекта: {str(e)}'
             }
     
-    async def _create_basic_project_structure(self, app_name: str, app_description: str):
-        """Создает базовую структуру проекта"""
-        
-        # Создаем package.json для React приложения
-        package_json = {
-            "name": app_name.lower().replace(' ', '-'),
-            "version": "1.0.0",
-            "description": app_description,
-            "main": "src/index.js",
-            "scripts": {
-                "start": "react-scripts start",
-                "build": "react-scripts build",
-                "test": "react-scripts test",
-                "eject": "react-scripts eject"
-            },
-            "dependencies": {
-                "react": "^18.2.0",
-                "react-dom": "^18.2.0",
-                "react-scripts": "5.0.1"
-            },
-            "browserslist": {
-                "production": [
-                    ">0.2%",
-                    "not dead",
-                    "not op_mini all"
-                ],
-                "development": [
-                    "last 1 chrome version",
-                    "last 1 firefox version",
-                    "last 1 safari version"
-                ]
-            }
-        }
-        
-        # Создаем базовые файлы
-        files_to_create = {
-            'package.json': json.dumps(package_json, indent=2),
-            'public/index.html': '''<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>''' + app_name + '''</title>
-</head>
-<body>
-    <div id="root"></div>
-</body>
-</html>''',
-            'src/index.js': '''import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);''',
-            'src/App.js': '''import React from 'react';
-
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <h1>''' + app_name + '''</h1>
-        <p>''' + app_description + '''</p>
-      </header>
-    </div>
-  );
-}
-
-export default App;''',
-            'src/App.css': '''.App {
-  text-align: center;
-}
-
-.App-header {
-  background-color: #282c34;
-  padding: 20px;
-  color: white;
-}
-
-.App-header h1 {
-  margin: 0;
-  font-size: 2rem;
-}
-
-.App-header p {
-  margin: 10px 0 0 0;
-  font-size: 1.2rem;
-}'''
-        }
-        
-        # Создаем файлы
-        for file_path, content in files_to_create.items():
-            full_path = self.workspace / file_path
-            full_path.parent.mkdir(parents=True, exist_ok=True)
-            full_path.write_text(content, encoding='utf-8')
-    
     async def chat_with_agents(self, message: str, context: str = "chat") -> AsyncGenerator[Dict, None]:
         """Основной метод для общения с агентами GPT-Pilot"""
         
-        if not self.project:
+        if not self.project or not self.orchestrator:
             yield {
                 'type': 'error',
                 'message': 'Проект не инициализирован',
@@ -217,12 +126,12 @@ export default App;''',
                     'timestamp': datetime.now().isoformat()
                 }
                 
-                # Симулируем работу Product Owner агента
-                await asyncio.sleep(1)
+                # Здесь будет вызов агента Product Owner
+                # Пока возвращаем заглушку
                 yield {
                     'type': 'agent_response',
                     'agent': 'ProductOwner',
-                    'content': f'Понял ваши требования: {message}. Создаю user stories...',
+                    'content': f'Понял ваши требования: {message}',
                     'timestamp': datetime.now().isoformat()
                 }
                 
@@ -234,12 +143,11 @@ export default App;''',
                     'timestamp': datetime.now().isoformat()
                 }
                 
-                # Симулируем работу Architect агента
-                await asyncio.sleep(1)
+                # Здесь будет вызов агента Architect
                 yield {
                     'type': 'agent_response',
                     'agent': 'Architect',
-                    'content': f'Архитектура для: {message}. Выбираю React + Node.js + PostgreSQL',
+                    'content': f'Архитектура для: {message}',
                     'timestamp': datetime.now().isoformat()
                 }
                 
@@ -251,8 +159,7 @@ export default App;''',
                     'timestamp': datetime.now().isoformat()
                 }
                 
-                # Симулируем работу Developer агента
-                await asyncio.sleep(1)
+                # Здесь будет вызов агента Developer
                 yield {
                     'type': 'agent_response',
                     'agent': 'Developer',
@@ -260,34 +167,14 @@ export default App;''',
                     'timestamp': datetime.now().isoformat()
                 }
                 
-                # Создаем новый компонент
-                component_name = f"Component{datetime.now().strftime('%H%M%S')}"
-                component_content = f'''import React from 'react';
-
-function {component_name}() {{
-  return (
-    <div className="{component_name.lower()}">
-      <h2>{component_name}</h2>
-      <p>Создан для: {message}</p>
-    </div>
-  );
-}}
-
-export default {component_name};'''
-                
-                component_path = self.workspace / f'src/{component_name}.js'
-                component_path.write_text(component_content, encoding='utf-8')
-                
-                # Уведомляем о созданных файлах
+                # Если агент создал файлы, уведомляем об этом
                 yield {
                     'type': 'files_updated',
-                    'files': [f'src/{component_name}.js'],
+                    'files': ['src/App.js', 'package.json'],
                     'timestamp': datetime.now().isoformat()
                 }
             
         except Exception as e:
-            # Логируем ошибку
-            print(f"Error in chat_with_agents: {e}")
             yield {
                 'type': 'error',
                 'message': f'Ошибка в работе агентов: {str(e)}',
@@ -301,60 +188,39 @@ export default {component_name};'''
             yield {'type': 'status', 'message': 'Запуск Product Owner агента...'}
             
             # 1. Анализ требований (Product Owner)
-            await asyncio.sleep(2)
             yield {
                 'type': 'agent_complete',
                 'agent': 'ProductOwner',
-                'result': {'user_stories': ['Как пользователь, я хочу управлять задачами', 'Как пользователь, я хочу видеть прогресс']},
+                'result': {'user_stories': ['Как пользователь, я хочу...']},
                 'progress': 20
             }
             
             # 2. Планирование архитектуры (Architect)
             yield {'type': 'status', 'message': 'Запуск Architect агента...'}
-            await asyncio.sleep(2)
             
             yield {
                 'type': 'agent_complete', 
                 'agent': 'Architect',
-                'result': {'architecture': 'React + Node.js + PostgreSQL', 'components': ['TaskList', 'TaskForm', 'TaskItem']},
+                'result': {'architecture': 'React + Node.js + PostgreSQL'},
                 'progress': 40
             }
             
             # 3. Разработка (Developer)
             yield {'type': 'status', 'message': 'Запуск Developer агента...'}
             
-            # Создаем компоненты
-            components = ['TaskList', 'TaskForm', 'TaskItem', 'Header', 'Footer']
-            for i, component in enumerate(components):
-                await asyncio.sleep(1)
+            # Симулируем разработку
+            for i in range(5):
+                await asyncio.sleep(1)  # Симуляция работы
                 yield {
                     'type': 'development_update',
-                    'content': f'Создаю компонент {component}...',
+                    'content': f'Создаю файл {i+1}/5...',
                     'progress': min(40 + (i+1) * 10, 90)
                 }
-                
-                # Создаем файл компонента
-                component_content = f'''import React from 'react';
-
-function {component}() {{
-  return (
-    <div className="{component.lower()}">
-      <h2>{component}</h2>
-      <p>Компонент {component} готов к использованию</p>
-    </div>
-  );
-}}
-
-export default {component};'''
-                
-                component_path = self.workspace / f'src/components/{component}.js'
-                component_path.parent.mkdir(parents=True, exist_ok=True)
-                component_path.write_text(component_content, encoding='utf-8')
                 
                 # Уведомляем о созданных файлах
                 yield {
                     'type': 'files_created',
-                    'files': [f'src/components/{component}.js']
+                    'files': [f'src/component{i+1}.js']
                 }
             
             # 4. Завершение
@@ -366,8 +232,6 @@ export default {component};'''
             }
             
         except Exception as e:
-            # Логируем ошибку
-            print(f"Error in generate_full_app: {e}")
             yield {
                 'type': 'error',
                 'message': f'Ошибка генерации: {str(e)}',
@@ -423,10 +287,6 @@ export default {component};'''
         except UnicodeDecodeError:
             # Если бинарный файл, возвращаем info
             return f"[Бинарный файл: {full_path.name}, размер: {full_path.stat().st_size} байт]"
-        except Exception as e:
-            # Логируем ошибку
-            print(f"Error reading file {file_path}: {e}")
-            raise FileNotFoundError(f"Ошибка чтения файла {file_path}: {str(e)}")
     
     def create_zip_export(self) -> Path:
         """Создает ZIP архив проекта"""
@@ -436,43 +296,16 @@ export default {component};'''
         zip_filename = f"{self.project_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
         zip_path = export_path / zip_filename
         
-        try:
-            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                for file_path in self.workspace.rglob('*'):
-                    if file_path.is_file() and not any(exclude in str(file_path) for exclude in ['.git', 'node_modules', '__pycache__']):
-                        arcname = file_path.relative_to(self.workspace)
-                        zipf.write(file_path, arcname)
-            
-            return zip_path
-        except Exception as e:
-            # Логируем ошибку
-            print(f"Error creating zip export: {e}")
-            raise Exception(f"Ошибка создания ZIP архива: {str(e)}")
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for file_path in self.workspace.rglob('*'):
+                if file_path.is_file() and not any(exclude in str(file_path) for exclude in ['.git', 'node_modules', '__pycache__']):
+                    arcname = file_path.relative_to(self.workspace)
+                    zipf.write(file_path, arcname)
+        
+        return zip_path
     
     async def restore_from_workspace(self):
         """Восстанавливает состояние проекта из workspace"""
-        try:
-            # Проверяем, есть ли файлы в workspace
-            if self.workspace.exists() and any(self.workspace.iterdir()):
-                # Восстанавливаем состояние проекта
-                self.project = {
-                    'config': {
-                        'app': {
-                            'app_name': 'Restored Project',
-                            'app_type': 'web',
-                            'description': 'Восстановленный проект'
-                        },
-                        'workspace': str(self.workspace),
-                        'user_id': self.user_id
-                    },
-                    'status': 'restored',
-                    'created_at': datetime.now().isoformat()
-                }
-            else:
-                # Если workspace пустой, создаем базовую структуру
-                await self._create_basic_project_structure('Restored Project', 'Восстановленный проект')
-        except Exception as e:
-            # Логируем ошибку
-            print(f"Error restoring from workspace: {e}")
-            # Создаем базовую структуру в случае ошибки
-            await self._create_basic_project_structure('Restored Project', 'Восстановленный проект')
+        # Здесь будет логика восстановления состояния проекта
+        # из существующих файлов в workspace
+        pass

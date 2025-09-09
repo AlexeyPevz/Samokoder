@@ -2,9 +2,10 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from supabase import create_client, Client
 from typing import Dict, Optional
+import jwt
 from datetime import datetime
 
-from config.settings_fixed import settings
+from config.settings import settings
 
 # Supabase клиент для проверки токенов
 supabase: Client = create_client(
@@ -153,61 +154,3 @@ def require_api_credits(min_credits: float = 0.01):
             )
     
     return check_credits
-
-def validate_user_permissions(required_permissions: list):
-    """
-    Декоратор для проверки разрешений пользователя
-    """
-    async def check_permissions(current_user: Dict = Depends(get_current_user)) -> Dict:
-        try:
-            # Получаем профиль пользователя из базы
-            response = supabase.table("profiles").select("subscription_tier").eq("id", current_user["id"]).single().execute()
-            
-            if not response.data:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Профиль пользователя не найден"
-                )
-            
-            user_tier = response.data["subscription_tier"]
-            
-            # Определяем разрешения для каждого тарифа
-            tier_permissions = {
-                "free": ["basic_chat", "view_files"],
-                "starter": ["basic_chat", "view_files", "export_projects"],
-                "professional": ["basic_chat", "view_files", "export_projects", "advanced_agents", "custom_models"],
-                "business": ["basic_chat", "view_files", "export_projects", "advanced_agents", "custom_models", "team_collaboration"],
-                "enterprise": ["basic_chat", "view_files", "export_projects", "advanced_agents", "custom_models", "team_collaboration", "priority_support"]
-            }
-            
-            user_permissions = tier_permissions.get(user_tier, [])
-            
-            # Проверяем, есть ли у пользователя все необходимые разрешения
-            missing_permissions = [perm for perm in required_permissions if perm not in user_permissions]
-            
-            if missing_permissions:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Недостаточно разрешений. Требуется: {missing_permissions}. Ваш тариф: {user_tier}"
-                )
-            
-            return current_user
-            
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Ошибка проверки разрешений: {str(e)}"
-            )
-    
-    return check_permissions
-
-def rate_limit(requests_per_minute: int = 60):
-    """
-    Декоратор для rate limiting (базовая реализация)
-    """
-    async def check_rate_limit(current_user: Dict = Depends(get_current_user)) -> Dict:
-        # Здесь должна быть реализация rate limiting
-        # Пока возвращаем пользователя без проверки
-        return current_user
-    
-    return check_rate_limit
