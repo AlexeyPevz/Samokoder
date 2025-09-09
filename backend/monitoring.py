@@ -12,8 +12,9 @@ from contextlib import asynccontextmanager
 
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
-from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from sentry_sdk.integrations.httpx import HttpxIntegration
+
+# SQLAlchemy будет импортирован опционально в _init_sentry
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 from fastapi import Request, Response
 from fastapi.responses import PlainTextResponse
@@ -106,13 +107,21 @@ class MonitoringService:
         """Инициализация Sentry для отслеживания ошибок"""
         
         if settings.sentry_dsn:
+            integrations = [
+                FastApiIntegration(auto_enabling_instrumentations=True),
+                HttpxIntegration(),
+            ]
+            
+            # Добавляем SQLAlchemy интеграцию только если доступна
+            try:
+                from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+                integrations.append(SqlalchemyIntegration())
+            except ImportError:
+                pass  # SQLAlchemy не установлен, пропускаем
+            
             sentry_sdk.init(
                 dsn=settings.sentry_dsn,
-                integrations=[
-                    FastApiIntegration(auto_enabling_instrumentations=True),
-                    SqlalchemyIntegration(),
-                    HttpxIntegration(),
-                ],
+                integrations=integrations,
                 traces_sample_rate=0.1,  # 10% трассировка
                 profiles_sample_rate=0.1,  # 10% профилирование
                 environment=settings.environment,
