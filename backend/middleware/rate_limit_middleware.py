@@ -5,7 +5,6 @@ Rate Limiting Middleware для FastAPI
 
 from fastapi import Request, HTTPException, status
 from fastapi.responses import JSONResponse
-from typing import Callable
 import structlog
 from datetime import datetime
 

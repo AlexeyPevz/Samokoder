@@ -2,13 +2,10 @@ from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
-import asyncio
 import json
-import os
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Optional
-import logging
 
 from config.settings import settings
 from backend.services.gpt_pilot_wrapper_v2 import SamokoderGPTPilot
@@ -18,7 +15,6 @@ from backend.monitoring import monitoring, monitoring_middleware, get_metrics_re
 
 # Настройка структурированного логирования
 import structlog
-from config.settings import settings
 
 # Настройка structlog
 structlog.configure(
@@ -89,7 +85,15 @@ active_projects: Dict[str, SamokoderGPTPilot] = {}
 
 @app.options("/{path:path}")
 async def options_handler(path: str):
-    """Обработчик для CORS preflight запросов"""
+    """
+    Обработчик для CORS preflight запросов.
+    
+    Args:
+        path: Путь запроса
+        
+    Returns:
+        Response: CORS заголовки для preflight запроса
+    """
     from fastapi.responses import Response
     return Response(
         status_code=200,
@@ -104,7 +108,12 @@ async def options_handler(path: str):
 
 @app.get("/")
 async def root():
-    """Корневой эндпоинт"""
+    """
+    Корневой эндпоинт API.
+    
+    Returns:
+        dict: Информация о API и его статусе
+    """
     return {
         "message": "🚀 Samokoder Backend API",
         "version": "1.0.0",
@@ -114,12 +123,22 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Проверка здоровья сервиса"""
+    """
+    Проверка здоровья сервиса.
+    
+    Returns:
+        dict: Статус здоровья всех компонентов системы
+    """
     return monitoring.get_health_status()
 
 @app.get("/metrics")
 async def metrics():
-    """Prometheus метрики"""
+    """
+    Prometheus метрики системы.
+    
+    Returns:
+        Response: Метрики в формате Prometheus
+    """
     return get_metrics_response()
 
 @app.get("/health/detailed")

@@ -2,7 +2,6 @@
 Circuit Breaker Pattern Implementation
 """
 import asyncio
-import time
 import structlog
 from enum import Enum
 from typing import Callable, Any, Optional
