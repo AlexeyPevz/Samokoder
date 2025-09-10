@@ -1,7 +1,7 @@
 import React from 'react';
 import SamokoderLogo from '../components/ui/SamokoderLogo';
 import SamokoderButton from '../components/ui/SamokoderButton';
-import { SamokoderCard, SamokoderCardHeader, SamokoderCardTitle, SamokoderCardDescription, SamokoderCardContent, SamokoderCardFooter } from '../components/ui/SamokoderCard';
+import { SamokoderCard, SamokoderCardHeader, SamokoderCardTitle, SamokoderCardDescription, SamokoderCardContent } from '../components/ui/SamokoderCard';
 import SamokoderBadge from '../components/ui/SamokoderBadge';
 import { SamokoderIcon, LightningIcon, CodeBracketsIcon, AIBrainIcon, DevelopmentIcon, PlatformIcon } from '../components/ui/SamokoderIcons';
 
