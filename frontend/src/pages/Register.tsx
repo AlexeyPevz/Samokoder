@@ -37,11 +37,11 @@ export function Register() {
       const response = await register({ email: data.email, password: data.password });
       
       if (response.success && response.data) {
-        // Сохраняем токены
-        if (response.data.accessToken) {
+        // Сохраняем токены с валидацией
+        if (response.data.accessToken && typeof response.data.accessToken === 'string') {
           localStorage.setItem('accessToken', response.data.accessToken)
         }
-        if (response.data.refreshToken) {
+        if (response.data.refreshToken && typeof response.data.refreshToken === 'string') {
           localStorage.setItem('refreshToken', response.data.refreshToken)
         }
         

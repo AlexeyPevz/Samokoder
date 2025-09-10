@@ -64,8 +64,13 @@ const setupInterceptors = (apiInstance: typeof axios) => {
             const newAccessToken = response.data.data.accessToken;
             const newRefreshToken = response.data.data.refreshToken;
 
-            localStorage.setItem('accessToken', newAccessToken);
-            localStorage.setItem('refreshToken', newRefreshToken);
+            // Валидация токенов перед сохранением
+            if (typeof newAccessToken === 'string' && newAccessToken.length > 0) {
+              localStorage.setItem('accessToken', newAccessToken);
+            }
+            if (typeof newRefreshToken === 'string' && newRefreshToken.length > 0) {
+              localStorage.setItem('refreshToken', newRefreshToken);
+            }
 
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;

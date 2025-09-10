@@ -22,10 +22,39 @@ export function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!email || !password) {
+    // Валидация email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !email.trim()) {
       toast({
         title: "Ошибка",
-        description: "Заполните все поля",
+        description: "Введите email",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "Ошибка",
+        description: "Введите корректный email",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    if (!password || !password.trim()) {
+      toast({
+        title: "Ошибка",
+        description: "Введите пароль",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    if (password.length < 6) {
+      toast({
+        title: "Ошибка",
+        description: "Пароль должен содержать минимум 6 символов",
         variant: "destructive"
       })
       return
@@ -41,11 +70,11 @@ export function Login() {
       if (response.success && response.data) {
         console.log('Login successful, setting user and navigating')
         
-        // Сохраняем токены
-        if (response.data.accessToken) {
+        // Сохраняем токены с валидацией
+        if (response.data.accessToken && typeof response.data.accessToken === 'string') {
           localStorage.setItem('accessToken', response.data.accessToken)
         }
-        if (response.data.refreshToken) {
+        if (response.data.refreshToken && typeof response.data.refreshToken === 'string') {
           localStorage.setItem('refreshToken', response.data.refreshToken)
         }
         
