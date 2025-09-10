@@ -121,8 +121,18 @@ async def detailed_health_check():
 async def login(credentials: dict):
     """Вход через Supabase Auth (или mock для тестирования)"""
     try:
-        if not credentials.get("email") or not credentials.get("password"):
-            raise HTTPException(status_code=400, detail="Email и пароль обязательны")
+        # Строгая проверка входных данных
+        if not credentials:
+            raise HTTPException(status_code=400, detail="Данные для входа обязательны")
+        
+        email = credentials.get("email")
+        password = credentials.get("password")
+        
+        if not email or not password or not isinstance(email, str) or not isinstance(password, str):
+            raise HTTPException(status_code=400, detail="Email и пароль обязательны и должны быть строками")
+        
+        if not email.strip() or not password.strip():
+            raise HTTPException(status_code=400, detail="Email и пароль не могут быть пустыми")
         
         # Если Supabase недоступен или URL содержит example, используем mock аутентификацию
         if not supabase or settings.supabase_url.endswith("example.supabase.co"):
@@ -130,19 +140,19 @@ async def login(credentials: dict):
             return {
                 "message": "Успешный вход (mock режим)",
                 "user": {
-                    "id": f"mock_user_{credentials['email']}",
-                    "email": credentials["email"],
+                    "id": f"mock_user_{email}",
+                    "email": email,
                     "created_at": "2025-01-01T00:00:00Z"
                 },
                 "session": {
-                    "access_token": f"mock_token_{credentials['email']}",
+                    "access_token": f"mock_token_{email}",
                     "token_type": "bearer"
                 }
             }
         
         response = supabase.auth.sign_in_with_password({
-            "email": credentials["email"],
-            "password": credentials["password"]
+            "email": email,
+            "password": password
         })
         
         if response.user:
