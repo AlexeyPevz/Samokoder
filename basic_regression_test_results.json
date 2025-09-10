@@ -1,0 +1,51 @@
+{
+  "total_tests": 6,
+  "passed_tests": 5,
+  "failed_tests": 1,
+  "success_rate": 83.33333333333334,
+  "duration": 0.028229475021362305,
+  "results": [
+    {
+      "test_name": "File Structure Check",
+      "status": "PASSED",
+      "duration": 2.2172927856445312e-05,
+      "details": "All 7 required files found",
+      "timestamp": "2025-09-10T15:57:11.759849"
+    },
+    {
+      "test_name": "Python Syntax Check",
+      "status": "PASSED",
+      "duration": 0.01317739486694336,
+      "details": "Checked 125 Python files",
+      "timestamp": "2025-09-10T15:57:11.773064"
+    },
+    {
+      "test_name": "Configuration Files Check",
+      "status": "PASSED",
+      "duration": 0.00012135505676269531,
+      "details": "Valid configs: 5/5",
+      "timestamp": "2025-09-10T15:57:11.773217"
+    },
+    {
+      "test_name": "Test Coverage Check",
+      "status": "PASSED",
+      "duration": 0.0002028942108154297,
+      "details": "Test ratio: 0.37 (22/59)",
+      "timestamp": "2025-09-10T15:57:11.773433"
+    },
+    {
+      "test_name": "Documentation Check",
+      "status": "PASSED",
+      "duration": 0.00018835067749023438,
+      "details": "Docs: 4/4, Size: 38975 chars",
+      "timestamp": "2025-09-10T15:57:11.773634"
+    },
+    {
+      "test_name": "Security Checks",
+      "status": "FAILED",
+      "duration": 0.014371395111083984,
+      "details": "Potential security issues: 2",
+      "timestamp": "2025-09-10T15:57:11.788018"
+    }
+  ]
+}
