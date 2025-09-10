@@ -364,16 +364,17 @@ class AIService:
                 self.user_api_keys['groq']
             )
         
-        # Fallback на системные ключи если нет пользовательских
+        # Fallback на системные ключи если нет пользовательских (только для демо)
         if not self.clients:
-            if settings.system_openrouter_key:
+            if settings.system_openrouter_key and settings.system_openrouter_key != "":
                 self.clients[AIProvider.OPENROUTER] = OpenRouterClient(
                     settings.system_openrouter_key
                 )
-            elif settings.system_openai_key:
+            elif settings.system_openai_key and settings.system_openai_key != "":
                 self.clients[AIProvider.OPENAI] = OpenAIClient(
                     settings.system_openai_key
                 )
+            # Если нет системных ключей, оставляем clients пустым
     
     async def route_request(self, 
                           messages: List[Dict[str, str]], 
@@ -385,6 +386,19 @@ class AIService:
         """
         Маршрутизация запроса к нужному AI провайдеру
         """
+        
+        # Проверяем, есть ли доступные провайдеры
+        if not self.clients:
+            return AIResponse(
+                content="",
+                tokens_used=0,
+                cost_usd=0.0,
+                provider=AIProvider.OPENROUTER,
+                model="",
+                response_time=0.0,
+                success=False,
+                error="No AI providers configured. Please add your API keys in the settings."
+            )
         
         # Определяем провайдера и модель
         if provider and provider in [p.value for p in AIProvider]:
@@ -437,17 +451,28 @@ class AIService:
         return await client.chat_completion(request)
     
     async def _fallback_request(self, original_request: AIRequest) -> AIResponse:
-        """Fallback на другой провайдер при ошибке"""
+        """Fallback на другой провайдер при ошибке с умной логикой"""
         
-        available_providers = [p for p in self.clients.keys() if p != original_request.provider]
+        # Определяем приоритет fallback провайдеров
+        fallback_priority = [
+            AIProvider.OPENROUTER,  # Бесплатные модели
+            AIProvider.GROQ,        # Быстрые модели
+            AIProvider.OPENAI,      # Надежные модели
+            AIProvider.ANTHROPIC    # Качественные модели
+        ]
+        
+        available_providers = [p for p in fallback_priority if p in self.clients and p != original_request.provider]
+        
+        logger.info(f"Trying fallback providers: {[p.value for p in available_providers]}")
         
         for provider in available_providers:
             try:
+                # Создаем запрос с оптимизированными параметрами для fallback
                 request = AIRequest(
                     messages=original_request.messages,
-                    model=self._get_default_model_for_provider(provider),
+                    model=self._get_optimal_model_for_fallback(provider, original_request),
                     provider=provider,
-                    max_tokens=original_request.max_tokens,
+                    max_tokens=min(original_request.max_tokens, 2048),  # Ограничиваем токены для fallback
                     temperature=original_request.temperature,
                     user_id=original_request.user_id,
                     project_id=original_request.project_id
@@ -455,13 +480,15 @@ class AIService:
                 
                 response = await self._execute_request(request)
                 if response.success:
-                    logger.info(f"Fallback to {provider.value} successful")
+                    logger.info(f"Fallback to {provider.value} successful with model {response.model}")
                     return response
+                else:
+                    logger.warning(f"Fallback to {provider.value} failed: {response.error}")
             except Exception as e:
-                logger.warning(f"Fallback to {provider.value} failed: {e}")
+                logger.warning(f"Fallback to {provider.value} failed with exception: {e}")
                 continue
         
-        # Если все fallback провалились
+        # Если все fallback провалились, возвращаем ошибку с деталями
         return AIResponse(
             content="",
             tokens_used=0,
@@ -470,8 +497,30 @@ class AIService:
             model=original_request.model,
             response_time=0.0,
             success=False,
-            error="All providers failed"
+            error=f"All {len(available_providers)} fallback providers failed. Original error: {original_request.provider.value}"
         )
+    
+    def _get_optimal_model_for_fallback(self, provider: AIProvider, original_request: AIRequest) -> str:
+        """Выбирает оптимальную модель для fallback с учетом контекста"""
+        
+        # Если исходный запрос был для кодирования, выбираем модель для кодирования
+        if "code" in original_request.messages[0].get("content", "").lower():
+            coding_models = {
+                AIProvider.OPENROUTER: "deepseek/deepseek-v3",
+                AIProvider.GROQ: "llama-3-8b-8192",
+                AIProvider.OPENAI: "gpt-4o-mini",
+                AIProvider.ANTHROPIC: "claude-3-haiku-20240307"
+            }
+            return coding_models.get(provider, self._get_default_model_for_provider(provider))
+        
+        # Для обычных запросов используем быстрые модели
+        fast_models = {
+            AIProvider.OPENROUTER: "meta-llama/llama-3.1-8b-instruct",
+            AIProvider.GROQ: "llama-3-8b-8192",
+            AIProvider.OPENAI: "gpt-4o-mini",
+            AIProvider.ANTHROPIC: "claude-3-haiku-20240307"
+        }
+        return fast_models.get(provider, self._get_default_model_for_provider(provider))
     
     def _select_best_provider(self) -> AIProvider:
         """Выбор лучшего доступного провайдера"""
@@ -488,8 +537,12 @@ class AIService:
             if provider in self.clients:
                 return provider
         
-        # Если ничего не найдено, возвращаем первый доступный
-        return list(self.clients.keys())[0] if self.clients else AIProvider.OPENROUTER
+        # Если ничего не найдено, возвращаем первый доступный или OpenRouter по умолчанию
+        if self.clients:
+            return list(self.clients.keys())[0]
+        else:
+            # Нет доступных провайдеров - это нормально, будет обработано в route_request
+            return AIProvider.OPENROUTER
     
     def _get_default_model_for_provider(self, provider: AIProvider) -> str:
         """Получение модели по умолчанию для провайдера"""

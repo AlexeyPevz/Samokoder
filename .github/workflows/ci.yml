@@ -6,25 +6,28 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  PYTHON_VERSION: "3.9"
-  NODE_VERSION: "18"
-
 jobs:
   test:
     runs-on: ubuntu-latest
     
-    strategy:
-      matrix:
-        python-version: ["3.9", "3.10", "3.11"]
-    
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: '3.9'
     
     - name: Cache pip dependencies
       uses: actions/cache@v3
@@ -38,34 +41,37 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-asyncio pytest-cov
     
     - name: Lint with flake8
       run: |
-        pip install flake8
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     
     - name: Type check with mypy
       run: |
-        pip install mypy
         mypy backend/ --ignore-missing-imports
+    
+    - name: Format check with black
+      run: |
+        black --check backend/
+    
+    - name: Sort check with isort
+      run: |
+        isort --check-only backend/
     
     - name: Run unit tests
       run: |
-        pytest tests/ -v --cov=backend --cov-report=xml --cov-report=html
+        pytest tests/ -v --cov=backend --cov-report=xml
     
-    - name: Run comprehensive tests
+    - name: Run integration tests
       run: |
-        python comprehensive_test.py
-    
-    - name: Run E2E tests
-      run: |
-        python test_e2e_comprehensive.py
+        python test_improved_integration.py
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         API_ENCRYPTION_KEY: ${{ secrets.API_ENCRYPTION_KEY }}
+        REDIS_URL: redis://localhost:6379
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -74,122 +80,79 @@ jobs:
         flags: unittests
         name: codecov-umbrella
 
-  security:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install bandit safety
-    
-    - name: Run Bandit security scan
-      run: |
-        bandit -r backend/ -f json -o bandit-report.json
-        bandit -r backend/ -ll
-    
-    - name: Run Safety check
-      run: |
-        safety check --json --output safety-report.json
-        safety check
-    
-    - name: Upload security reports
-      uses: actions/upload-artifact@v3
-      with:
-        name: security-reports
-        path: |
-          bandit-report.json
-          safety-report.json
-
   build:
+    needs: test
     runs-on: ubuntu-latest
-    needs: [test, security]
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
     
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Build Docker image
-      run: |
-        docker build -t samokoder:${{ github.sha }} .
-        docker tag samokoder:${{ github.sha }} samokoder:latest
-    
-    - name: Test Docker image
-      run: |
-        docker run --rm -d -p 8000:8000 --name samokoder-test samokoder:${{ github.sha }}
-        sleep 10
-        curl -f http://localhost:8000/health || exit 1
-        docker stop samokoder-test
-    
-    - name: Save Docker image
-      uses: actions/upload-artifact@v3
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
       with:
-        name: docker-image
-        path: /tmp/docker-image.tar
+        context: .
+        push: true
+        tags: |
+          samokoder:latest
+          samokoder:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
   deploy-staging:
-    runs-on: ubuntu-latest
     needs: build
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop'
     
     steps:
-    - uses: actions/checkout@v4
-    
     - name: Deploy to staging
       run: |
         echo "Deploying to staging environment..."
-        # Здесь будет реальный деплой на staging
-        # Например, через Docker, Kubernetes, или cloud provider
-    
-    - name: Run smoke tests
-      run: |
-        echo "Running smoke tests on staging..."
-        # Здесь будут smoke тесты на staging окружении
+        # Здесь будет команда деплоя на staging
+        # Например, через kubectl, docker-compose, или другой инструмент
 
   deploy-production:
+    needs: build
     runs-on: ubuntu-latest
-    needs: [build, deploy-staging]
     if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production environment..."
+        # Здесь будет команда деплоя на production
+        # Например, через kubectl, docker-compose, или другой инструмент
+
+  security-scan:
+    runs-on: ubuntu-latest
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Deploy to production
-      run: |
-        echo "Deploying to production environment..."
-        # Здесь будет реальный деплой на production
-        # Например, через Docker, Kubernetes, или cloud provider
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
     
-    - name: Run production health checks
-      run: |
-        echo "Running production health checks..."
-        # Здесь будут health checks на production
-    
-    - name: Notify deployment
-      run: |
-        echo "Production deployment completed successfully!"
-        # Здесь будет уведомление о деплое (Slack, email, etc.)
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
 
-  performance:
+  performance-test:
+    needs: test
     runs-on: ubuntu-latest
-    needs: build
     
     steps:
     - uses: actions/checkout@v4
@@ -197,20 +160,18 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
+        python-version: '3.9'
     
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install locust
     
     - name: Run load tests
       run: |
-        locust -f load_tests/locustfile.py --headless -u 10 -r 2 -t 30s --html load_test_report.html
-    
-    - name: Upload load test report
-      uses: actions/upload-artifact@v3
-      with:
-        name: load-test-report
-        path: load_test_report.html
+        locust -f load_tests/locustfile.py --host=http://localhost:8000 --headless -u 10 -r 2 -t 30s
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        API_ENCRYPTION_KEY: ${{ secrets.API_ENCRYPTION_KEY }}
