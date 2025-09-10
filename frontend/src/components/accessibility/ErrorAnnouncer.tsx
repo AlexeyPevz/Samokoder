@@ -9,7 +9,7 @@ export function ErrorAnnouncer({ error, className = '' }: ErrorAnnouncerProps) {
   return (
     <div
       role="alert"
-      aria-live="polite"
+      aria-live="assertive"
       aria-atomic="true"
       className={`sr-only ${className}`}
     >

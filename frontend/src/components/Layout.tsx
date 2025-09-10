@@ -9,7 +9,12 @@ export function Layout() {
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
       <Header />
       <div className="flex h-[calc(100vh-4rem)] pt-16">
-        <main className="flex-1 overflow-y-auto p-6">
+        <main 
+          id="main-content"
+          className="flex-1 overflow-y-auto p-6"
+          role="main"
+          aria-label="Основной контент"
+        >
           <div className="mx-auto max-w-7xl">
             <Outlet />
           </div>
