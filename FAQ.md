@@ -87,6 +87,14 @@ python run_server.py
 
 Скопируйте `.env.example` в `.env` и заполните необходимые значения:
 
+```bash
+# Копируем пример конфигурации
+cp .env.example .env
+
+# Редактируем файл
+nano .env
+```
+
 ```env
 # Основные настройки
 NODE_ENV=development
@@ -103,6 +111,8 @@ OPENAI_API_KEY=sk-your-openai-key
 JWT_SECRET=your-super-secret-jwt-key-here-32-chars
 API_ENCRYPTION_KEY=your-32-character-secret-key-here
 ```
+
+> **💡 Совет**: В `.env.example` уже настроены все необходимые переменные с примерами значений.
 
 ### ❓ Как сгенерировать безопасные ключи?
 
@@ -622,6 +632,63 @@ kernprof -l -v script.py
 3. **Внесите изменения**
 4. **Напишите тесты**
 5. **Создайте Pull Request**
+
+### ❓ Как проверить, что установка работает?
+
+```bash
+# 1. Проверьте health endpoint
+curl http://localhost:8000/health
+
+# 2. Проверьте API документацию
+open http://localhost:8000/docs
+
+# 3. Запустите автоматическую проверку
+python scripts/test_reproducibility.py
+```
+
+### ❓ Что делать, если .env.example отсутствует?
+
+Если файл `.env.example` отсутствует, создайте его вручную:
+
+```bash
+# Создайте базовый .env файл
+cat > .env << 'EOF'
+# Основные настройки
+NODE_ENV=development
+PORT=8000
+DEBUG=true
+
+# База данных
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your_anon_key_here
+
+# Безопасность
+JWT_SECRET=your-super-secret-jwt-key-here-32-chars
+API_ENCRYPTION_KEY=your-32-character-secret-key-here
+API_ENCRYPTION_SALT=samokoder_salt_2025
+EOF
+```
+
+### ❓ Как обновить проект до последней версии?
+
+```bash
+# 1. Остановите сервисы
+docker-compose down
+
+# 2. Обновите код
+git fetch origin
+git pull origin main
+
+# 3. Обновите зависимости
+pip install -r requirements.txt
+cd frontend && npm install
+
+# 4. Выполните миграции
+python -m alembic upgrade head
+
+# 5. Запустите сервисы
+docker-compose up -d
+```
 
 ---
 

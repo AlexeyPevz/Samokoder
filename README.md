@@ -6,6 +6,8 @@
 [![React](https://img.shields.io/badge/react-18.3.1-blue.svg)](https://reactjs.org)
 [![FastAPI](https://img.shields.io/badge/fastapi-0.104.1-green.svg)](https://fastapi.tiangolo.com)
 [![TypeScript](https://img.shields.io/badge/typescript-5.6.2-blue.svg)](https://www.typescriptlang.org)
+[![Docker](https://img.shields.io/badge/docker-24+-blue.svg)](https://docker.com)
+[![Node.js](https://img.shields.io/badge/node.js-18+-green.svg)](https://nodejs.org)
 
 > **Полнофункциональная платформа для генерации кода с помощью ИИ**  
 > Включает современный React фронтенд, FastAPI бэкенд, PostgreSQL базу данных и интеграцию с множественными AI провайдерами.
@@ -86,6 +88,8 @@ cp .env.example .env
 # Отредактируйте .env файл
 nano .env
 ```
+
+> **💡 Совет**: В `.env.example` уже настроены все необходимые переменные с примерами значений. Просто замените `your-*` значения на реальные.
 
 #### 3. Установка зависимостей
 ```bash
@@ -353,6 +357,8 @@ python -m alembic upgrade head
 | **Zustand** | 5.0.8 | State management |
 | **Axios** | 1.7.8 | HTTP клиент |
 | **Framer Motion** | 12.23.12 | Анимации |
+| **Lucide React** | 0.460.0 | Иконки |
+| **Sonner** | 1.7.0 | Уведомления |
 
 ### ⚙️ Backend
 | Технология | Версия | Назначение |
@@ -489,6 +495,14 @@ python -m alembic upgrade head
 # Решение: Установите зависимости
 pip install -r requirements.txt
 cd frontend && npm install
+```
+
+#### Проблема: "Environment variable not found"
+```bash
+# Решение: Скопируйте .env.example
+cp .env.example .env
+# Отредактируйте .env файл с вашими значениями
+nano .env
 ```
 
 #### Проблема: "Database connection failed"
