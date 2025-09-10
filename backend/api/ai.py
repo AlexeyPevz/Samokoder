@@ -1,0 +1,195 @@
+"""
+AI endpoints
+"""
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
+from backend.models.requests import ChatRequest, AIUsageRequest
+from backend.models.responses import AIResponse, AIUsageStatsResponse
+from backend.auth.dependencies import get_current_user
+from backend.middleware.rate_limit_middleware import ai_rate_limit
+from backend.services.ai_service import get_ai_service
+from backend.services.connection_pool import connection_pool_manager
+import logging
+import json
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+@router.post("/chat", response_model=AIResponse)
+async def chat_with_ai(
+    chat_request: ChatRequest,
+    current_user: dict = Depends(get_current_user),
+    rate_limit: dict = Depends(ai_rate_limit)
+):
+    """Chat with AI endpoint"""
+    try:
+        ai_service = get_ai_service()
+        
+        # Get user's AI configuration
+        supabase = connection_pool_manager.get_supabase_client()
+        settings_response = supabase.table("user_settings").select("*").eq("user_id", current_user["id"]).execute()
+        
+        user_settings = settings_response.data[0] if settings_response.data else {}
+        
+        # Prepare AI request
+        ai_request = {
+            "message": chat_request.message,
+            "model": chat_request.model or user_settings.get("default_model", "deepseek/deepseek-v3"),
+            "provider": chat_request.provider or user_settings.get("default_provider", "openrouter"),
+            "context": chat_request.context or {},
+            "stream": False
+        }
+        
+        # Get AI response
+        response = await ai_service.chat_completion(ai_request)
+        
+        # Log usage
+        if response.get("usage"):
+            usage_data = {
+                "user_id": current_user["id"],
+                "project_id": chat_request.project_id,
+                "provider": ai_request["provider"],
+                "model": ai_request["model"],
+                "tokens_used": response["usage"].get("total_tokens", 0),
+                "cost": response["usage"].get("cost", 0.0)
+            }
+            
+            supabase.table("ai_usage").insert(usage_data).execute()
+        
+        return AIResponse(
+            response=response["content"],
+            model=ai_request["model"],
+            provider=ai_request["provider"],
+            usage=response.get("usage", {}),
+            metadata=response.get("metadata", {})
+        )
+        
+    except Exception as e:
+        logger.error(f"AI chat failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="AI chat failed"
+        )
+
+@router.post("/chat/stream")
+async def chat_with_ai_stream(
+    chat_request: ChatRequest,
+    current_user: dict = Depends(get_current_user),
+    rate_limit: dict = Depends(ai_rate_limit)
+):
+    """Stream chat with AI endpoint"""
+    try:
+        ai_service = get_ai_service()
+        
+        # Get user's AI configuration
+        supabase = connection_pool_manager.get_supabase_client()
+        settings_response = supabase.table("user_settings").select("*").eq("user_id", current_user["id"]).execute()
+        
+        user_settings = settings_response.data[0] if settings_response.data else {}
+        
+        # Prepare AI request
+        ai_request = {
+            "message": chat_request.message,
+            "model": chat_request.model or user_settings.get("default_model", "deepseek/deepseek-v3"),
+            "provider": chat_request.provider or user_settings.get("default_provider", "openrouter"),
+            "context": chat_request.context or {},
+            "stream": True
+        }
+        
+        async def generate_response():
+            async for chunk in ai_service.chat_completion_stream(ai_request):
+                yield f"data: {json.dumps(chunk)}\n\n"
+            yield "data: [DONE]\n\n"
+        
+        return StreamingResponse(
+            generate_response(),
+            media_type="text/plain",
+            headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
+        )
+        
+    except Exception as e:
+        logger.error(f"AI stream chat failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="AI stream chat failed"
+        )
+
+@router.get("/usage", response_model=AIUsageStatsResponse)
+async def get_ai_usage(
+    current_user: dict = Depends(get_current_user),
+    days: int = 30,
+    rate_limit: dict = Depends(api_rate_limit)
+):
+    """Get AI usage statistics"""
+    try:
+        supabase = connection_pool_manager.get_supabase_client()
+        
+        # Get usage data for the specified period
+        from datetime import datetime, timedelta
+        start_date = datetime.now() - timedelta(days=days)
+        
+        response = supabase.table("ai_usage").select("*").eq("user_id", current_user["id"]).gte("created_at", start_date.isoformat()).execute()
+        
+        usage_data = response.data
+        
+        # Calculate statistics
+        total_tokens = sum(usage.get("tokens_used", 0) for usage in usage_data)
+        total_cost = sum(usage.get("cost", 0.0) for usage in usage_data)
+        
+        # Group by provider
+        provider_stats = {}
+        for usage in usage_data:
+            provider = usage.get("provider", "unknown")
+            if provider not in provider_stats:
+                provider_stats[provider] = {"tokens": 0, "cost": 0.0, "requests": 0}
+            provider_stats[provider]["tokens"] += usage.get("tokens_used", 0)
+            provider_stats[provider]["cost"] += usage.get("cost", 0.0)
+            provider_stats[provider]["requests"] += 1
+        
+        return AIUsageStatsResponse(
+            total_tokens=total_tokens,
+            total_cost=total_cost,
+            total_requests=len(usage_data),
+            period_days=days,
+            provider_stats=provider_stats
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to get AI usage: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get AI usage"
+        )
+
+@router.get("/providers")
+async def get_ai_providers(
+    current_user: dict = Depends(get_current_user),
+    rate_limit: dict = Depends(api_rate_limit)
+):
+    """Get available AI providers"""
+    try:
+        supabase = connection_pool_manager.get_supabase_client()
+        
+        response = supabase.table("ai_providers").select("*").eq("is_active", True).execute()
+        
+        providers = []
+        for provider in response.data:
+            providers.append({
+                "id": provider["id"],
+                "name": provider["name"],
+                "display_name": provider["display_name"],
+                "website_url": provider["website_url"],
+                "documentation_url": provider["documentation_url"],
+                "requires_api_key": provider["requires_api_key"],
+                "pricing_info": provider["pricing_info"]
+            })
+        
+        return {"providers": providers}
+        
+    except Exception as e:
+        logger.error(f"Failed to get AI providers: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get AI providers"
+        )

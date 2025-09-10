@@ -1,0 +1,390 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Samokoder - Golden Signals Dashboard",
+    "tags": ["samokoder", "golden-signals", "sre"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Golden Signals Overview",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "samokoder:api_response_time_p95",
+            "legendFormat": "API Latency P95"
+          },
+          {
+            "expr": "samokoder:requests_per_second",
+            "legendFormat": "Traffic (RPS)"
+          },
+          {
+            "expr": "samokoder:error_rate * 100",
+            "legendFormat": "Error Rate %"
+          },
+          {
+            "expr": "samokoder:cpu_usage_percent",
+            "legendFormat": "CPU Usage %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 70
+                },
+                {
+                  "color": "red",
+                  "value": 90
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Latency - API Response Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "samokoder:api_response_time_p95",
+            "legendFormat": "P95"
+          },
+          {
+            "expr": "samokoder:api_response_time_p99",
+            "legendFormat": "P99"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Response Time (seconds)",
+            "min": 0,
+            "max": 2
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 0.5,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          },
+          {
+            "value": 1.0,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "id": 3,
+        "title": "Traffic - Requests per Second",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "samokoder:requests_per_second",
+            "legendFormat": "RPS"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests/sec",
+            "min": 0
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 100,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          },
+          {
+            "value": 500,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        }
+      },
+      {
+        "id": 4,
+        "title": "Errors - Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "samokoder:error_rate * 100",
+            "legendFormat": "Error Rate %"
+          },
+          {
+            "expr": "samokoder:exception_rate * 100",
+            "legendFormat": "Exception Rate %"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Error Rate (%)",
+            "min": 0,
+            "max": 10
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 1,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          },
+          {
+            "value": 5,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        }
+      },
+      {
+        "id": 5,
+        "title": "Saturation - Resource Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "samokoder:cpu_usage_percent",
+            "legendFormat": "CPU %"
+          },
+          {
+            "expr": "samokoder:memory_usage_percent",
+            "legendFormat": "Memory %"
+          },
+          {
+            "expr": "samokoder:db_connection_usage_percent",
+            "legendFormat": "DB Connections %"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Usage (%)",
+            "min": 0,
+            "max": 100
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 70,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          },
+          {
+            "value": 90,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        }
+      },
+      {
+        "id": 6,
+        "title": "Database Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "samokoder:db_query_time_p95",
+            "legendFormat": "Query Time P95"
+          },
+          {
+            "expr": "samokoder:db_error_rate * 100",
+            "legendFormat": "DB Error Rate %"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Time (seconds) / Rate (%)",
+            "min": 0
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 24
+        }
+      },
+      {
+        "id": 7,
+        "title": "AI Service Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "samokoder:ai_generation_time_p95",
+            "legendFormat": "Generation Time P95"
+          },
+          {
+            "expr": "rate(ai_requests_total[5m])",
+            "legendFormat": "AI Requests/sec"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Time (seconds) / Requests/sec",
+            "min": 0
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        }
+      },
+      {
+        "id": 8,
+        "title": "Service Health Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"samokoder-app\"}",
+            "legendFormat": "API Service"
+          },
+          {
+            "expr": "up{job=\"postgres\"}",
+            "legendFormat": "Database"
+          },
+          {
+            "expr": "up{job=\"redis\"}",
+            "legendFormat": "Redis"
+          },
+          {
+            "expr": "up{job=\"nginx\"}",
+            "legendFormat": "Nginx"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": 0
+                },
+                {
+                  "color": "green",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 24,
+          "x": 0,
+          "y": 32
+        }
+      },
+      {
+        "id": 9,
+        "title": "Business Metrics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(user_registrations_total[1h])",
+            "legendFormat": "User Registrations/hour"
+          },
+          {
+            "expr": "rate(projects_created_total[1h])",
+            "legendFormat": "Projects Created/hour"
+          },
+          {
+            "expr": "samokoder:active_users",
+            "legendFormat": "Active Users"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Count",
+            "min": 0
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 36
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s",
+    "schemaVersion": 27,
+    "version": 1,
+    "links": [
+      {
+        "title": "Runbooks",
+        "url": "https://docs.samokoder.com/runbooks",
+        "type": "link"
+      },
+      {
+        "title": "Incident Response",
+        "url": "https://docs.samokoder.com/incident-response",
+        "type": "link"
+      }
+    ]
+  }
+}

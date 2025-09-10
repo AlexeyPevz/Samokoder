@@ -1,0 +1,98 @@
+# Golden Signals Configuration
+# DevOps/SRE Engineer - 20 лет опыта
+
+# Prometheus Configuration
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "golden_signals_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Samokoder Application Metrics
+  - job_name: 'samokoder-app'
+    static_configs:
+      - targets: ['samokoder:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # Database Metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 30s
+
+  # Redis Metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 30s
+
+  # Nginx Metrics
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:80']
+    metrics_path: '/nginx_status'
+    scrape_interval: 30s
+
+  # Node Exporter (System Metrics)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+
+# Recording Rules for Golden Signals
+recording_rules:
+  # Latency Metrics
+  - record: samokoder:api_response_time_p95
+    expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
+  
+  - record: samokoder:api_response_time_p99
+    expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))
+  
+  - record: samokoder:db_query_time_p95
+    expr: histogram_quantile(0.95, rate(database_query_duration_seconds_bucket[5m]))
+  
+  - record: samokoder:ai_generation_time_p95
+    expr: histogram_quantile(0.95, rate(ai_generation_duration_seconds_bucket[5m]))
+
+  # Traffic Metrics
+  - record: samokoder:requests_per_second
+    expr: rate(http_requests_total[1m])
+  
+  - record: samokoder:active_users
+    expr: sum(active_sessions_total)
+  
+  - record: samokoder:api_endpoint_hit_rate
+    expr: rate(http_requests_total[5m]) by (endpoint)
+
+  # Error Metrics
+  - record: samokoder:error_rate
+    expr: rate(http_requests_total{status=~"4..|5.."}[5m]) / rate(http_requests_total[5m])
+  
+  - record: samokoder:exception_rate
+    expr: rate(exceptions_total[5m])
+  
+  - record: samokoder:db_error_rate
+    expr: rate(database_errors_total[5m])
+
+  # Saturation Metrics
+  - record: samokoder:cpu_usage_percent
+    expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+  
+  - record: samokoder:memory_usage_percent
+    expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100
+  
+  - record: samokoder:db_connection_usage_percent
+    expr: (database_connections_active / database_connections_max) * 100
+  
+  - record: samokoder:disk_usage_percent
+    expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100

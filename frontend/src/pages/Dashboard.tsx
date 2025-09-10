@@ -10,6 +10,9 @@ import { useToast } from "@/hooks/useToast"
 import { ProjectCard } from "@/components/dashboard/ProjectCard"
 import { CreateProjectDialog } from "@/components/dashboard/CreateProjectDialog"
 import { EmptyState } from "@/components/dashboard/EmptyState"
+import { PageTitle } from "@/components/accessibility/ScreenReaderSupport"
+import { LoadingAnnouncer, LiveRegion } from "@/components/accessibility/ErrorAnnouncer"
+import { AccessibleButton } from "@/components/accessibility/AccessibleButton"
 
 export function Dashboard() {
   const navigate = useNavigate()
@@ -18,6 +21,7 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [announcement, setAnnouncement] = useState<string | null>(null)
 
   console.log('Dashboard component rendering')
 
@@ -29,11 +33,14 @@ export function Dashboard() {
     try {
       console.log('Loading projects...')
       setLoading(true)
+      setAnnouncement("Загрузка проектов...")
       const response = await getProjects()
       setProjects(response.projects)
+      setAnnouncement(`Загружено ${response.projects.length} проектов`)
       console.log('Projects loaded:', response.projects.length)
     } catch (error) {
       console.error('Error loading projects:', error)
+      setAnnouncement("Ошибка загрузки проектов")
       toast({
         title: "Ошибка",
         description: "Не удалось загрузить проекты",
@@ -47,14 +54,17 @@ export function Dashboard() {
   const handleDeleteProject = async (projectId: string) => {
     try {
       console.log('Deleting project:', projectId)
+      setAnnouncement("Удаление проекта...")
       await deleteProject(projectId)
       setProjects(projects.filter(p => p._id !== projectId))
+      setAnnouncement("Проект успешно удален")
       toast({
         title: "Успешно",
         description: "Проект удален"
       })
     } catch (error) {
       console.error('Error deleting project:', error)
+      setAnnouncement("Ошибка удаления проекта")
       toast({
         title: "Ошибка",
         description: "Не удалось удалить проект",
@@ -92,6 +102,13 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+      <PageTitle 
+        title="Панель управления" 
+        description="Управляйте своими проектами и создавайте новые"
+      />
+      <LoadingAnnouncer loading={loading} message="Загрузка проектов..." />
+      <LiveRegion message={announcement} />
+      
       <div className="mx-auto max-w-6xl">
         {/* Header */}
         <motion.div
@@ -107,13 +124,15 @@ export function Dashboard() {
             </p>
           </div>
           
-          <Button
+          <AccessibleButton
             onClick={() => setShowCreateDialog(true)}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            data-action="create-project"
+            description="Создать новый проект"
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
             Новый проект
-          </Button>
+          </AccessibleButton>
         </motion.div>
 
         {/* Search and Filters */}
@@ -124,32 +143,50 @@ export function Dashboard() {
           className="flex flex-col md:flex-row gap-4 mb-8"
         >
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <label htmlFor="search" className="sr-only">
+              Поиск проектов
+            </label>
+            <Search 
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" 
+              aria-hidden="true"
+            />
             <Input
+              id="search"
+              data-action="search"
               placeholder="Поиск проектов..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              aria-label="Поиск проектов по названию и описанию"
             />
           </div>
           
-          <Button variant="outline" onClick={loadProjects}>
-            <RefreshCw className="mr-2 h-4 w-4" />
+          <AccessibleButton 
+            variant="outline" 
+            onClick={loadProjects}
+            description="Обновить список проектов"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
             Обновить
-          </Button>
+          </AccessibleButton>
         </motion.div>
 
         {/* Projects Grid */}
         {filteredProjects.length === 0 ? (
           <EmptyState onCreateProject={() => setShowCreateDialog(true)} />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            role="grid"
+            aria-label="Список проектов"
+          >
             {filteredProjects.map((project, index) => (
               <motion.div
                 key={project._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
+                role="gridcell"
               >
                 <ProjectCard
                   project={project}

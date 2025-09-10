@@ -1,0 +1,120 @@
+name: Security Scan
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'  # Каждый понедельник в 2:00
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Vulnerability Scan
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.9"
+    
+    - name: Install security tools
+      run: |
+        pip install bandit safety semgrep pip-audit
+    
+    - name: Run Bandit security scan
+      run: |
+        echo "🔒 Running Bandit security scan..."
+        bandit -r backend/ -f json -o bandit-report.json
+        bandit -r backend/ -f txt
+    
+    - name: Run Safety check
+      run: |
+        echo "🔒 Running Safety check..."
+        safety check --json --output safety-report.json
+        safety check
+    
+    - name: Run pip-audit
+      run: |
+        echo "🔒 Running pip-audit..."
+        pip-audit --format=json --output=pip-audit-report.json
+        pip-audit
+    
+    - name: Run Semgrep scan
+      run: |
+        echo "🔒 Running Semgrep scan..."
+        semgrep --config=auto backend/ --json --output=semgrep-report.json
+        semgrep --config=auto backend/
+    
+    - name: Check for secrets
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+        extra_args: --debug --only-verified
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports-${{ github.run_number }}
+        path: |
+          bandit-report.json
+          safety-report.json
+          pip-audit-report.json
+          semgrep-report.json
+    
+    - name: Comment PR with security results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          
+          let comment = '## 🔒 Security Scan Results\n\n';
+          
+          try {
+            const banditReport = JSON.parse(fs.readFileSync('bandit-report.json', 'utf8'));
+            const issues = banditReport.results || [];
+            
+            if (issues.length === 0) {
+              comment += '✅ **Bandit**: No security issues found\n\n';
+            } else {
+              comment += `⚠️ **Bandit**: Found ${issues.length} security issues\n\n`;
+              issues.forEach(issue => {
+                comment += `- **${issue.severity.toUpperCase()}**: ${issue.test_name} in ${issue.filename}:${issue.line_number}\n`;
+                comment += `  ${issue.issue_text}\n\n`;
+              });
+            }
+          } catch (e) {
+            comment += '❌ **Bandit**: Failed to parse results\n\n';
+          }
+          
+          try {
+            const safetyReport = JSON.parse(fs.readFileSync('safety-report.json', 'utf8'));
+            const vulnerabilities = safetyReport || [];
+            
+            if (vulnerabilities.length === 0) {
+              comment += '✅ **Safety**: No known vulnerabilities found\n\n';
+            } else {
+              comment += `⚠️ **Safety**: Found ${vulnerabilities.length} vulnerabilities\n\n`;
+              vulnerabilities.forEach(vuln => {
+                comment += `- **${vuln.package}**: ${vuln.advisory}\n`;
+                comment += `  Installed: ${vuln.installed_version}, Vulnerable: ${vuln.vulnerable_spec}\n\n`;
+              });
+            }
+          } catch (e) {
+            comment += '❌ **Safety**: Failed to parse results\n\n';
+          }
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });

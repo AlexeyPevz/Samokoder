@@ -1,0 +1,257 @@
+# Устаревшие поля API
+# API Owner - 20 лет опыта
+
+# Поля, помеченные как устаревшие в версии 1.0.0
+deprecated_fields:
+  # === АУТЕНТИФИКАЦИЯ ===
+  authentication:
+    # Планируется к удалению в версии 2.0.0
+    - field: "refresh_token"
+      schema: "LoginResponse"
+      deprecated_since: "1.0.0"
+      removal_version: "2.0.0"
+      reason: "Заменен на более безопасный механизм token refresh"
+      replacement: "Используйте новый endpoint /api/auth/refresh"
+      migration_guide: |
+        Вместо refresh_token используйте:
+        1. Вызовите POST /api/auth/refresh с access_token
+        2. Получите новый access_token и refresh_token
+        3. Обновите токены в клиенте
+
+  # === ПРОЕКТЫ ===
+  projects:
+    # Планируется к удалению в версии 1.2.0
+    - field: "workspace_path"
+      schema: "ProjectResponse"
+      deprecated_since: "1.0.0"
+      removal_version: "1.2.0"
+      reason: "Путь к workspace теперь генерируется динамически"
+      replacement: "Используйте project_id для получения workspace"
+      migration_guide: |
+        Вместо workspace_path используйте:
+        1. Получите project_id из ответа
+        2. Используйте GET /api/projects/{project_id}/workspace
+        3. Получите актуальный путь к workspace
+
+    # Планируется к удалению в версии 1.3.0
+    - field: "file_count"
+      schema: "ProjectResponse"
+      deprecated_since: "1.0.0"
+      removal_version: "1.3.0"
+      reason: "Заменен на более детальную информацию о файлах"
+      replacement: "Используйте GET /api/projects/{project_id}/files/stats"
+      migration_guide: |
+        Вместо file_count используйте:
+        1. Вызовите GET /api/projects/{project_id}/files/stats
+        2. Получите детальную статистику файлов
+        3. Используйте поле 'total_files' из ответа
+
+    # Планируется к удалению в версии 1.4.0
+    - field: "total_size_bytes"
+      schema: "ProjectResponse"
+      deprecated_since: "1.0.0"
+      removal_version: "1.4.0"
+      reason: "Заменен на более точную информацию о размере"
+      replacement: "Используйте GET /api/projects/{project_id}/storage/stats"
+      migration_guide: |
+        Вместо total_size_bytes используйте:
+        1. Вызовите GET /api/projects/{project_id}/storage/stats
+        2. Получите детальную информацию о размере
+        3. Используйте поле 'total_size' из ответа
+
+  # === AI ===
+  ai:
+    # Планируется к удалению в версии 1.1.0
+    - field: "tokens_used"
+      schema: "AIResponse"
+      deprecated_since: "1.0.0"
+      removal_version: "1.1.0"
+      reason: "Заменен на более детальную информацию об использовании токенов"
+      replacement: "Используйте поле 'usage' с детальной разбивкой"
+      migration_guide: |
+        Вместо tokens_used используйте:
+        1. Используйте поле 'usage' из ответа
+        2. Получите детальную информацию: prompt_tokens, completion_tokens, total_tokens
+        3. Используйте usage.total_tokens для общего количества
+
+    # Планируется к удалению в версии 1.2.0
+    - field: "cost_usd"
+      schema: "AIResponse"
+      deprecated_since: "1.0.0"
+      removal_version: "1.2.0"
+      reason: "Заменен на более точную информацию о стоимости"
+      replacement: "Используйте поле 'usage' с детальной стоимостью"
+      migration_guide: |
+        Вместо cost_usd используйте:
+        1. Используйте поле 'usage' из ответа
+        2. Получите детальную информацию: prompt_cost, completion_cost, total_cost
+        3. Используйте usage.total_cost для общей стоимости
+
+  # === ПОЛЬЗОВАТЕЛИ ===
+  users:
+    # Планируется к удалению в версии 1.3.0
+    - field: "api_credits_balance"
+      schema: "UserResponse"
+      deprecated_since: "1.0.0"
+      removal_version: "1.3.0"
+      reason: "Заменен на более гибкую систему подписок"
+      replacement: "Используйте GET /api/billing/credits"
+      migration_guide: |
+        Вместо api_credits_balance используйте:
+        1. Вызовите GET /api/billing/credits
+        2. Получите детальную информацию о кредитах
+        3. Используйте поле 'available_credits' из ответа
+
+    # Планируется к удалению в версии 1.4.0
+    - field: "subscription_status"
+      schema: "UserResponse"
+      deprecated_since: "1.0.0"
+      removal_version: "1.4.0"
+      reason: "Заменен на более детальную информацию о подписке"
+      replacement: "Используйте GET /api/billing/subscription"
+      migration_guide: |
+        Вместо subscription_status используйте:
+        1. Вызовите GET /api/billing/subscription
+        2. Получите детальную информацию о подписке
+        3. Используйте поле 'status' из ответа
+
+# === ЭНДПОИНТЫ ===
+deprecated_endpoints:
+  # Планируется к удалению в версии 2.0.0
+  - endpoint: "GET /api/projects/{project_id}/files"
+    deprecated_since: "1.0.0"
+    removal_version: "2.0.0"
+    reason: "Заменен на более функциональный endpoint"
+    replacement: "GET /api/files?project_id={project_id}"
+    migration_guide: |
+      Вместо GET /api/projects/{project_id}/files используйте:
+      1. Вызовите GET /api/files?project_id={project_id}
+      2. Получите список файлов с дополнительными фильтрами
+      3. Используйте query параметры для фильтрации
+
+  # Планируется к удалению в версии 1.5.0
+  - endpoint: "POST /api/ai/generate"
+    deprecated_since: "1.0.0"
+    removal_version: "1.5.0"
+    reason: "Заменен на более универсальный endpoint"
+    replacement: "POST /api/ai/chat"
+    migration_guide: |
+      Вместо POST /api/ai/generate используйте:
+      1. Вызовите POST /api/ai/chat
+      2. Используйте тот же формат запроса
+      3. Получите ответ в том же формате
+
+# === ПАРАМЕТРЫ ===
+deprecated_parameters:
+  # Планируется к удалению в версии 1.2.0
+  - parameter: "include_archived"
+    endpoint: "GET /api/projects"
+    deprecated_since: "1.0.0"
+    removal_version: "1.2.0"
+    reason: "Заменен на более гибкий параметр"
+    replacement: "Используйте параметр 'status'"
+    migration_guide: |
+      Вместо include_archived=true используйте:
+      1. Используйте параметр status=archived
+      2. Для всех проектов используйте status=all
+      3. Для активных проектов используйте status=active
+
+  # Планируется к удалению в версии 1.3.0
+  - parameter: "max_tokens"
+    endpoint: "POST /api/ai/chat"
+    deprecated_since: "1.0.0"
+    removal_version: "1.3.0"
+    reason: "Заменен на более точный параметр"
+    replacement: "Используйте параметр 'max_completion_tokens'"
+    migration_guide: |
+      Вместо max_tokens используйте:
+      1. Используйте параметр max_completion_tokens
+      2. Учитывайте, что это только для completion токенов
+      3. Prompt токены считаются отдельно
+
+# === КОДЫ ОТВЕТОВ ===
+deprecated_status_codes:
+  # Планируется к удалению в версии 1.1.0
+  - status_code: 202
+    endpoint: "POST /api/ai/chat"
+    deprecated_since: "1.0.0"
+    removal_version: "1.1.0"
+    reason: "Заменен на более точный код ответа"
+    replacement: "Используйте 200 для синхронных запросов, 201 для асинхронных"
+    migration_guide: |
+      Вместо 202 используйте:
+      1. Для синхронных запросов ожидайте 200
+      2. Для асинхронных запросов ожидайте 201
+      3. Проверяйте поле 'async' в ответе
+
+# === ПРАВИЛА DEPRECATION ===
+deprecation_rules:
+  # Минимальное время deprecation
+  minimum_deprecation_period: "6 months"
+  
+  # Уведомления о deprecation
+  notification_timeline:
+    - "6 months before removal": "Warning в API responses"
+    - "3 months before removal": "Error в API responses"
+    - "1 month before removal": "Final notice в документации"
+  
+  # Миграционная поддержка
+  migration_support:
+    - "Документация по миграции"
+    - "Примеры кода"
+    - "Тестовые инструменты"
+    - "Поддержка в течение 3 месяцев после удаления"
+  
+  # Обратная совместимость
+  backward_compatibility:
+    - "Старые поля остаются в ответах"
+    - "Старые параметры игнорируются"
+    - "Старые коды ответов поддерживаются"
+    - "Предупреждения в логах"
+
+# === ПЛАН УДАЛЕНИЯ ===
+removal_schedule:
+  "1.1.0":
+    - "tokens_used в AIResponse"
+    - "202 status code в AI chat"
+  
+  "1.2.0":
+    - "workspace_path в ProjectResponse"
+    - "cost_usd в AIResponse"
+    - "include_archived параметр"
+  
+  "1.3.0":
+    - "file_count в ProjectResponse"
+    - "api_credits_balance в UserResponse"
+    - "max_tokens параметр"
+  
+  "1.4.0":
+    - "total_size_bytes в ProjectResponse"
+    - "subscription_status в UserResponse"
+  
+  "1.5.0":
+    - "POST /api/ai/generate endpoint"
+  
+  "2.0.0":
+    - "refresh_token в LoginResponse"
+    - "GET /api/projects/{project_id}/files endpoint"
+
+# === МОНИТОРИНГ DEPRECATION ===
+monitoring:
+  # Метрики использования устаревших полей
+  usage_metrics:
+    - "Количество запросов с устаревшими полями"
+    - "Количество клиентов, использующих устаревшие поля"
+    - "Популярность устаревших полей"
+  
+  # Алерты
+  alerts:
+    - "Высокое использование устаревших полей"
+    - "Клиенты, не мигрировавшие на новые поля"
+    - "Ошибки в устаревших полях"
+  
+  # Отчеты
+  reports:
+    - "Еженедельный отчет об использовании устаревших полей"
+    - "Месячный отчет о прогрессе миграции"
+    - "Квартальный отчет о готовности к удалению"
