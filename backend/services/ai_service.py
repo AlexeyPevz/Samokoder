@@ -179,8 +179,8 @@ class OpenAIClient(AIProviderClient):
     def _calculate_cost(self, tokens: int, model: str) -> float:
         """Расчет стоимости для OpenAI моделей"""
         pricing = {
-            "gpt-4o-mini": 0.00015,  # $0.15 per 1K tokens
-            "gpt-4o": 0.005,  # $5 per 1K tokens
+            "gpt-4o-mini": 0.15,  # $0.15 per 1K tokens
+            "gpt-4o": 5.0,  # $5 per 1K tokens
         }
         cost_per_1k = pricing.get(model, 0.0)
         return (tokens / 1000) * cost_per_1k
@@ -251,8 +251,8 @@ class AnthropicClient(AIProviderClient):
     def _calculate_cost(self, tokens: int, model: str) -> float:
         """Расчет стоимости для Anthropic моделей"""
         pricing = {
-            "claude-3-haiku-20240307": 0.00025,  # $0.25 per 1K tokens
-            "claude-3-sonnet-20240229": 0.003,  # $3 per 1K tokens
+            "claude-3-haiku-20240307": 0.25,  # $0.25 per 1K tokens
+            "claude-3-sonnet-20240229": 3.0,  # $3 per 1K tokens
         }
         cost_per_1k = pricing.get(model, 0.0)
         return (tokens / 1000) * cost_per_1k

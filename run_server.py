@@ -6,6 +6,15 @@
 import uvicorn
 import os
 import sys
+from dotenv import load_dotenv
+
+# Загружаем переменные из .env файла в корне проекта
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+if os.path.exists(dotenv_path):
+    print(f"🔌 Загрузка переменных из {dotenv_path}")
+    load_dotenv(dotenv_path=dotenv_path, override=True)
+else:
+    print(f"⚠️  Файл {dotenv_path} не найден, используются системные переменные окружения.")
 from pathlib import Path
 import logging
 

@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     
     # Database
     database_url: str = ""
+    database_pool_size: int = 10
+    database_max_overflow: int = 20
     
     # Monitoring
     enable_metrics: bool = True
@@ -73,6 +75,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"
 
 # Создаем глобальный экземпляр настроек
 settings = Settings()

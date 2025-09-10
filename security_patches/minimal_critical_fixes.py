@@ -10,7 +10,7 @@ import time
 import re
 from typing import Dict, List, Optional, Any
 from fastapi import HTTPException, status, Request, Response
-from fastapi.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import JSONResponse
 import logging
 

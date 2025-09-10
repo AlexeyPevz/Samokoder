@@ -9,7 +9,7 @@ from typing import Dict, Optional, Any
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 import asyncpg
-import aioredis
+from redis import asyncio as aioredis
 import httpx
 from dataclasses import dataclass
 

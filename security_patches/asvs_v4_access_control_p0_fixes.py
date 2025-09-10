@@ -243,6 +243,7 @@ class AccessControlSecurity:
     def audit_access_attempt(self, user_id: str, user_role: str, resource_id: str, 
                            resource_type: str, action: str, success: bool) -> None:
         """V4.1.13: Аудит попыток доступа"""
+        import time
         audit_data = {
             "user_id": user_id,
             "user_role": user_role,

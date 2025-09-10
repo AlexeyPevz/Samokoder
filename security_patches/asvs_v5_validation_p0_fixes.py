@@ -91,7 +91,7 @@ class ValidationSecurity:
             return ""
         
         # Удаляем потенциально опасные SQL символы
-        dangerous_chars = ["'", '"', ';', '--', '/*', '*/', 'xp_', 'sp_', 'exec", "execute"]
+        dangerous_chars = ["'", '"', ';', '--', '/*', '*/', 'xp_', 'sp_', 'exec', "execute"]
         sanitized = input_data
         
         for char in dangerous_chars:

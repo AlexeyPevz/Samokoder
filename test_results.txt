@@ -1,0 +1,2428 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-7.4.3, pluggy-1.6.0 -- /root/projects/Samokoder/venv/bin/python
+cachedir: .pytest_cache
+rootdir: /root/projects/Samokoder
+configfile: pytest.ini
+plugins: asyncio-0.21.1, cov-4.1.0, anyio-3.7.1
+asyncio: mode=Mode.STRICT
+collecting ... collected 390 items / 98 deselected / 292 selected
+
+projects/Samokoder/tests/test_ai_service.py::TestAIRequest::test_ai_request_creation PASSED [  0%]
+projects/Samokoder/tests/test_ai_service.py::TestAIResponse::test_ai_response_creation PASSED [  0%]
+projects/Samokoder/tests/test_ai_service.py::TestAIResponse::test_ai_response_error PASSED [  1%]
+projects/Samokoder/tests/test_ai_service.py::TestOpenRouterClient::test_chat_completion_success PASSED [  1%]
+projects/Samokoder/tests/test_ai_service.py::TestOpenRouterClient::test_chat_completion_error PASSED [  1%]
+projects/Samokoder/tests/test_ai_service.py::TestOpenRouterClient::test_validate_api_key_success PASSED [  2%]
+projects/Samokoder/tests/test_ai_service.py::TestOpenRouterClient::test_validate_api_key_error PASSED [  2%]
+projects/Samokoder/tests/test_ai_service.py::TestOpenRouterClient::test_calculate_cost PASSED [  2%]
+projects/Samokoder/tests/test_ai_service.py::TestOpenAIClient::test_chat_completion_success PASSED [  3%]
+projects/Samokoder/tests/test_ai_service.py::TestOpenAIClient::test_calculate_cost PASSED [  3%]
+projects/Samokoder/tests/test_ai_service.py::TestAnthropicClient::test_chat_completion_success PASSED [  3%]
+projects/Samokoder/tests/test_ai_service.py::TestAnthropicClient::test_calculate_cost PASSED [  4%]
+projects/Samokoder/tests/test_ai_service.py::TestGroqClient::test_chat_completion_success PASSED [  4%]
+projects/Samokoder/tests/test_ai_service.py::TestAIService::test_initialization PASSED [  4%]
+projects/Samokoder/tests/test_ai_service.py::TestAIService::test_select_best_provider PASSED [  5%]
+projects/Samokoder/tests/test_ai_service.py::TestAIService::test_get_default_model_for_provider PASSED [  5%]
+projects/Samokoder/tests/test_ai_service.py::TestAIService::test_route_request_success PASSED [  5%]
+projects/Samokoder/tests/test_ai_service.py::TestAIService::test_route_request_no_providers PASSED [  6%]
+projects/Samokoder/tests/test_ai_service.py::TestAIService::test_fallback_request PASSED [  6%]
+projects/Samokoder/tests/test_ai_service.py::TestAIService::test_validate_all_keys PASSED [  6%]
+projects/Samokoder/tests/test_ai_service.py::TestAIService::test_get_usage_stats PASSED [  7%]
+projects/Samokoder/tests/test_encryption.py::TestAPIKeyEncryption::test_encrypt_decrypt_cycle PASSED [  7%]
+projects/Samokoder/tests/test_encryption.py::TestAPIKeyEncryption::test_encrypt_different_keys PASSED [  7%]
+projects/Samokoder/tests/test_encryption.py::TestAPIKeyEncryption::test_encrypt_same_key_multiple_times PASSED [  8%]
+projects/Samokoder/tests/test_encryption.py::TestAPIKeyEncryption::test_decrypt_invalid_key PASSED [  8%]
+projects/Samokoder/tests/test_encryption.py::TestAPIKeyEncryption::test_encrypt_empty_key FAILED [  8%]
+projects/Samokoder/tests/test_encryption.py::TestAPIKeyEncryption::test_get_last_4_chars PASSED [  9%]
+projects/Samokoder/tests/test_encryption.py::TestAPIKeyEncryption::test_mask_api_key PASSED [  9%]
+projects/Samokoder/tests/test_encryption.py::TestAPIKeyEncryption::test_mask_short_key PASSED [  9%]
+projects/Samokoder/tests/test_encryption.py::TestAPIKeyEncryption::test_validate_api_key_format_openai PASSED [ 10%]
+projects/Samokoder/tests/test_encryption.py::TestAPIKeyEncryption::test_validate_api_key_format_anthropic PASSED [ 10%]
+projects/Samokoder/tests/test_encryption.py::TestAPIKeyEncryption::test_validate_api_key_format_openrouter PASSED [ 10%]
+projects/Samokoder/tests/test_encryption.py::TestAPIKeyEncryption::test_validate_api_key_format_groq PASSED [ 11%]
+projects/Samokoder/tests/test_encryption.py::TestAPIKeyEncryption::test_validate_api_key_format_unknown_provider PASSED [ 11%]
+projects/Samokoder/tests/test_encryption.py::TestAPIKeyEncryption::test_validate_empty_key PASSED [ 11%]
+projects/Samokoder/tests/test_encryption.py::TestAPIKeyEncryption::test_validate_whitespace_key PASSED [ 12%]
+projects/Samokoder/tests/test_integration_circuit_breaker.py::TestCircuitBreakerIntegration::test_circuit_breaker_success PASSED [ 12%]
+projects/Samokoder/tests/test_integration_circuit_breaker.py::TestCircuitBreakerIntegration::test_circuit_breaker_failure_threshold PASSED [ 13%]
+projects/Samokoder/tests/test_integration_circuit_breaker.py::TestCircuitBreakerIntegration::test_circuit_breaker_open_state PASSED [ 13%]
+projects/Samokoder/tests/test_integration_circuit_breaker.py::TestCircuitBreakerIntegration::test_circuit_breaker_half_open_recovery PASSED [ 13%]
+projects/Samokoder/tests/test_integration_circuit_breaker.py::TestCircuitBreakerIntegration::test_circuit_breaker_timeout PASSED [ 14%]
+projects/Samokoder/tests/test_integration_circuit_breaker.py::TestCircuitBreakerIntegration::test_circuit_breaker_thread_safety PASSED [ 14%]
+projects/Samokoder/tests/test_integration_circuit_breaker.py::TestCircuitBreakerIntegration::test_circuit_breaker_state_transitions FAILED [ 14%]
+projects/Samokoder/tests/test_integration_circuit_breaker.py::TestCircuitBreakerIntegration::test_circuit_breaker_metrics FAILED [ 15%]
+projects/Samokoder/tests/test_integration_circuit_breaker.py::TestCircuitBreakerIntegration::test_circuit_breaker_custom_exceptions FAILED [ 15%]
+projects/Samokoder/tests/test_integration_di_container.py::TestDIContainerIntegration::test_container_registration PASSED [ 15%]
+projects/Samokoder/tests/test_integration_di_container.py::TestDIContainerIntegration::test_container_factory_registration PASSED [ 16%]
+projects/Samokoder/tests/test_integration_di_container.py::TestDIContainerIntegration::test_container_instance_registration PASSED [ 16%]
+projects/Samokoder/tests/test_integration_di_container.py::TestDIContainerIntegration::test_sync_service_retrieval PASSED [ 16%]
+projects/Samokoder/tests/test_integration_di_container.py::TestDIContainerIntegration::test_async_service_retrieval PASSED [ 17%]
+projects/Samokoder/tests/test_integration_di_container.py::TestDIContainerIntegration::test_singleton_behavior PASSED [ 17%]
+projects/Samokoder/tests/test_integration_di_container.py::TestDIContainerIntegration::test_transient_behavior PASSED [ 17%]
+projects/Samokoder/tests/test_integration_di_container.py::TestDIContainerIntegration::test_thread_safety PASSED [ 18%]
+projects/Samokoder/tests/test_integration_di_container.py::TestDIContainerIntegration::test_global_container_functions PASSED [ 18%]
+projects/Samokoder/tests/test_integration_di_container.py::TestDIContainerIntegration::test_global_container_async_functions PASSED [ 18%]
+projects/Samokoder/tests/test_integration_di_container.py::TestDIContainerIntegration::test_error_handling PASSED [ 19%]
+projects/Samokoder/tests/test_integration_di_container.py::TestDIContainerIntegration::test_optional_service_retrieval PASSED [ 19%]
+projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_manager_initialization PASSED [ 19%]
+projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_manager_initialization_with_env PASSED [ 20%]
+projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_manager_initialization_with_settings FAILED [ 20%]
+projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_upgrade_success FAILED [ 20%]
+projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_upgrade_failure FAILED [ 21%]
+projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_downgrade_success FAILED [ 21%]
+projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_downgrade_failure FAILED [ 21%]
+projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_current_revision_success FAILED [ 22%]
+projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_current_revision_failure FAILED [ 22%]
+projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_create_migration_success FAILED [ 22%]
+projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_create_migration_failure FAILED [ 23%]
+projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_history_success FAILED [ 23%]
+projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_history_failure FAILED [ 23%]
+projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_status_check FAILED [ 24%]
+projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_exception_handling PASSED [ 24%]
+projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_environment_variables FAILED [ 25%]
+projects/Samokoder/tests/test_integration_repositories.py::TestUserRepositoryIntegration::test_find_by_id_success PASSED [ 25%]
+projects/Samokoder/tests/test_integration_repositories.py::TestUserRepositoryIntegration::test_find_by_id_not_found PASSED [ 25%]
+projects/Samokoder/tests/test_integration_repositories.py::TestUserRepositoryIntegration::test_find_by_email_success PASSED [ 26%]
+projects/Samokoder/tests/test_integration_repositories.py::TestUserRepositoryIntegration::test_save_user_success PASSED [ 26%]
+projects/Samokoder/tests/test_integration_repositories.py::TestUserRepositoryIntegration::test_update_user_success PASSED [ 26%]
+projects/Samokoder/tests/test_integration_repositories.py::TestUserRepositoryIntegration::test_delete_user_success PASSED [ 27%]
+projects/Samokoder/tests/test_integration_repositories.py::TestUserRepositoryIntegration::test_find_active_users_success PASSED [ 27%]
+projects/Samokoder/tests/test_integration_repositories.py::TestUserRepositoryIntegration::test_repository_error_handling PASSED [ 27%]
+projects/Samokoder/tests/test_integration_repositories.py::TestProjectRepositoryIntegration::test_find_by_user_id_success PASSED [ 28%]
+projects/Samokoder/tests/test_integration_repositories.py::TestProjectRepositoryIntegration::test_save_project_success PASSED [ 28%]
+projects/Samokoder/tests/test_integration_repositories.py::TestProjectRepositoryIntegration::test_search_projects_success FAILED [ 28%]
+projects/Samokoder/tests/test_integration_repositories.py::TestChatRepositoryIntegration::test_find_session_by_id_success PASSED [ 29%]
+projects/Samokoder/tests/test_integration_repositories.py::TestChatRepositoryIntegration::test_save_session_success PASSED [ 29%]
+projects/Samokoder/tests/test_integration_repositories.py::TestChatRepositoryIntegration::test_find_messages_by_session_success PASSED [ 29%]
+projects/Samokoder/tests/test_integration_repositories.py::TestChatRepositoryIntegration::test_save_message_success PASSED [ 30%]
+projects/Samokoder/tests/test_integration_repositories.py::TestChatRepositoryIntegration::test_count_messages_by_session_success PASSED [ 30%]
+projects/Samokoder/tests/test_integration_security.py::TestSecretsManagerIntegration::test_environment_provider_success FAILED [ 30%]
+projects/Samokoder/tests/test_integration_security.py::TestSecretsManagerIntegration::test_file_provider_success PASSED [ 31%]
+projects/Samokoder/tests/test_integration_security.py::TestSecretsManagerIntegration::test_secrets_manager_with_environment_provider ERROR [ 31%]
+projects/Samokoder/tests/test_integration_security.py::TestSecretsManagerIntegration::test_secrets_manager_caching ERROR [ 31%]
+projects/Samokoder/tests/test_integration_security.py::TestSecretsManagerIntegration::test_secrets_manager_fallback ERROR [ 32%]
+projects/Samokoder/tests/test_integration_security.py::TestSecretsManagerIntegration::test_secrets_manager_audit_logging ERROR [ 32%]
+projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_generate_secure_key_encryption PASSED [ 32%]
+projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_generate_secure_key_api PASSED [ 33%]
+projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_check_rotation_needed_no_history PASSED [ 33%]
+projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_check_rotation_needed_with_history PASSED [ 33%]
+projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_check_rotation_needed_expired FAILED [ 34%]
+projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_rotate_key_success FAILED [ 34%]
+projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_rotate_key_failure FAILED [ 34%]
+projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_rotate_all_keys_success FAILED [ 35%]
+projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_rotate_all_keys_partial_failure FAILED [ 35%]
+projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_get_rotation_status FAILED [ 35%]
+projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_schedule_rotation_success FAILED [ 36%]
+projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_schedule_rotation_failure FAILED [ 36%]
+projects/Samokoder/tests/test_models.py::TestLoginRequest::test_valid_login_request PASSED [ 36%]
+projects/Samokoder/tests/test_models.py::TestLoginRequest::test_invalid_email PASSED [ 37%]
+projects/Samokoder/tests/test_models.py::TestLoginRequest::test_password_too_short PASSED [ 37%]
+projects/Samokoder/tests/test_models.py::TestLoginRequest::test_password_missing_uppercase PASSED [ 38%]
+projects/Samokoder/tests/test_models.py::TestLoginRequest::test_password_missing_lowercase PASSED [ 38%]
+projects/Samokoder/tests/test_models.py::TestLoginRequest::test_password_missing_digit PASSED [ 38%]
+projects/Samokoder/tests/test_models.py::TestProjectCreateRequest::test_valid_project_request PASSED [ 39%]
+projects/Samokoder/tests/test_models.py::TestProjectCreateRequest::test_empty_name PASSED [ 39%]
+projects/Samokoder/tests/test_models.py::TestProjectCreateRequest::test_whitespace_only_name PASSED [ 39%]
+projects/Samokoder/tests/test_models.py::TestProjectCreateRequest::test_description_too_short PASSED [ 40%]
+projects/Samokoder/tests/test_models.py::TestProjectCreateRequest::test_name_too_long PASSED [ 40%]
+projects/Samokoder/tests/test_models.py::TestChatRequest::test_valid_chat_request PASSED [ 40%]
+projects/Samokoder/tests/test_models.py::TestChatRequest::test_empty_message FAILED [ 41%]
+projects/Samokoder/tests/test_models.py::TestChatRequest::test_message_too_long PASSED [ 41%]
+projects/Samokoder/tests/test_models.py::TestChatRequest::test_invalid_temperature FAILED [ 41%]
+projects/Samokoder/tests/test_models.py::TestChatRequest::test_negative_temperature FAILED [ 42%]
+projects/Samokoder/tests/test_models.py::TestAPIKeyCreateRequest::test_valid_openai_key PASSED [ 42%]
+projects/Samokoder/tests/test_models.py::TestAPIKeyCreateRequest::test_valid_anthropic_key PASSED [ 42%]
+projects/Samokoder/tests/test_models.py::TestAPIKeyCreateRequest::test_invalid_openai_key_format PASSED [ 43%]
+projects/Samokoder/tests/test_models.py::TestAPIKeyCreateRequest::test_invalid_anthropic_key_format PASSED [ 43%]
+projects/Samokoder/tests/test_models.py::TestAPIKeyCreateRequest::test_key_too_short PASSED [ 43%]
+projects/Samokoder/tests/test_models.py::TestUserSettingsUpdateRequest::test_valid_settings_update PASSED [ 44%]
+projects/Samokoder/tests/test_models.py::TestUserSettingsUpdateRequest::test_invalid_theme FAILED [ 44%]
+projects/Samokoder/tests/test_models.py::TestUserSettingsUpdateRequest::test_all_optional_fields PASSED [ 44%]
+projects/Samokoder/tests/test_models.py::TestResponseModels::test_user_response PASSED [ 45%]
+projects/Samokoder/tests/test_models.py::TestResponseModels::test_project_response PASSED [ 45%]
+projects/Samokoder/tests/test_models.py::TestResponseModels::test_ai_response PASSED [ 45%]
+projects/Samokoder/tests/test_models.py::TestResponseModels::test_error_response PASSED [ 46%]
+projects/Samokoder/tests/test_rate_limiter.py::TestRateLimiter::test_memory_rate_limit_allowed PASSED [ 46%]
+projects/Samokoder/tests/test_rate_limiter.py::TestRateLimiter::test_memory_rate_limit_exceeded_minute PASSED [ 46%]
+projects/Samokoder/tests/test_rate_limiter.py::TestRateLimiter::test_memory_rate_limit_exceeded_hour PASSED [ 47%]
+projects/Samokoder/tests/test_rate_limiter.py::TestRateLimiter::test_different_users_separate_limits FAILED [ 47%]
+projects/Samokoder/tests/test_rate_limiter.py::TestRateLimiter::test_different_endpoints_separate_limits FAILED [ 47%]
+projects/Samokoder/tests/test_rate_limiter.py::TestRateLimiter::test_reset_rate_limit FAILED [ 48%]
+projects/Samokoder/tests/test_rate_limiter.py::TestRateLimiter::test_get_rate_limit_info FAILED [ 48%]
+projects/Samokoder/tests/test_rate_limiter.py::TestRateLimiter::test_get_rate_limit_info_nonexistent PASSED [ 48%]
+projects/Samokoder/tests/test_rate_limiter.py::TestRateLimiter::test_cleanup_expired_entries FAILED [ 49%]
+projects/Samokoder/tests/test_rate_limiter.py::TestRateLimitInfo::test_rate_limit_info_creation PASSED [ 49%]
+projects/Samokoder/tests/test_rate_limiter.py::TestRedisRateLimiter::test_redis_rate_limit_success FAILED [ 50%]
+projects/Samokoder/tests/test_rate_limiter.py::TestRedisRateLimiter::test_redis_rate_limit_exceeded FAILED [ 50%]
+projects/Samokoder/tests/test_rate_limiter.py::TestRedisRateLimiter::test_redis_connection_error_fallback PASSED [ 50%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_default_security_config PASSED [ 51%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_config_loading PASSED [ 51%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_config_merging PASSED [ 51%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_config_validation_success PASSED [ 52%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_config_validation_failure PASSED [ 52%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_security_headers PASSED [ 52%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_cors_config PASSED [ 53%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_password_policy PASSED [ 53%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_session_config PASSED [ 53%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_rate_limiting_config PASSED [ 54%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_encryption_config PASSED [ 54%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_logging_config PASSED [ 54%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_config_update_success PASSED [ 55%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_config_update_validation_failure PASSED [ 55%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_environment_security_check PASSED [ 55%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_environment_security_issues FAILED [ 56%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_security_report_generation PASSED [ 56%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_security_score_calculation PASSED [ 56%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_config_backup FAILED [ 57%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_config_restore PASSED [ 57%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_config_restore_file_not_found PASSED [ 57%]
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_comprehensive_configuration_flow FAILED [ 58%]
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_api_endpoint_validation PASSED [ 58%]
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_request_headers_validation PASSED [ 58%]
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_request_body_validation PASSED [ 59%]
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_query_parameters_validation PASSED [ 59%]
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_rate_limiting PASSED [ 59%]
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_brute_force_detection PASSED [ 60%]
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_api_key_validation PASSED [ 60%]
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_api_response_sanitization FAILED [ 60%]
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_cors_origin_validation FAILED [ 61%]
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_sql_injection_detection FAILED [ 61%]
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_xss_attack_detection PASSED [ 61%]
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_file_upload_validation PASSED [ 62%]
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_ip_blocking PASSED [ 62%]
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_comprehensive_api_security_flow PASSED [ 63%]
+projects/Samokoder/tests/test_security_asvs_v2_auth.py::TestAuthenticationSecurity::test_password_strength_validation_strong PASSED [ 63%]
+projects/Samokoder/tests/test_security_asvs_v2_auth.py::TestAuthenticationSecurity::test_password_strength_validation_weak PASSED [ 63%]
+projects/Samokoder/tests/test_security_asvs_v2_auth.py::TestAuthenticationSecurity::test_account_lockout_mechanism PASSED [ 64%]
+projects/Samokoder/tests/test_security_asvs_v2_auth.py::TestAuthenticationSecurity::test_account_unlock_after_timeout PASSED [ 64%]
+projects/Samokoder/tests/test_security_asvs_v2_auth.py::TestAuthenticationSecurity::test_failed_attempts_recording PASSED [ 64%]
+projects/Samokoder/tests/test_security_asvs_v2_auth.py::TestAuthenticationSecurity::test_reset_failed_attempts_on_success PASSED [ 65%]
+projects/Samokoder/tests/test_security_asvs_v2_auth.py::TestAuthenticationSecurity::test_secure_session_token_generation PASSED [ 65%]
+projects/Samokoder/tests/test_security_asvs_v2_auth.py::TestAuthenticationSecurity::test_session_token_validation FAILED [ 65%]
+projects/Samokoder/tests/test_security_asvs_v2_auth.py::TestAuthenticationSecurity::test_password_hashing PASSED [ 66%]
+projects/Samokoder/tests/test_security_asvs_v2_auth.py::TestAuthenticationSecurity::test_password_verification PASSED [ 66%]
+projects/Samokoder/tests/test_security_asvs_v2_auth.py::TestAuthenticationSecurity::test_input_sanitization PASSED [ 66%]
+projects/Samokoder/tests/test_security_asvs_v2_auth.py::TestAuthenticationSecurity::test_password_history_check PASSED [ 67%]
+projects/Samokoder/tests/test_security_asvs_v2_auth.py::TestAuthenticationSecurity::test_timing_attack_resistance PASSED [ 67%]
+projects/Samokoder/tests/test_security_asvs_v2_auth.py::TestAuthenticationSecurity::test_concurrent_authentication_attempts PASSED [ 67%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_secure_session_id_generation PASSED [ 68%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_session_creation PASSED [ 68%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_session_validation_success PASSED [ 68%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_session_validation_failure PASSED [ 69%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_session_timeout PASSED [ 69%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_session_invalidation PASSED [ 69%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_user_sessions_invalidation PASSED [ 70%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_csrf_token_generation PASSED [ 70%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_csrf_token_validation PASSED [ 70%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_session_id_rotation PASSED [ 71%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_expired_sessions_cleanup PASSED [ 71%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_session_info_retrieval PASSED [ 71%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_session_attributes PASSED [ 72%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_session_timeout_enforcement PASSED [ 72%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_session_anomaly_detection PASSED [ 72%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_max_sessions_per_user PASSED [ 73%]
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_concurrent_session_operations FAILED [ 73%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_permission_check_success PASSED [ 73%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_permission_check_failure PASSED [ 74%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_resource_ownership_check PASSED [ 74%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_ownership_access_enforcement PASSED [ 75%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_role_based_access_check PASSED [ 75%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_resource_access_validation PASSED [ 75%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_resource_access_validation_failure PASSED [ 76%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_resource_id_sanitization FAILED [ 76%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_resource_type_validation PASSED [ 76%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_rate_limit_by_role PASSED [ 77%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_principle_of_least_privilege FAILED [ 77%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_cross_tenant_access PASSED [ 77%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_api_endpoint_access PASSED [ 78%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_data_access_scope PASSED [ 78%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_access_attempt_audit FAILED [ 78%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_privilege_escalation_check PASSED [ 79%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_session_authorization_validation PASSED [ 79%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_comprehensive_access_control_flow FAILED [ 79%]
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_edge_cases PASSED [ 80%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_input_length_validation PASSED [ 80%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_html_input_sanitization FAILED [ 80%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_email_format_validation FAILED [ 81%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_url_format_validation FAILED [ 81%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_json_input_validation PASSED [ 81%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_sql_input_sanitization FAILED [ 82%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_file_upload_validation PASSED [ 82%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_html_output_encoding FAILED [ 82%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_url_output_encoding FAILED [ 83%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_json_output_encoding PASSED [ 83%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_numeric_input_validation PASSED [ 83%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_alpha_numeric_input_validation PASSED [ 84%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_path_input_sanitization PASSED [ 84%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_base64_input_validation PASSED [ 84%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_injection_attack_prevention PASSED [ 85%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_comprehensive_validation_flow FAILED [ 85%]
+projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_edge_cases FAILED [ 85%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_error_message_sanitization PASSED [ 86%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_security_event_logging PASSED [ 86%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_log_data_sanitization PASSED [ 86%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_authentication_error_handling PASSED [ 87%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_authorization_error_handling PASSED [ 87%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_input_validation_error_handling PASSED [ 88%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_system_error_handling PASSED [ 88%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_security_violation_handling PASSED [ 88%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_safe_error_response_creation PASSED [ 89%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_request_id_generation PASSED [ 89%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_api_access_logging PASSED [ 89%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_api_access_logging_error_status PASSED [ 90%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_anomalous_activity_detection FAILED [ 90%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_security_logs_retrieval PASSED [ 90%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_old_logs_clearing PASSED [ 91%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_security_logs_export_json PASSED [ 91%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_security_logs_export_csv PASSED [ 91%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_log_size_limit PASSED [ 92%]
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_comprehensive_error_handling_flow PASSED [ 92%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestAuthenticationSecurity::test_mfa_secret_generation PASSED [ 92%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestAuthenticationSecurity::test_mfa_code_verification FAILED [ 93%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestAuthenticationSecurity::test_password_hashing PASSED [ 93%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestAuthenticationSecurity::test_password_verification FAILED [ 93%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestAuthenticationSecurity::test_brute_force_protection PASSED [ 94%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestSessionSecurity::test_secure_session_creation PASSED [ 94%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestSessionSecurity::test_session_validation PASSED [ 94%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestAccessControl::test_permission_checking PASSED [ 95%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestInputValidation::test_input_validation FAILED [ 95%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestInputValidation::test_sql_injection_detection FAILED [ 95%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestInputValidation::test_xss_detection PASSED [ 96%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestErrorHandling::test_safe_error_response PASSED [ 96%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestSecretsManagement::test_secret_retrieval PASSED [ 96%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestSecretsManagement::test_secrets_validation PASSED [ 97%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestAPISecurity::test_rate_limiting PASSED [ 97%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestAPISecurity::test_ip_blocking PASSED [ 97%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestSecurityMiddleware::test_middleware_creation PASSED [ 98%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestSecurityMiddleware::test_middleware_with_test_client FAILED [ 98%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestIntegrationFixes::test_apply_auth_fixes PASSED [ 98%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestIntegrationFixes::test_apply_all_fixes PASSED [ 99%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestPerformanceSecurity::test_password_hashing_performance FAILED [ 99%]
+projects/Samokoder/tests/test_security_critical_fixes.py::TestPerformanceSecurity::test_rate_limiting_performance PASSED [100%]
+
+==================================== ERRORS ====================================
+_ ERROR at setup of TestSecretsManagerIntegration.test_secrets_manager_with_environment_provider _
+
+self = <tests.test_integration_security.TestSecretsManagerIntegration object at 0x7a57f30fc8f0>
+
+    @pytest.fixture
+    def secrets_manager(self):
+        """Create secrets manager instance"""
+>       return SecretsManager()
+E       TypeError: SecretsManager.__init__() missing 1 required positional argument: 'provider'
+
+projects/Samokoder/tests/test_integration_security.py:16: TypeError
+_ ERROR at setup of TestSecretsManagerIntegration.test_secrets_manager_caching _
+
+self = <tests.test_integration_security.TestSecretsManagerIntegration object at 0x7a57f30fcf80>
+
+    @pytest.fixture
+    def secrets_manager(self):
+        """Create secrets manager instance"""
+>       return SecretsManager()
+E       TypeError: SecretsManager.__init__() missing 1 required positional argument: 'provider'
+
+projects/Samokoder/tests/test_integration_security.py:16: TypeError
+_ ERROR at setup of TestSecretsManagerIntegration.test_secrets_manager_fallback _
+
+self = <tests.test_integration_security.TestSecretsManagerIntegration object at 0x7a57f30fcc50>
+
+    @pytest.fixture
+    def secrets_manager(self):
+        """Create secrets manager instance"""
+>       return SecretsManager()
+E       TypeError: SecretsManager.__init__() missing 1 required positional argument: 'provider'
+
+projects/Samokoder/tests/test_integration_security.py:16: TypeError
+_ ERROR at setup of TestSecretsManagerIntegration.test_secrets_manager_audit_logging _
+
+self = <tests.test_integration_security.TestSecretsManagerIntegration object at 0x7a57f30fcc80>
+
+    @pytest.fixture
+    def secrets_manager(self):
+        """Create secrets manager instance"""
+>       return SecretsManager()
+E       TypeError: SecretsManager.__init__() missing 1 required positional argument: 'provider'
+
+projects/Samokoder/tests/test_integration_security.py:16: TypeError
+=================================== FAILURES ===================================
+_________________ TestAPIKeyEncryption.test_encrypt_empty_key __________________
+
+self = <tests.test_encryption.TestAPIKeyEncryption object at 0x7a57f34153d0>
+encryption_service = <backend.services.encryption.APIKeyEncryption object at 0x7a57f2994e00>
+
+    def test_encrypt_empty_key(self, encryption_service):
+        """Тест шифрования пустого ключа"""
+>       with pytest.raises(ValueError) as exc_info:
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+projects/Samokoder/tests/test_encryption.py:70: Failed
+_____ TestCircuitBreakerIntegration.test_circuit_breaker_state_transitions _____
+
+self = <tests.test_integration_circuit_breaker.TestCircuitBreakerIntegration object at 0x7a57f31cc3e0>
+
+    @pytest.mark.asyncio
+    async def test_circuit_breaker_state_transitions(self):
+        """Test circuit breaker state transitions"""
+        config = CircuitBreakerConfig(
+            failure_threshold=2,
+            recovery_timeout=0.1,
+            success_threshold=2,
+            timeout=5
+        )
+        breaker = CircuitBreaker("test", config)
+    
+        # Start in CLOSED state
+        assert breaker.state == CircuitState.CLOSED
+    
+        # Mock failing function
+        async def fail_func():
+            raise Exception("test error")
+    
+        # First failure - should stay CLOSED
+        with pytest.raises(Exception):
+            await breaker.call(fail_func)
+        assert breaker.state == CircuitState.CLOSED
+    
+        # Second failure - should go to OPEN
+        with pytest.raises(Exception):
+            await breaker.call(fail_func)
+        assert breaker.state == CircuitState.OPEN
+    
+        # Wait for recovery timeout
+        await asyncio.sleep(0.2)
+    
+        # Mock successful function
+        async def success_func():
+            return "success"
+    
+        # Should go to HALF_OPEN and then CLOSED
+        result = await breaker.call(success_func)
+        assert result == "success"
+>       assert breaker.state == CircuitState.CLOSED
+E       AssertionError: assert <CircuitState.HALF_OPEN: 'half_open'> == <CircuitState.CLOSED: 'closed'>
+E        +  where <CircuitState.HALF_OPEN: 'half_open'> = <backend.patterns.circuit_breaker.CircuitBreaker object at 0x7a57f29a84d0>.state
+E        +  and   <CircuitState.CLOSED: 'closed'> = CircuitState.CLOSED
+
+projects/Samokoder/tests/test_integration_circuit_breaker.py:213: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  backend.patterns.circuit_breaker:circuit_breaker.py:104 {"name": "test", "failure_count": 1, "error": "test error", "event": "circuit_breaker_failure", "logger": "backend.patterns.circuit_breaker", "level": "warning", "timestamp": "2025-09-10T19:40:39.692948Z"}
+WARNING  backend.patterns.circuit_breaker:circuit_breaker.py:104 {"name": "test", "failure_count": 2, "error": "test error", "event": "circuit_breaker_failure", "logger": "backend.patterns.circuit_breaker", "level": "warning", "timestamp": "2025-09-10T19:40:39.693116Z"}
+WARNING  backend.patterns.circuit_breaker:circuit_breaker.py:114 {"name": "test", "event": "circuit_breaker_open", "logger": "backend.patterns.circuit_breaker", "level": "warning", "timestamp": "2025-09-10T19:40:39.693236Z"}
+__________ TestCircuitBreakerIntegration.test_circuit_breaker_metrics __________
+
+self = <tests.test_integration_circuit_breaker.TestCircuitBreakerIntegration object at 0x7a57f31cc200>
+
+    @pytest.mark.asyncio
+    async def test_circuit_breaker_metrics(self):
+        """Test circuit breaker metrics"""
+        config = CircuitBreakerConfig(
+            failure_threshold=2,
+            recovery_timeout=1,
+            success_threshold=2,
+            timeout=5
+        )
+        breaker = CircuitBreaker("test", config)
+    
+        # Mock failing function
+        async def fail_func():
+            raise Exception("test error")
+    
+        # Trigger failures
+        for _ in range(3):
+            with pytest.raises(Exception):
+                await breaker.call(fail_func)
+    
+        # Check metrics
+>       assert breaker.failure_count == 3
+E       assert 2 == 3
+E        +  where 2 = <backend.patterns.circuit_breaker.CircuitBreaker object at 0x7a57f29a83e0>.failure_count
+
+projects/Samokoder/tests/test_integration_circuit_breaker.py:236: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  backend.patterns.circuit_breaker:circuit_breaker.py:104 {"name": "test", "failure_count": 1, "error": "test error", "event": "circuit_breaker_failure", "logger": "backend.patterns.circuit_breaker", "level": "warning", "timestamp": "2025-09-10T19:40:39.900237Z"}
+WARNING  backend.patterns.circuit_breaker:circuit_breaker.py:104 {"name": "test", "failure_count": 2, "error": "test error", "event": "circuit_breaker_failure", "logger": "backend.patterns.circuit_breaker", "level": "warning", "timestamp": "2025-09-10T19:40:39.900411Z"}
+WARNING  backend.patterns.circuit_breaker:circuit_breaker.py:114 {"name": "test", "event": "circuit_breaker_open", "logger": "backend.patterns.circuit_breaker", "level": "warning", "timestamp": "2025-09-10T19:40:39.900484Z"}
+_____ TestCircuitBreakerIntegration.test_circuit_breaker_custom_exceptions _____
+
+self = <tests.test_integration_circuit_breaker.TestCircuitBreakerIntegration object at 0x7a57f31ce540>
+
+    @pytest.mark.asyncio
+    async def test_circuit_breaker_custom_exceptions(self):
+        """Test circuit breaker with custom exceptions"""
+        config = CircuitBreakerConfig(
+            failure_threshold=1,
+            recovery_timeout=1,
+            success_threshold=1,
+            timeout=5,
+            expected_exception=(ValueError,)
+        )
+        breaker = CircuitBreaker("test", config)
+    
+        # Mock function that raises expected exception
+        async def expected_error_func():
+            raise ValueError("expected error")
+    
+        # Should count as failure
+        with pytest.raises(ValueError):
+            await breaker.call(expected_error_func)
+    
+        assert breaker.state == CircuitState.OPEN
+    
+        # Mock function that raises unexpected exception
+        async def unexpected_error_func():
+            raise RuntimeError("unexpected error")
+    
+        # Should not count as failure (but still raise)
+        with pytest.raises(RuntimeError):
+>           await breaker.call(unexpected_error_func)
+
+projects/Samokoder/tests/test_integration_circuit_breaker.py:268: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <backend.patterns.circuit_breaker.CircuitBreaker object at 0x7a57f2997a10>
+func = <function TestCircuitBreakerIntegration.test_circuit_breaker_custom_exceptions.<locals>.unexpected_error_func at 0x7a57f29a34c0>
+args = (), kwargs = {}
+
+    async def call(self, func: Callable, *args, **kwargs) -> Any:
+        """Execute function with circuit breaker protection"""
+    
+        async with self._lock:
+            # Check if circuit is open and should remain open
+            if self.state == CircuitState.OPEN:
+                if self._should_attempt_reset():
+                    self.state = CircuitState.HALF_OPEN
+                    self.success_count = 0
+                    logger.info("circuit_breaker_half_open", name=self.name)
+                else:
+>                   raise CircuitBreakerOpenException(f"Circuit breaker '{self.name}' is OPEN")
+E                   backend.patterns.circuit_breaker.CircuitBreakerOpenException: Circuit breaker 'test' is OPEN
+
+projects/Samokoder/backend/patterns/circuit_breaker.py:54: CircuitBreakerOpenException
+------------------------------ Captured log call -------------------------------
+WARNING  backend.patterns.circuit_breaker:circuit_breaker.py:104 {"name": "test", "failure_count": 1, "error": "expected error", "event": "circuit_breaker_failure", "logger": "backend.patterns.circuit_breaker", "level": "warning", "timestamp": "2025-09-10T19:40:39.918673Z"}
+WARNING  backend.patterns.circuit_breaker:circuit_breaker.py:114 {"name": "test", "event": "circuit_breaker_open", "logger": "backend.patterns.circuit_breaker", "level": "warning", "timestamp": "2025-09-10T19:40:39.918778Z"}
+_ TestMigrationManagerIntegration.test_migration_manager_initialization_with_settings _
+
+self = <tests.test_integration_migration_manager.TestMigrationManagerIntegration object at 0x7a57f31d5040>
+
+    def test_migration_manager_initialization_with_settings(self):
+        """Test migration manager initialization with settings fallback"""
+        # Mock settings
+        with patch('backend.services.migration_manager.settings') as mock_settings:
+            mock_settings.database_user = "test_user"
+            mock_settings.database_password = "test_pass"
+            mock_settings.database_host = "test_host"
+            mock_settings.database_port = "5432"
+            mock_settings.database_name = "test_db"
+    
+            manager = MigrationManager()
+            expected_url = "postgresql://test_user:test_pass@test_host:5432/test_db"
+>           assert manager.database_url == expected_url
+E           AssertionError: assert 'postgresql:/...db-1:5432/n8n' == 'postgresql:/...:5432/test_db'
+E             - postgresql://test_user:test_pass@test_host:5432/test_db
+E             + postgresql://n8n:n8n@n8n-db-1:5432/n8n
+
+projects/Samokoder/tests/test_integration_migration_manager.py:43: AssertionError
+________ TestMigrationManagerIntegration.test_migration_upgrade_success ________
+
+self = <tests.test_integration_migration_manager.TestMigrationManagerIntegration object at 0x7a57f31d5100>
+
+    @pytest.mark.asyncio
+    async def test_migration_upgrade_success(self):
+        """Test successful migration upgrade"""
+        manager = MigrationManager("postgresql://test:test@localhost:5432/test")
+    
+        # Mock subprocess
+        with patch('asyncio.create_subprocess_exec') as mock_subprocess:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate.return_value = (b"Migration successful", b"")
+            mock_subprocess.return_value = mock_process
+    
+            result = await manager.upgrade("head")
+    
+>           assert result is True
+E           assert False is True
+
+projects/Samokoder/tests/test_integration_migration_manager.py:59: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.migration_manager:migration_manager.py:50 Migration upgrade failed: name 'os' is not defined
+________ TestMigrationManagerIntegration.test_migration_upgrade_failure ________
+
+self = <tests.test_integration_migration_manager.TestMigrationManagerIntegration object at 0x7a57f31cfa40>
+
+    @pytest.mark.asyncio
+    async def test_migration_upgrade_failure(self):
+        """Test migration upgrade failure"""
+        manager = MigrationManager("postgresql://test:test@localhost:5432/test")
+    
+        # Mock subprocess
+        with patch('asyncio.create_subprocess_exec') as mock_subprocess:
+            mock_process = AsyncMock()
+            mock_process.returncode = 1
+            mock_process.communicate.return_value = (b"", b"Migration failed")
+            mock_subprocess.return_value = mock_process
+    
+            result = await manager.upgrade("head")
+    
+            assert result is False
+>           mock_subprocess.assert_called_once()
+
+projects/Samokoder/tests/test_integration_migration_manager.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AsyncMock name='create_subprocess_exec' id='134518150666128'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'create_subprocess_exec' to have been called once. Called 0 times.
+
+/usr/lib/python3.12/unittest/mock.py:923: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.migration_manager:migration_manager.py:50 Migration upgrade failed: name 'os' is not defined
+_______ TestMigrationManagerIntegration.test_migration_downgrade_success _______
+
+self = <tests.test_integration_migration_manager.TestMigrationManagerIntegration object at 0x7a57f31cf560>
+
+    @pytest.mark.asyncio
+    async def test_migration_downgrade_success(self):
+        """Test successful migration downgrade"""
+        manager = MigrationManager("postgresql://test:test@localhost:5432/test")
+    
+        # Mock subprocess
+        with patch('asyncio.create_subprocess_exec') as mock_subprocess:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate.return_value = (b"Downgrade successful", b"")
+            mock_subprocess.return_value = mock_process
+    
+            result = await manager.downgrade("-1")
+    
+>           assert result is True
+E           assert False is True
+
+projects/Samokoder/tests/test_integration_migration_manager.py:93: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.migration_manager:migration_manager.py:74 Migration downgrade failed: name 'os' is not defined
+_______ TestMigrationManagerIntegration.test_migration_downgrade_failure _______
+
+self = <tests.test_integration_migration_manager.TestMigrationManagerIntegration object at 0x7a57f31ced20>
+
+    @pytest.mark.asyncio
+    async def test_migration_downgrade_failure(self):
+        """Test migration downgrade failure"""
+        manager = MigrationManager("postgresql://test:test@localhost:5432/test")
+    
+        # Mock subprocess
+        with patch('asyncio.create_subprocess_exec') as mock_subprocess:
+            mock_process = AsyncMock()
+            mock_process.returncode = 1
+            mock_process.communicate.return_value = (b"", b"Downgrade failed")
+            mock_subprocess.return_value = mock_process
+    
+            result = await manager.downgrade("-1")
+    
+            assert result is False
+>           mock_subprocess.assert_called_once()
+
+projects/Samokoder/tests/test_integration_migration_manager.py:111: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AsyncMock name='create_subprocess_exec' id='134518150327776'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'create_subprocess_exec' to have been called once. Called 0 times.
+
+/usr/lib/python3.12/unittest/mock.py:923: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.migration_manager:migration_manager.py:74 Migration downgrade failed: name 'os' is not defined
+________ TestMigrationManagerIntegration.test_current_revision_success _________
+
+self = <tests.test_integration_migration_manager.TestMigrationManagerIntegration object at 0x7a57f31d4aa0>
+
+    @pytest.mark.asyncio
+    async def test_current_revision_success(self):
+        """Test successful current revision retrieval"""
+        manager = MigrationManager("postgresql://test:test@localhost:5432/test")
+    
+        # Mock subprocess
+        with patch('asyncio.create_subprocess_exec') as mock_subprocess:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate.return_value = (b"abc123 (head)", b"")
+            mock_subprocess.return_value = mock_process
+    
+            revision = await manager.current_revision()
+    
+>           assert revision == "abc123"
+E           AssertionError: assert None == 'abc123'
+
+projects/Samokoder/tests/test_integration_migration_manager.py:127: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.migration_manager:migration_manager.py:99 Failed to get current revision: name 'os' is not defined
+________ TestMigrationManagerIntegration.test_current_revision_failure _________
+
+self = <tests.test_integration_migration_manager.TestMigrationManagerIntegration object at 0x7a57f31d4ec0>
+
+    @pytest.mark.asyncio
+    async def test_current_revision_failure(self):
+        """Test current revision retrieval failure"""
+        manager = MigrationManager("postgresql://test:test@localhost:5432/test")
+    
+        # Mock subprocess
+        with patch('asyncio.create_subprocess_exec') as mock_subprocess:
+            mock_process = AsyncMock()
+            mock_process.returncode = 1
+            mock_process.communicate.return_value = (b"", b"Error getting revision")
+            mock_subprocess.return_value = mock_process
+    
+            revision = await manager.current_revision()
+    
+            assert revision is None
+>           mock_subprocess.assert_called_once()
+
+projects/Samokoder/tests/test_integration_migration_manager.py:145: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AsyncMock name='create_subprocess_exec' id='134518150962816'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'create_subprocess_exec' to have been called once. Called 0 times.
+
+/usr/lib/python3.12/unittest/mock.py:923: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.migration_manager:migration_manager.py:99 Failed to get current revision: name 'os' is not defined
+________ TestMigrationManagerIntegration.test_create_migration_success _________
+
+self = <tests.test_integration_migration_manager.TestMigrationManagerIntegration object at 0x7a57f31d51f0>
+
+    @pytest.mark.asyncio
+    async def test_create_migration_success(self):
+        """Test successful migration creation"""
+        manager = MigrationManager("postgresql://test:test@localhost:5432/test")
+    
+        # Mock subprocess
+        with patch('asyncio.create_subprocess_exec') as mock_subprocess:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate.return_value = (b"Migration created", b"")
+            mock_subprocess.return_value = mock_process
+    
+            result = await manager.create_migration("test migration")
+    
+>           assert result is True
+E           assert False is True
+
+projects/Samokoder/tests/test_integration_migration_manager.py:161: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.migration_manager:migration_manager.py:122 Failed to create migration: name 'os' is not defined
+________ TestMigrationManagerIntegration.test_create_migration_failure _________
+
+self = <tests.test_integration_migration_manager.TestMigrationManagerIntegration object at 0x7a57f31d5610>
+
+    @pytest.mark.asyncio
+    async def test_create_migration_failure(self):
+        """Test migration creation failure"""
+        manager = MigrationManager("postgresql://test:test@localhost:5432/test")
+    
+        # Mock subprocess
+        with patch('asyncio.create_subprocess_exec') as mock_subprocess:
+            mock_process = AsyncMock()
+            mock_process.returncode = 1
+            mock_process.communicate.return_value = (b"", b"Error creating migration")
+            mock_subprocess.return_value = mock_process
+    
+            result = await manager.create_migration("test migration")
+    
+            assert result is False
+>           mock_subprocess.assert_called_once()
+
+projects/Samokoder/tests/test_integration_migration_manager.py:179: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AsyncMock name='create_subprocess_exec' id='134518150438768'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'create_subprocess_exec' to have been called once. Called 0 times.
+
+/usr/lib/python3.12/unittest/mock.py:923: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.migration_manager:migration_manager.py:122 Failed to create migration: name 'os' is not defined
+________ TestMigrationManagerIntegration.test_migration_history_success ________
+
+self = <tests.test_integration_migration_manager.TestMigrationManagerIntegration object at 0x7a57f31d5820>
+
+    @pytest.mark.asyncio
+    async def test_migration_history_success(self):
+        """Test successful migration history retrieval"""
+        manager = MigrationManager("postgresql://test:test@localhost:5432/test")
+    
+        # Mock subprocess
+        with patch('asyncio.create_subprocess_exec') as mock_subprocess:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate.return_value = (b"abc123 - Initial migration\nxyz789 - Add users table", b"")
+            mock_subprocess.return_value = mock_process
+    
+            history = await manager.history()
+    
+>           assert len(history) == 2
+E           assert 0 == 2
+E            +  where 0 = len([])
+
+projects/Samokoder/tests/test_integration_migration_manager.py:195: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.migration_manager:migration_manager.py:143 Failed to get migration history: name 'os' is not defined
+________ TestMigrationManagerIntegration.test_migration_history_failure ________
+
+self = <tests.test_integration_migration_manager.TestMigrationManagerIntegration object at 0x7a57f31d5970>
+
+    @pytest.mark.asyncio
+    async def test_migration_history_failure(self):
+        """Test migration history retrieval failure"""
+        manager = MigrationManager("postgresql://test:test@localhost:5432/test")
+    
+        # Mock subprocess
+        with patch('asyncio.create_subprocess_exec') as mock_subprocess:
+            mock_process = AsyncMock()
+            mock_process.returncode = 1
+            mock_process.communicate.return_value = (b"", b"Error getting history")
+            mock_subprocess.return_value = mock_process
+    
+            history = await manager.history()
+    
+            assert history == []
+>           mock_subprocess.assert_called_once()
+
+projects/Samokoder/tests/test_integration_migration_manager.py:215: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AsyncMock name='create_subprocess_exec' id='134518150311488'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'create_subprocess_exec' to have been called once. Called 0 times.
+
+/usr/lib/python3.12/unittest/mock.py:923: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.migration_manager:migration_manager.py:143 Failed to get migration history: name 'os' is not defined
+_________ TestMigrationManagerIntegration.test_migration_status_check __________
+
+self = <tests.test_integration_migration_manager.TestMigrationManagerIntegration object at 0x7a57f31d59a0>
+
+    @pytest.mark.asyncio
+    async def test_migration_status_check(self):
+        """Test migration status check"""
+        manager = MigrationManager("postgresql://test:test@localhost:5432/test")
+    
+        # Mock subprocess calls
+        with patch('asyncio.create_subprocess_exec') as mock_subprocess:
+            # Mock current revision call
+            mock_process_current = AsyncMock()
+            mock_process_current.returncode = 0
+            mock_process_current.communicate.return_value = (b"abc123 (head)", b"")
+    
+            # Mock history call
+            mock_process_history = AsyncMock()
+            mock_process_history.returncode = 0
+            mock_process_history.communicate.return_value = (b"abc123 - Initial migration", b"")
+    
+            mock_subprocess.side_effect = [mock_process_current, mock_process_history]
+    
+            status = await manager.check_migration_status()
+    
+            assert "current_revision" in status
+>           assert "history" in status
+E           AssertionError: assert 'history' in {'current_revision': None, 'is_up_to_date': False, 'total_migrations': 0}
+
+projects/Samokoder/tests/test_integration_migration_manager.py:239: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.migration_manager:migration_manager.py:99 Failed to get current revision: name 'os' is not defined
+ERROR    backend.services.migration_manager:migration_manager.py:143 Failed to get migration history: name 'os' is not defined
+_____ TestMigrationManagerIntegration.test_migration_environment_variables _____
+
+self = <tests.test_integration_migration_manager.TestMigrationManagerIntegration object at 0x7a57f31d5d30>
+
+    @pytest.mark.asyncio
+    async def test_migration_environment_variables(self):
+        """Test migration with environment variables"""
+        manager = MigrationManager("postgresql://test:test@localhost:5432/test")
+    
+        # Mock subprocess
+        with patch('asyncio.create_subprocess_exec') as mock_subprocess:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate.return_value = (b"Success", b"")
+            mock_subprocess.return_value = mock_process
+    
+            await manager.upgrade("head")
+    
+            # Check that environment variables were passed
+            call_args = mock_subprocess.call_args
+>           env = call_args[1]["env"]
+E           TypeError: 'NoneType' object is not subscriptable
+
+projects/Samokoder/tests/test_integration_migration_manager.py:272: TypeError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.migration_manager:migration_manager.py:50 Migration upgrade failed: name 'os' is not defined
+________ TestProjectRepositoryIntegration.test_search_projects_success _________
+
+self = <tests.test_integration_repositories.TestProjectRepositoryIntegration object at 0x7a57f30e1880>
+project_repo = <backend.repositories.project_repository.ProjectRepository object at 0x7a57f282cb00>
+mock_supabase = (<Mock name='connection_pool_manager.get_supabase_client()' id='134518149409600'>, <Mock name='connection_pool_manager.get_supabase_client().table()' id='134518149409648'>)
+
+    @pytest.mark.asyncio
+    async def test_search_projects_success(self, project_repo, mock_supabase):
+        """Test successful project search"""
+        mock_client, mock_table = mock_supabase
+    
+        # Mock response
+        projects_data = [
+            {"id": str(uuid4()), "user_id": str(uuid4()), "name": "Test Project", "description": "Test description"}
+        ]
+        mock_response = Mock()
+        mock_response.data = projects_data
+        mock_table.select.return_value.eq.return_value.eq.return_value.or_.return_value.range.return_value.order.return_value.execute.return_value = mock_response
+    
+        # Mock connection pool
+        with patch('backend.repositories.project_repository.connection_pool_manager') as mock_pool:
+            mock_pool.get_supabase_client.return_value = mock_client
+    
+            user_id = uuid4()
+            result = await project_repo.search(user_id, "test", limit=10, offset=0)
+    
+>           assert result == projects_data
+E           AssertionError: assert <Mock name='connection_pool_manager.get_supabase_client().table().select().eq().eq().or_().range().execute().data' id='134518150549616'> == [{'description': 'Test description', 'id': 'fabcfe4b-d00e-4b4c-9983-37eb8009f9f5', 'name': 'Test Project', 'user_id': 'e394d578-f3a1-45c5-b25a-e9d2b17cd8f2'}]
+
+projects/Samokoder/tests/test_integration_repositories.py:275: AssertionError
+_______ TestSecretsManagerIntegration.test_environment_provider_success ________
+
+self = <tests.test_integration_security.TestSecretsManagerIntegration object at 0x7a57f30fc3e0>
+
+    @pytest.mark.asyncio
+    async def test_environment_provider_success(self):
+        """Test successful environment provider operations"""
+        provider = EnvironmentSecretsProvider(prefix="TEST_")
+    
+        # Test get secret
+        with patch.dict('os.environ', {'TEST_API_KEY': 'test_value'}):
+            result = await provider.get_secret("api_key")
+            assert result == "test_value"
+    
+        # Test set secret
+        await provider.set_secret("new_key", "new_value")
+>       assert provider.get_secret("new_key") == "new_value"
+E       AssertionError: assert <coroutine object EnvironmentSecretsProvider.get_secret at 0x7a57f2b332a0> == 'new_value'
+E        +  where <coroutine object EnvironmentSecretsProvider.get_secret at 0x7a57f2b332a0> = <bound method EnvironmentSecretsProvider.get_secret of <backend.security.secrets_manager.EnvironmentSecretsProvider object at 0x7a57f286f7a0>>('new_key')
+E        +    where <bound method EnvironmentSecretsProvider.get_secret of <backend.security.secrets_manager.EnvironmentSecretsProvider object at 0x7a57f286f7a0>> = <backend.security.secrets_manager.EnvironmentSecretsProvider object at 0x7a57f286f7a0>.get_secret
+
+projects/Samokoder/tests/test_integration_security.py:30: AssertionError
+_____ TestKeyRotationManagerIntegration.test_check_rotation_needed_expired _____
+
+self = <tests.test_integration_security.TestKeyRotationManagerIntegration object at 0x7a57f30fd610>
+key_rotation_manager = <backend.security.key_rotation.KeyRotationManager object at 0x7a57f2995760>
+
+    @pytest.mark.asyncio
+    async def test_check_rotation_needed_expired(self, key_rotation_manager):
+        """Test rotation check with expired keys"""
+        from datetime import datetime, timedelta
+    
+        # Mock expired rotation
+        expired_date = datetime.now() - timedelta(days=100)
+    
+        with patch.object(key_rotation_manager, 'get_last_rotation_date', return_value=expired_date):
+            keys_to_rotate = await key_rotation_manager.check_rotation_needed()
+    
+            # All keys should need rotation
+>           assert len(keys_to_rotate) == len(key_rotation_manager.rotation_schedule)
+E           AssertionError: assert 3 == 7
+E            +  where 3 = len(['api_encryption_key', 'jwt_secret', 'csrf_secret'])
+E            +  and   7 = len({'anthropic_api_key': datetime.timedelta(days=180), 'api_encryption_key': datetime.timedelta(days=90), 'csrf_secret': datetime.timedelta(days=60), 'groq_api_key': datetime.timedelta(days=180), ...})
+E            +    where {'anthropic_api_key': datetime.timedelta(days=180), 'api_encryption_key': datetime.timedelta(days=90), 'csrf_secret': datetime.timedelta(days=60), 'groq_api_key': datetime.timedelta(days=180), ...} = <backend.security.key_rotation.KeyRotationManager object at 0x7a57f2995760>.rotation_schedule
+
+projects/Samokoder/tests/test_integration_security.py:214: AssertionError
+__________ TestKeyRotationManagerIntegration.test_rotate_key_success ___________
+
+self = <tests.test_integration_security.TestKeyRotationManagerIntegration object at 0x7a57f30fd760>
+key_rotation_manager = <backend.security.key_rotation.KeyRotationManager object at 0x7a57f29978f0>
+
+    @pytest.mark.asyncio
+    async def test_rotate_key_success(self, key_rotation_manager):
+        """Test successful key rotation"""
+        with patch.object(key_rotation_manager, 'generate_secure_key', return_value="new_key"):
+>           with patch.object(key_rotation_manager, 'secrets_manager') as mock_secrets:
+
+projects/Samokoder/tests/test_integration_security.py:220: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7a57f2987e60>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <backend.security.key_rotation.KeyRotationManager object at 0x7a57f29978f0> does not have the attribute 'secrets_manager'
+
+/usr/lib/python3.12/unittest/mock.py:1431: AttributeError
+__________ TestKeyRotationManagerIntegration.test_rotate_key_failure ___________
+
+self = <tests.test_integration_security.TestKeyRotationManagerIntegration object at 0x7a57f30fda30>
+key_rotation_manager = <backend.security.key_rotation.KeyRotationManager object at 0x7a57f29967e0>
+
+    @pytest.mark.asyncio
+    async def test_rotate_key_failure(self, key_rotation_manager):
+        """Test key rotation failure"""
+        with patch.object(key_rotation_manager, 'generate_secure_key', return_value="new_key"):
+>           with patch.object(key_rotation_manager, 'secrets_manager') as mock_secrets:
+
+projects/Samokoder/tests/test_integration_security.py:233: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7a57f286f1d0>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <backend.security.key_rotation.KeyRotationManager object at 0x7a57f29967e0> does not have the attribute 'secrets_manager'
+
+/usr/lib/python3.12/unittest/mock.py:1431: AttributeError
+________ TestKeyRotationManagerIntegration.test_rotate_all_keys_success ________
+
+self = <tests.test_integration_security.TestKeyRotationManagerIntegration object at 0x7a57f30fda60>
+key_rotation_manager = <backend.security.key_rotation.KeyRotationManager object at 0x7a57f29978c0>
+
+    @pytest.mark.asyncio
+    async def test_rotate_all_keys_success(self, key_rotation_manager):
+        """Test successful rotation of all keys"""
+        with patch.object(key_rotation_manager, 'check_rotation_needed', return_value=["key1", "key2"]):
+            with patch.object(key_rotation_manager, 'rotate_key', return_value=True):
+>               result = await key_rotation_manager.rotate_all_keys()
+E               AttributeError: 'KeyRotationManager' object has no attribute 'rotate_all_keys'
+
+projects/Samokoder/tests/test_integration_security.py:246: AttributeError
+____ TestKeyRotationManagerIntegration.test_rotate_all_keys_partial_failure ____
+
+self = <tests.test_integration_security.TestKeyRotationManagerIntegration object at 0x7a57f30fdd60>
+key_rotation_manager = <backend.security.key_rotation.KeyRotationManager object at 0x7a57f286ed50>
+
+    @pytest.mark.asyncio
+    async def test_rotate_all_keys_partial_failure(self, key_rotation_manager):
+        """Test partial failure in key rotation"""
+        with patch.object(key_rotation_manager, 'check_rotation_needed', return_value=["key1", "key2"]):
+            with patch.object(key_rotation_manager, 'rotate_key', side_effect=[True, False]):
+>               result = await key_rotation_manager.rotate_all_keys()
+E               AttributeError: 'KeyRotationManager' object has no attribute 'rotate_all_keys'
+
+projects/Samokoder/tests/test_integration_security.py:255: AttributeError
+__________ TestKeyRotationManagerIntegration.test_get_rotation_status __________
+
+self = <tests.test_integration_security.TestKeyRotationManagerIntegration object at 0x7a57f30fd880>
+key_rotation_manager = <backend.security.key_rotation.KeyRotationManager object at 0x7a57f286c200>
+
+    @pytest.mark.asyncio
+    async def test_get_rotation_status(self, key_rotation_manager):
+        """Test rotation status retrieval"""
+        from datetime import datetime, timedelta
+    
+        # Mock rotation history
+        rotation_history = {
+            "key1": datetime.now() - timedelta(days=30),
+            "key2": datetime.now() - timedelta(days=100)
+        }
+    
+        with patch.object(key_rotation_manager, 'rotation_history', rotation_history):
+            status = await key_rotation_manager.get_rotation_status()
+    
+>           assert "key1" in status
+E           AssertionError: assert 'key1' in {'anthropic_api_key': {'days_until_rotation': None, 'last_rotation': None, 'needs_rotation': True, 'next_rotation': None, ...}, 'api_encryption_key': {'days_until_rotation': None, 'last_rotation': None, 'needs_rotation': True, 'next_rotation': None, ...}, 'csrf_secret': {'days_until_rotation': None, 'last_rotation': None, 'needs_rotation': True, 'next_rotation': None, ...}, 'groq_api_key': {'days_until_rotation': None, 'last_rotation': None, 'needs_rotation': True, 'next_rotation': None, ...}, ...}
+
+projects/Samokoder/tests/test_integration_security.py:273: AssertionError
+_______ TestKeyRotationManagerIntegration.test_schedule_rotation_success _______
+
+self = <tests.test_integration_security.TestKeyRotationManagerIntegration object at 0x7a57f30fd190>
+key_rotation_manager = <backend.security.key_rotation.KeyRotationManager object at 0x7a57f286c740>
+
+    @pytest.mark.asyncio
+    async def test_schedule_rotation_success(self, key_rotation_manager):
+        """Test successful rotation scheduling"""
+>       with patch.object(key_rotation_manager, 'rotate_all_keys', return_value={"key1": True}):
+
+projects/Samokoder/tests/test_integration_security.py:283: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7a57f286e8a0>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <backend.security.key_rotation.KeyRotationManager object at 0x7a57f286c740> does not have the attribute 'rotate_all_keys'
+
+/usr/lib/python3.12/unittest/mock.py:1431: AttributeError
+_______ TestKeyRotationManagerIntegration.test_schedule_rotation_failure _______
+
+self = <tests.test_integration_security.TestKeyRotationManagerIntegration object at 0x7a57f30fcaa0>
+key_rotation_manager = <backend.security.key_rotation.KeyRotationManager object at 0x7a57f28ad460>
+
+    @pytest.mark.asyncio
+    async def test_schedule_rotation_failure(self, key_rotation_manager):
+        """Test rotation scheduling failure"""
+>       with patch.object(key_rotation_manager, 'rotate_all_keys', side_effect=Exception("Rotation failed")):
+
+projects/Samokoder/tests/test_integration_security.py:293: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7a57f28afa10>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <backend.security.key_rotation.KeyRotationManager object at 0x7a57f28ad460> does not have the attribute 'rotate_all_keys'
+
+/usr/lib/python3.12/unittest/mock.py:1431: AttributeError
+______________________ TestChatRequest.test_empty_message ______________________
+
+self = <tests.test_models.TestChatRequest object at 0x7a57f30ff860>
+
+    def test_empty_message(self):
+        """Тест пустого сообщения"""
+        with pytest.raises(ValidationError) as exc_info:
+            ChatRequest(
+                message="",
+                context="chat"
+            )
+>       assert "не может быть пустым" in str(exc_info.value)
+E       assert 'не может быть пустым' in "1 validation error for ChatRequest\nmessage\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.11/v/string_too_short"
+E        +  where "1 validation error for ChatRequest\nmessage\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.11/v/string_too_short" = str(1 validation error for ChatRequest\nmessage\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.11/v/string_too_short)
+E        +    where 1 validation error for ChatRequest\nmessage\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.11/v/string_too_short = <ExceptionInfo 1 validation error for ChatRequest\nmessage\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.11/v/string_too_short tblen=2>.value
+
+projects/Samokoder/tests/test_models.py:145: AssertionError
+___________________ TestChatRequest.test_invalid_temperature ___________________
+
+self = <tests.test_models.TestChatRequest object at 0x7a57f30fd0d0>
+
+    def test_invalid_temperature(self):
+        """Тест невалидной температуры"""
+        with pytest.raises(ValidationError) as exc_info:
+            ChatRequest(
+                message="Hello",
+                temperature=3.0  # Слишком высокая
+            )
+>       assert "less than or equal to 2.0" in str(exc_info.value)
+E       AssertionError: assert 'less than or equal to 2.0' in '1 validation error for ChatRequest\ntemperature\n  Input should be less than or equal to 2 [type=less_than_equal, input_value=3.0, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.11/v/less_than_equal'
+E        +  where '1 validation error for ChatRequest\ntemperature\n  Input should be less than or equal to 2 [type=less_than_equal, input_value=3.0, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.11/v/less_than_equal' = str(1 validation error for ChatRequest\ntemperature\n  Input should be less than or equal to 2 [type=less_than_equal, input_value=3.0, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.11/v/less_than_equal)
+E        +    where 1 validation error for ChatRequest\ntemperature\n  Input should be less than or equal to 2 [type=less_than_equal, input_value=3.0, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.11/v/less_than_equal = <ExceptionInfo 1 validation error for ChatRequest\ntemperature\n  Input should be less than or equal to 2 [type=less_than_equal, input_value=3.0, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.11/v/less_than_equal tblen=2>.value
+
+projects/Samokoder/tests/test_models.py:163: AssertionError
+__________________ TestChatRequest.test_negative_temperature ___________________
+
+self = <tests.test_models.TestChatRequest object at 0x7a57f31080b0>
+
+    def test_negative_temperature(self):
+        """Тест отрицательной температуры"""
+        with pytest.raises(ValidationError) as exc_info:
+            ChatRequest(
+                message="Hello",
+                temperature=-0.1
+            )
+>       assert "greater than or equal to 0.0" in str(exc_info.value)
+E       AssertionError: assert 'greater than or equal to 0.0' in '1 validation error for ChatRequest\ntemperature\n  Input should be greater than or equal to 0 [type=greater_than_equal, input_value=-0.1, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.11/v/greater_than_equal'
+E        +  where '1 validation error for ChatRequest\ntemperature\n  Input should be greater than or equal to 0 [type=greater_than_equal, input_value=-0.1, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.11/v/greater_than_equal' = str(1 validation error for ChatRequest\ntemperature\n  Input should be greater than or equal to 0 [type=greater_than_equal, input_value=-0.1, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.11/v/greater_than_equal)
+E        +    where 1 validation error for ChatRequest\ntemperature\n  Input should be greater than or equal to 0 [type=greater_than_equal, input_value=-0.1, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.11/v/greater_than_equal = <ExceptionInfo 1 validation error for ChatRequest\ntemperature\n  Input should be greater than or equal to 0 [type=greater_than_equal, ...t_value=-0.1, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.11/v/greater_than_equal tblen=2>.value
+
+projects/Samokoder/tests/test_models.py:172: AssertionError
+_______________ TestUserSettingsUpdateRequest.test_invalid_theme _______________
+
+self = <tests.test_models.TestUserSettingsUpdateRequest object at 0x7a57f3108bf0>
+
+    def test_invalid_theme(self):
+        """Тест невалидной темы"""
+        with pytest.raises(ValidationError) as exc_info:
+            UserSettingsUpdateRequest(
+                theme="invalid-theme"
+            )
+>       assert "string does not match regex" in str(exc_info.value)
+E       assert 'string does not match regex' in "1 validation error for UserSettingsUpdateRequest\ntheme\n  String should match pattern '^(light|dark|auto)$' [type=string_pattern_mismatch, input_value='invalid-theme', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.11/v/string_pattern_mismatch"
+E        +  where "1 validation error for UserSettingsUpdateRequest\ntheme\n  String should match pattern '^(light|dark|auto)$' [type=string_pattern_mismatch, input_value='invalid-theme', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.11/v/string_pattern_mismatch" = str(1 validation error for UserSettingsUpdateRequest\ntheme\n  String should match pattern '^(light|dark|auto)$' [type=string_pattern_mismatch, input_value='invalid-theme', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.11/v/string_pattern_mismatch)
+E        +    where 1 validation error for UserSettingsUpdateRequest\ntheme\n  String should match pattern '^(light|dark|auto)$' [type=string_pattern_mismatch, input_value='invalid-theme', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.11/v/string_pattern_mismatch = <ExceptionInfo 1 validation error for UserSettingsUpdateRequest\ntheme\n  String should match pattern '^(light|dark|auto)$' [type=strin...id-theme', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.11/v/string_pattern_mismatch tblen=2>.value
+
+projects/Samokoder/tests/test_models.py:249: AssertionError
+_____________ TestRateLimiter.test_different_users_separate_limits _____________
+
+self = <tests.test_rate_limiter.TestRateLimiter object at 0x7a57f3156330>
+rate_limiter = <backend.services.rate_limiter.RateLimiter object at 0x7a57f282f050>
+
+    @pytest.mark.asyncio
+    async def test_different_users_separate_limits(self, rate_limiter):
+        """Тест раздельных лимитов для разных пользователей"""
+        user1 = "user1"
+        user2 = "user2"
+        endpoint = "/api/test"
+    
+        # Пользователь 1 делает 5 запросов
+        for i in range(5):
+            allowed, rate_info = await rate_limiter.check_rate_limit(
+                user_id=user1,
+                endpoint=endpoint,
+                limit_per_minute=10,
+                limit_per_hour=100
+            )
+            assert allowed is True
+    
+        # Пользователь 2 делает 5 запросов
+        for i in range(5):
+            allowed, rate_info = await rate_limiter.check_rate_limit(
+                user_id=user2,
+                endpoint=endpoint,
+                limit_per_minute=10,
+                limit_per_hour=100
+            )
+            assert allowed is True
+    
+        # Проверяем, что у каждого пользователя свой счетчик
+        allowed1, rate_info1 = await rate_limiter.check_rate_limit(
+            user_id=user1,
+            endpoint=endpoint,
+            limit_per_minute=10,
+            limit_per_hour=100
+        )
+    
+        allowed2, rate_info2 = await rate_limiter.check_rate_limit(
+            user_id=user2,
+            endpoint=endpoint,
+            limit_per_minute=10,
+            limit_per_hour=100
+        )
+    
+>       assert rate_info1.minute_requests == 6
+E       assert 11 == 6
+E        +  where 11 = RateLimitInfo(minute_requests=11, hour_requests=11, minute_limit=10, hour_limit=100, minute_allowed=False, hour_allowed=True, reset_time_minute=1757533300, reset_time_hour=1757536840).minute_requests
+
+projects/Samokoder/tests/test_rate_limiter.py:119: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+___________ TestRateLimiter.test_different_endpoints_separate_limits ___________
+
+self = <tests.test_rate_limiter.TestRateLimiter object at 0x7a57f3156480>
+rate_limiter = <backend.services.rate_limiter.RateLimiter object at 0x7a57f2985fa0>
+
+    @pytest.mark.asyncio
+    async def test_different_endpoints_separate_limits(self, rate_limiter):
+        """Тест раздельных лимитов для разных эндпоинтов"""
+        user_id = "test_user"
+        endpoint1 = "/api/endpoint1"
+        endpoint2 = "/api/endpoint2"
+    
+        # Делаем запросы к разным эндпоинтам
+        allowed1, rate_info1 = await rate_limiter.check_rate_limit(
+            user_id=user_id,
+            endpoint=endpoint1,
+            limit_per_minute=10,
+            limit_per_hour=100
+        )
+    
+        allowed2, rate_info2 = await rate_limiter.check_rate_limit(
+            user_id=user_id,
+            endpoint=endpoint2,
+            limit_per_minute=10,
+            limit_per_hour=100
+        )
+    
+        assert allowed1 is True
+        assert allowed2 is True
+        assert rate_info1.minute_requests == 1
+>       assert rate_info2.minute_requests == 1
+E       assert 2 == 1
+E        +  where 2 = RateLimitInfo(minute_requests=2, hour_requests=2, minute_limit=10, hour_limit=100, minute_allowed=True, hour_allowed=True, reset_time_minute=1757533300, reset_time_hour=1757536840).minute_requests
+
+projects/Samokoder/tests/test_rate_limiter.py:147: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+____________________ TestRateLimiter.test_reset_rate_limit _____________________
+
+self = <tests.test_rate_limiter.TestRateLimiter object at 0x7a57f31565d0>
+rate_limiter = <backend.services.rate_limiter.RateLimiter object at 0x7a57f28a93a0>
+
+    @pytest.mark.asyncio
+    async def test_reset_rate_limit(self, rate_limiter):
+        """Тест сброса rate limit"""
+        user_id = "test_user"
+        endpoint = "/api/test"
+    
+        # Делаем несколько запросов
+        for i in range(5):
+            await rate_limiter.check_rate_limit(
+                user_id=user_id,
+                endpoint=endpoint,
+                limit_per_minute=10,
+                limit_per_hour=100
+            )
+    
+        # Сбрасываем лимит
+        await rate_limiter.reset_rate_limit(user_id, endpoint)
+    
+        # Проверяем, что счетчик сброшен
+        allowed, rate_info = await rate_limiter.check_rate_limit(
+            user_id=user_id,
+            endpoint=endpoint,
+            limit_per_minute=10,
+            limit_per_hour=100
+        )
+    
+        assert allowed is True
+>       assert rate_info.minute_requests == 1
+E       assert 6 == 1
+E        +  where 6 = RateLimitInfo(minute_requests=6, hour_requests=6, minute_limit=10, hour_limit=100, minute_allowed=True, hour_allowed=True, reset_time_minute=1757533300, reset_time_hour=1757536840).minute_requests
+
+projects/Samokoder/tests/test_rate_limiter.py:176: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:256 Redis reset rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+___________________ TestRateLimiter.test_get_rate_limit_info ___________________
+
+self = <tests.test_rate_limiter.TestRateLimiter object at 0x7a57f3156720>
+rate_limiter = <backend.services.rate_limiter.RateLimiter object at 0x7a57f28a8350>
+
+    @pytest.mark.asyncio
+    async def test_get_rate_limit_info(self, rate_limiter):
+        """Тест получения информации о rate limit"""
+        user_id = "test_user"
+        endpoint = "/api/test"
+    
+        # Делаем несколько запросов
+        for i in range(3):
+            await rate_limiter.check_rate_limit(
+                user_id=user_id,
+                endpoint=endpoint,
+                limit_per_minute=10,
+                limit_per_hour=100
+            )
+    
+        # Получаем информацию о лимитах
+        rate_info = await rate_limiter.get_rate_limit_info(user_id, endpoint)
+    
+>       assert rate_info is not None
+E       assert None is not None
+
+projects/Samokoder/tests/test_rate_limiter.py:197: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:226 Redis get rate limit info error: Error 111 connecting to localhost:6379. 111.
+_________________ TestRateLimiter.test_cleanup_expired_entries _________________
+
+self = <tests.test_rate_limiter.TestRateLimiter object at 0x7a57f31569c0>
+rate_limiter = <backend.services.rate_limiter.RateLimiter object at 0x7a57f2960590>
+
+    @pytest.mark.asyncio
+    async def test_cleanup_expired_entries(self, rate_limiter):
+        """Тест очистки устаревших записей"""
+        user_id = "test_user"
+        endpoint = "/api/test"
+    
+        # Делаем запрос
+        await rate_limiter.check_rate_limit(
+            user_id=user_id,
+            endpoint=endpoint,
+            limit_per_minute=10,
+            limit_per_hour=100
+        )
+    
+        # Проверяем, что запись создана
+        rate_info = await rate_limiter.get_rate_limit_info(user_id, endpoint)
+>       assert rate_info is not None
+E       assert None is not None
+
+projects/Samokoder/tests/test_rate_limiter.py:227: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: Error 111 connecting to localhost:6379. 111.
+ERROR    backend.services.rate_limiter:rate_limiter.py:226 Redis get rate limit info error: Error 111 connecting to localhost:6379. 111.
+______________ TestRedisRateLimiter.test_redis_rate_limit_success ______________
+
+self = <tests.test_rate_limiter.TestRedisRateLimiter object at 0x7a57f3156cf0>
+mock_redis = <AsyncMock id='134518150670592'>
+
+    @pytest.mark.asyncio
+    async def test_redis_rate_limit_success(self, mock_redis):
+        """Тест успешного Redis rate limit"""
+        # Настраиваем мок
+        mock_pipeline = AsyncMock()
+        mock_pipeline.incr.return_value = None
+        mock_pipeline.expire.return_value = None
+        mock_pipeline.get.return_value = None
+        mock_pipeline.execute.return_value = [None, None, None, None, "5", "50"]
+        mock_redis.pipeline.return_value = mock_pipeline
+    
+        # Создаем rate limiter с моком Redis
+        rate_limiter = RateLimiter()
+        rate_limiter.redis_client = mock_redis
+    
+        # Тестируем
+        allowed, rate_info = await rate_limiter.check_rate_limit(
+            user_id="test_user",
+            endpoint="/api/test",
+            limit_per_minute=10,
+            limit_per_hour=100
+        )
+    
+        assert allowed is True
+>       assert rate_info.minute_requests == 5
+E       assert 1 == 5
+E        +  where 1 = RateLimitInfo(minute_requests=1, hour_requests=1, minute_limit=10, hour_limit=100, minute_allowed=True, hour_allowed=True, reset_time_minute=1757533300, reset_time_hour=1757536840).minute_requests
+
+projects/Samokoder/tests/test_rate_limiter.py:295: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: 'coroutine' object has no attribute 'incr'
+_____________ TestRedisRateLimiter.test_redis_rate_limit_exceeded ______________
+
+self = <tests.test_rate_limiter.TestRedisRateLimiter object at 0x7a57f3156e10>
+mock_redis = <AsyncMock id='134518150674048'>
+
+    @pytest.mark.asyncio
+    async def test_redis_rate_limit_exceeded(self, mock_redis):
+        """Тест превышения Redis rate limit"""
+        # Настраиваем мок
+        mock_pipeline = AsyncMock()
+        mock_pipeline.incr.return_value = None
+        mock_pipeline.expire.return_value = None
+        mock_pipeline.get.return_value = None
+        mock_pipeline.execute.return_value = [None, None, None, None, "11", "50"]
+        mock_redis.pipeline.return_value = mock_pipeline
+    
+        # Создаем rate limiter с моком Redis
+        rate_limiter = RateLimiter()
+        rate_limiter.redis_client = mock_redis
+    
+        # Тестируем
+        allowed, rate_info = await rate_limiter.check_rate_limit(
+            user_id="test_user",
+            endpoint="/api/test",
+            limit_per_minute=10,
+            limit_per_hour=100
+        )
+    
+>       assert allowed is False
+E       assert True is False
+
+projects/Samokoder/tests/test_rate_limiter.py:321: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    backend.services.rate_limiter:rate_limiter.py:140 Redis rate limit error: 'coroutine' object has no attribute 'incr'
+__________ TestConfigurationSecurity.test_environment_security_issues __________
+
+self = <tests.test_security_asvs_v10_configuration.TestConfigurationSecurity object at 0x7a57f29cd070>
+config_security = <security_patches.asvs_v10_configuration_p0_fixes.ConfigurationSecurity object at 0x7a57f292be30>
+
+    def test_environment_security_issues(self, config_security):
+        """V10.1.14: Тест проблем безопасности окружения"""
+        with patch.dict(os.environ, {
+            "DEBUG": "true",
+            "HTTPS_ONLY": "false"
+        }, clear=True):
+            issues = config_security.check_environment_security()
+            assert len(issues) > 0
+>           assert any("DEBUG" in issue for issue in issues)
+E           assert False
+E            +  where False = any(<generator object TestConfigurationSecurity.test_environment_security_issues.<locals>.<genexpr> at 0x7a57f28364d0>)
+
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py:287: AssertionError
+------------------------------ Captured log setup ------------------------------
+WARNING  security_patches.asvs_v10_configuration_p0_fixes:asvs_v10_configuration_p0_fixes.py:84 Security config file not found, using defaults
+_________________ TestConfigurationSecurity.test_config_backup _________________
+
+self = <tests.test_security_asvs_v10_configuration.TestConfigurationSecurity object at 0x7a57f29cd460>
+config_security = <security_patches.asvs_v10_configuration_p0_fixes.ConfigurationSecurity object at 0x7a57f29a8bf0>
+
+    def test_config_backup(self, config_security):
+        """V10.1.17: Тест резервного копирования конфигурации"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_security.config_file_path = Path(temp_dir) / "test_config.json"
+    
+            backup_path = config_security.backup_config()
+>           assert backup_path != ""
+E           AssertionError: assert '' != ''
+
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py:347: AssertionError
+------------------------------ Captured log setup ------------------------------
+WARNING  security_patches.asvs_v10_configuration_p0_fixes:asvs_v10_configuration_p0_fixes.py:84 Security config file not found, using defaults
+------------------------------ Captured log call -------------------------------
+ERROR    security_patches.asvs_v10_configuration_p0_fixes:asvs_v10_configuration_p0_fixes.py:280 Failed to backup configuration: [Errno 2] No such file or directory: 'config/security_config_backup_556a9921.json'
+_______ TestConfigurationSecurity.test_comprehensive_configuration_flow ________
+
+self = <tests.test_security_asvs_v10_configuration.TestConfigurationSecurity object at 0x7a57f29cd580>
+config_security = <security_patches.asvs_v10_configuration_p0_fixes.ConfigurationSecurity object at 0x7a57f292a1e0>
+
+    def test_comprehensive_configuration_flow(self, config_security):
+        """V10.1.19: Тест комплексного потока конфигурации"""
+        # 1. Проверяем загрузку конфигурации
+        assert config_security.current_config is not None
+    
+        # 2. Валидируем конфигурацию
+        errors = config_security.validate_config()
+        assert len(errors) == 0
+    
+        # 3. Получаем различные конфигурации
+        headers = config_security.get_security_headers()
+        assert len(headers) > 0
+    
+        cors_config = config_security.get_cors_config()
+        assert "allowed_methods" in cors_config
+    
+        password_policy = config_security.get_password_policy()
+        assert password_policy["min_length"] >= 8
+    
+        # 4. Проверяем окружение
+        with patch.dict(os.environ, {
+            "DATABASE_URL": "postgresql://test:test@localhost/test",
+            "JWT_SECRET": "test_secret",
+            "ENCRYPTION_KEY": "test_key"
+        }):
+            env_issues = config_security.check_environment_security()
+>           assert len(env_issues) == 0
+E           AssertionError: assert 2 == 0
+E            +  where 2 = len(['Debug mode should not be enabled in production', 'HTTPS should be enforced in production'])
+
+projects/Samokoder/tests/test_security_asvs_v10_configuration.py:409: AssertionError
+------------------------------ Captured log setup ------------------------------
+WARNING  security_patches.asvs_v10_configuration_p0_fixes:asvs_v10_configuration_p0_fixes.py:84 Security config file not found, using defaults
+________________ TestAPISecurity.test_api_response_sanitization ________________
+
+self = <tests.test_security_asvs_v12_api_security.TestAPISecurity object at 0x7a57f29cf740>
+api_security = <security_patches.asvs_v12_api_security_p0_fixes.APISecurity object at 0x7a57f2928470>
+
+    def test_api_response_sanitization(self, api_security):
+        """V12.1.8: Тест санитизации ответа API"""
+        # Санитизация строки
+        dangerous_string = "Hello <script>alert('xss')</script> world"
+        sanitized = api_security.sanitize_api_response(dangerous_string)
+        assert "<script>" not in sanitized
+>       assert "alert" not in sanitized
+E       AssertionError: assert 'alert' not in 'Hello scrip...script world'
+E         'alert' is contained here:
+E           Hello scriptalertxss/script world
+E         ?            +++++
+
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py:120: AssertionError
+_________________ TestAPISecurity.test_cors_origin_validation __________________
+
+self = <tests.test_security_asvs_v12_api_security.TestAPISecurity object at 0x7a57f29cf8c0>
+api_security = <security_patches.asvs_v12_api_security_p0_fixes.APISecurity object at 0x7a57f29286b0>
+
+    def test_cors_origin_validation(self, api_security):
+        """V12.1.9: Тест валидации CORS origin"""
+        allowed_origins = ["https://example.com", "https://*.example.com"]
+    
+        # Валидные origins
+        assert api_security.validate_cors_origin("https://example.com", allowed_origins) is True
+>       assert api_security.validate_cors_origin("https://sub.example.com", allowed_origins) is True
+E       AssertionError: assert False is True
+E        +  where False = <bound method APISecurity.validate_cors_origin of <security_patches.asvs_v12_api_security_p0_fixes.APISecurity object at 0x7a57f29286b0>>('https://sub.example.com', ['https://example.com', 'https://*.example.com'])
+E        +    where <bound method APISecurity.validate_cors_origin of <security_patches.asvs_v12_api_security_p0_fixes.APISecurity object at 0x7a57f29286b0>> = <security_patches.asvs_v12_api_security_p0_fixes.APISecurity object at 0x7a57f29286b0>.validate_cors_origin
+
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py:141: AssertionError
+_________________ TestAPISecurity.test_sql_injection_detection _________________
+
+self = <tests.test_security_asvs_v12_api_security.TestAPISecurity object at 0x7a57f29cfa40>
+api_security = <security_patches.asvs_v12_api_security_p0_fixes.APISecurity object at 0x7a57f29294f0>
+
+    def test_sql_injection_detection(self, api_security):
+        """V12.1.10: Тест обнаружения SQL injection"""
+        # SQL injection атаки
+        sql_attacks = [
+            "'; DROP TABLE users; --",
+            "1' UNION SELECT * FROM users--",
+            "admin' OR '1'='1",
+            "'; EXEC xp_cmdshell('dir'); --"
+        ]
+    
+        for attack in sql_attacks:
+>           assert api_security.detect_sql_injection(attack) is True
+E           assert False is True
+E            +  where False = <bound method APISecurity.detect_sql_injection of <security_patches.asvs_v12_api_security_p0_fixes.APISecurity object at 0x7a57f29294f0>>("admin' OR '1'='1")
+E            +    where <bound method APISecurity.detect_sql_injection of <security_patches.asvs_v12_api_security_p0_fixes.APISecurity object at 0x7a57f29294f0>> = <security_patches.asvs_v12_api_security_p0_fixes.APISecurity object at 0x7a57f29294f0>.detect_sql_injection
+
+projects/Samokoder/tests/test_security_asvs_v12_api_security.py:159: AssertionError
+___________ TestAuthenticationSecurity.test_session_token_validation ___________
+
+self = <tests.test_security_asvs_v2_auth.TestAuthenticationSecurity object at 0x7a57f29f9ac0>
+auth_security = <security_patches.asvs_v2_auth_p0_fixes.AuthenticationSecurity object at 0x7a57f24cc860>
+
+    def test_session_token_validation(self, auth_security):
+        """V2.1.6: Тест валидации токена сессии"""
+        # Валидный токен
+        valid_token = auth_security.generate_secure_session_token()
+        assert auth_security.validate_session_token(valid_token) is True
+    
+        # Невалидные токены
+        invalid_tokens = [
+            "",  # Пустой токен
+            "short",  # Слишком короткий
+            "invalid_token_with_special_chars!@#",  # Невалидные символы
+            None,  # None
+        ]
+    
+        for token in invalid_tokens:
+            if token is not None:
+>               assert auth_security.validate_session_token(token) is False
+E               AssertionError: assert True is False
+E                +  where True = <bound method AuthenticationSecurity.validate_session_token of <security_patches.asvs_v2_auth_p0_fixes.AuthenticationSecurity object at 0x7a57f24cc860>>('invalid_token_with_special_chars!@#')
+E                +    where <bound method AuthenticationSecurity.validate_session_token of <security_patches.asvs_v2_auth_p0_fixes.AuthenticationSecurity object at 0x7a57f24cc860>> = <security_patches.asvs_v2_auth_p0_fixes.AuthenticationSecurity object at 0x7a57f24cc860>.validate_session_token
+
+projects/Samokoder/tests/test_security_asvs_v2_auth.py:128: AssertionError
+____________ TestSessionSecurity.test_concurrent_session_operations ____________
+
+self = <tests.test_security_asvs_v3_sessions.TestSessionSecurity object at 0x7a57f314b620>
+session_security = <security_patches.asvs_v3_sessions_p0_fixes.SessionSecurity object at 0x7a57f2545310>
+
+    def test_concurrent_session_operations(self, session_security):
+        """V3.1.16: Тест concurrent операций с сессиями"""
+        import threading
+        import time
+    
+        user_id = "user123"
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        ip_address = "192.168.1.1"
+    
+        results = []
+    
+        def create_and_validate_session():
+            session_id = session_security.create_session(user_id, user_agent, ip_address)
+            is_valid = session_security.validate_session(session_id, user_agent, ip_address)
+            results.append((session_id, is_valid))
+    
+        # Создаем несколько потоков
+        threads = []
+        for _ in range(10):
+            thread = threading.Thread(target=create_and_validate_session)
+            threads.append(thread)
+            thread.start()
+    
+        # Ждем завершения всех потоков
+        for thread in threads:
+            thread.join()
+    
+        # Проверяем результаты
+        assert len(results) == 10
+        for session_id, is_valid in results:
+            assert is_valid is True
+>           assert session_id in session_security.active_sessions
+E           AssertionError: assert '_4tyTlgPZd5GD5fcRqGGDMLNUkAkIyex7ZgFOv4nOXI' in {'JdIgUhF5-AYyDQrK91R0B-rLBJS6hzbpUKRvd8Nv1pg': {'created_at': 1757533243.3882864, 'csrf_token': 'J50IvGYq51FRK7JRN7-jHmvh8SyLVbVIZq1bVVLcQxU', 'ip_address': '192.168.1.1', 'is_active': True, ...}, 'fao-NR64QNcOj8Tdbp3MLAPgpBzTdzait-cgjecwyMU': {'created_at': 1757533243.388033, 'csrf_token': '4_m-Ndue4izabzYXDieDtw87ocNRGwGuhuQ0uHjwR9U', 'ip_address': '192.168.1.1', 'is_active': True, ...}, 'iIKbtJFabWbKOZL_aSkNmbkBH64ePK0mEIcOldW9atg': {'created_at': 1757533243.3878765, 'csrf_token': 'SWLN2kKVgXE634ObSA8xCvdjSIb8mF_lgB3gfptqXlE', 'ip_address': '192.168.1.1', 'is_active': True, ...}, 'lkcKLF1c6E4fhWbaZGHG_vFyqAsQaO6EG6ME4JJI30w': {'created_at': 1757533243.3881574, 'csrf_token': '-1truPcA_TE94k5ANqqbSo5xTrdPltx6fdWef_wTtP8', 'ip_address': '192.168.1.1', 'is_active': True, ...}, ...}
+E            +  where {'JdIgUhF5-AYyDQrK91R0B-rLBJS6hzbpUKRvd8Nv1pg': {'created_at': 1757533243.3882864, 'csrf_token': 'J50IvGYq51FRK7JRN7-jHmvh8SyLVbVIZq1bVVLcQxU', 'ip_address': '192.168.1.1', 'is_active': True, ...}, 'fao-NR64QNcOj8Tdbp3MLAPgpBzTdzait-cgjecwyMU': {'created_at': 1757533243.388033, 'csrf_token': '4_m-Ndue4izabzYXDieDtw87ocNRGwGuhuQ0uHjwR9U', 'ip_address': '192.168.1.1', 'is_active': True, ...}, 'iIKbtJFabWbKOZL_aSkNmbkBH64ePK0mEIcOldW9atg': {'created_at': 1757533243.3878765, 'csrf_token': 'SWLN2kKVgXE634ObSA8xCvdjSIb8mF_lgB3gfptqXlE', 'ip_address': '192.168.1.1', 'is_active': True, ...}, 'lkcKLF1c6E4fhWbaZGHG_vFyqAsQaO6EG6ME4JJI30w': {'created_at': 1757533243.3881574, 'csrf_token': '-1truPcA_TE94k5ANqqbSo5xTrdPltx6fdWef_wTtP8', 'ip_address': '192.168.1.1', 'is_active': True, ...}, ...} = <security_patches.asvs_v3_sessions_p0_fixes.SessionSecurity object at 0x7a57f2545310>.active_sessions
+
+projects/Samokoder/tests/test_security_asvs_v3_sessions.py:318: AssertionError
+___________ TestAccessControlSecurity.test_resource_id_sanitization ____________
+
+self = <tests.test_security_asvs_v4_access_control.TestAccessControlSecurity object at 0x7a57f2a2e690>
+access_control = <security_patches.asvs_v4_access_control_p0_fixes.AccessControlSecurity object at 0x7a57f292ae40>
+
+    def test_resource_id_sanitization(self, access_control):
+        """V4.1.6: Тест санитизации ID ресурса"""
+        # Нормальный ID
+        normal_id = "project123"
+        assert access_control.sanitize_resource_id(normal_id) == normal_id
+    
+        # ID с опасными символами
+        dangerous_id = "project<script>alert('xss')</script>123"
+        sanitized = access_control.sanitize_resource_id(dangerous_id)
+        assert "<" not in sanitized
+        assert ">" not in sanitized
+>       assert "script" not in sanitized
+E       AssertionError: assert 'script' not in 'projectscri...xssscript123'
+E         'script' is contained here:
+E           projectscriptalertxssscript123
+E         ?       ++++++
+
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py:108: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  security_patches.asvs_v4_access_control_p0_fixes:asvs_v4_access_control_p0_fixes.py:143 Resource ID sanitized: project<script>alert('xss')</script>123 -> projectscriptalertxssscript123
+_________ TestAccessControlSecurity.test_principle_of_least_privilege __________
+
+self = <tests.test_security_asvs_v4_access_control.TestAccessControlSecurity object at 0x7a57f2a2e1e0>
+access_control = <security_patches.asvs_v4_access_control_p0_fixes.AccessControlSecurity object at 0x7a57f2929220>
+
+    def test_principle_of_least_privilege(self, access_control):
+        """V4.1.9: Тест принципа минимальных привилегий"""
+        user_role = "free"
+        requested_permissions = [
+            "project:read",
+            "project:write",
+            "admin:delete",  # Это должно быть отклонено
+            "file:read"
+        ]
+    
+        allowed_permissions = access_control.enforce_principle_of_least_privilege(user_role, requested_permissions)
+    
+        # Только разрешенные права должны быть возвращены
+        assert "project:read" in allowed_permissions
+        assert "file:read" in allowed_permissions
+        assert "admin:delete" not in allowed_permissions
+>       assert "project:write" not in allowed_permissions  # Free не может писать в проекты
+E       AssertionError: assert 'project:write' not in ['project:read', 'project:write', 'file:read']
+
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py:156: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  security_patches.asvs_v4_access_control_p0_fixes:asvs_v4_access_control_p0_fixes.py:199 Denied permissions for role free: {'admin:delete'}
+_____________ TestAccessControlSecurity.test_access_attempt_audit ______________
+
+self = <tests.test_security_asvs_v4_access_control.TestAccessControlSecurity object at 0x7a57f2a2ecf0>
+access_control = <security_patches.asvs_v4_access_control_p0_fixes.AccessControlSecurity object at 0x7a57f292bb60>
+
+    def test_access_attempt_audit(self, access_control):
+        """V4.1.13: Тест аудита попыток доступа"""
+        user_id = "user123"
+        user_role = "professional"
+        resource_id = "project456"
+        resource_type = "project"
+        action = "read"
+    
+        # Аудит успешной попытки
+        with patch('security_patches.asvs_v4_access_control_p0_fixes.logger') as mock_logger:
+>           access_control.audit_access_attempt(user_id, user_role, resource_id, resource_type, action, True)
+
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py:217: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <security_patches.asvs_v4_access_control_p0_fixes.AccessControlSecurity object at 0x7a57f292bb60>
+user_id = 'user123', user_role = 'professional', resource_id = 'project456'
+resource_type = 'project', action = 'read', success = True
+
+    def audit_access_attempt(self, user_id: str, user_role: str, resource_id: str,
+                           resource_type: str, action: str, success: bool) -> None:
+        """V4.1.13: Аудит попыток доступа"""
+        audit_data = {
+            "user_id": user_id,
+            "user_role": user_role,
+            "resource_id": resource_id,
+            "resource_type": resource_type,
+            "action": action,
+            "success": success,
+>           "timestamp": time.time()
+        }
+E       NameError: name 'time' is not defined. Did you forget to import 'time'
+
+projects/Samokoder/security_patches/asvs_v4_access_control_p0_fixes.py:253: NameError
+_______ TestAccessControlSecurity.test_comprehensive_access_control_flow _______
+
+self = <tests.test_security_asvs_v4_access_control.TestAccessControlSecurity object at 0x7a57f2a2f170>
+access_control = <security_patches.asvs_v4_access_control_p0_fixes.AccessControlSecurity object at 0x7a57f28aa2a0>
+
+    def test_comprehensive_access_control_flow(self, access_control):
+        """V4.1.16: Тест комплексного потока контроля доступа"""
+        user_id = "user123"
+        user_role = "professional"
+        resource_id = "project456"
+        resource_type = "project"
+        action = "delete"
+    
+        # 1. Санитизация ID ресурса
+        sanitized_id = access_control.sanitize_resource_id(resource_id)
+        assert sanitized_id == resource_id
+    
+        # 2. Валидация типа ресурса
+        assert access_control.validate_resource_type(resource_type) is True
+    
+        # 3. Проверка разрешений
+        assert access_control.check_permission(user_role, resource_type, action) is True
+    
+        # 4. Проверка владения ресурсом
+        assert access_control.check_resource_ownership(user_id, sanitized_id, resource_type) is True
+    
+        # 5. Комплексная валидация
+        assert access_control.validate_resource_access(user_id, user_role, sanitized_id, resource_type, action) is True
+    
+        # 6. Аудит
+        with patch('security_patches.asvs_v4_access_control_p0_fixes.logger') as mock_logger:
+>           access_control.audit_access_attempt(user_id, user_role, sanitized_id, resource_type, action, True)
+
+projects/Samokoder/tests/test_security_asvs_v4_access_control.py:278: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <security_patches.asvs_v4_access_control_p0_fixes.AccessControlSecurity object at 0x7a57f28aa2a0>
+user_id = 'user123', user_role = 'professional', resource_id = 'project456'
+resource_type = 'project', action = 'delete', success = True
+
+    def audit_access_attempt(self, user_id: str, user_role: str, resource_id: str,
+                           resource_type: str, action: str, success: bool) -> None:
+        """V4.1.13: Аудит попыток доступа"""
+        audit_data = {
+            "user_id": user_id,
+            "user_role": user_role,
+            "resource_id": resource_id,
+            "resource_type": resource_type,
+            "action": action,
+            "success": success,
+>           "timestamp": time.time()
+        }
+E       NameError: name 'time' is not defined. Did you forget to import 'time'
+
+projects/Samokoder/security_patches/asvs_v4_access_control_p0_fixes.py:253: NameError
+_____________ TestValidationSecurity.test_html_input_sanitization ______________
+
+self = <tests.test_security_asvs_v5_validation.TestValidationSecurity object at 0x7a57f2a54ef0>
+validation_security = <security_patches.asvs_v5_validation_p0_fixes.ValidationSecurity object at 0x7a57f2544620>
+
+    def test_html_input_sanitization(self, validation_security):
+        """V5.1.2: Тест санитизации HTML ввода"""
+        # Нормальный текст
+        normal_text = "Hello, world!"
+        assert validation_security.sanitize_html_input(normal_text) == "Hello, world!"
+    
+        # XSS атака
+        xss_input = "<script>alert('xss')</script>"
+        sanitized = validation_security.sanitize_html_input(xss_input)
+        assert "<script>" not in sanitized
+>       assert "alert" not in sanitized
+E       AssertionError: assert 'alert' not in '&lt;script&...;/script&gt;'
+E         'alert' is contained here:
+E           &lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;
+E         ?               +++++
+
+projects/Samokoder/tests/test_security_asvs_v5_validation.py:44: AssertionError
+_____________ TestValidationSecurity.test_email_format_validation ______________
+
+self = <tests.test_security_asvs_v5_validation.TestValidationSecurity object at 0x7a57f2a55070>
+validation_security = <security_patches.asvs_v5_validation_p0_fixes.ValidationSecurity object at 0x7a57f2545d30>
+
+    def test_email_format_validation(self, validation_security):
+        """V5.1.3: Тест валидации формата email"""
+        # Валидные email
+        valid_emails = [
+            "test@example.com",
+            "user.name@domain.co.uk",
+            "user+tag@example.org",
+            "user123@test-domain.com"
+        ]
+    
+        for email in valid_emails:
+            assert validation_security.validate_email_format(email) is True
+    
+        # Невалидные email
+        invalid_emails = [
+            "invalid-email",
+            "@example.com",
+            "test@",
+            "test..test@example.com",
+            "test@.com",
+            "test@example.",
+            ""
+        ]
+    
+        for email in invalid_emails:
+>           assert validation_security.validate_email_format(email) is False
+E           AssertionError: assert True is False
+E            +  where True = <bound method ValidationSecurity.validate_email_format of <security_patches.asvs_v5_validation_p0_fixes.ValidationSecurity object at 0x7a57f2545d30>>('test..test@example.com')
+E            +    where <bound method ValidationSecurity.validate_email_format of <security_patches.asvs_v5_validation_p0_fixes.ValidationSecurity object at 0x7a57f2545d30>> = <security_patches.asvs_v5_validation_p0_fixes.ValidationSecurity object at 0x7a57f2545d30>.validate_email_format
+
+projects/Samokoder/tests/test_security_asvs_v5_validation.py:85: AssertionError
+______________ TestValidationSecurity.test_url_format_validation _______________
+
+self = <tests.test_security_asvs_v5_validation.TestValidationSecurity object at 0x7a57f2a2ef90>
+validation_security = <security_patches.asvs_v5_validation_p0_fixes.ValidationSecurity object at 0x7a57f2546e70>
+
+    def test_url_format_validation(self, validation_security):
+        """V5.1.4: Тест валидации формата URL"""
+        # Валидные URL
+        valid_urls = [
+            "https://example.com",
+            "http://test.org",
+            "https://subdomain.example.com/path",
+            "http://example.com:8080/path?param=value"
+        ]
+    
+        for url in valid_urls:
+>           assert validation_security.validate_url_format(url) is True
+E           AssertionError: assert False is True
+E            +  where False = <bound method ValidationSecurity.validate_url_format of <security_patches.asvs_v5_validation_p0_fixes.ValidationSecurity object at 0x7a57f2546e70>>('http://example.com:8080/path?param=value')
+E            +    where <bound method ValidationSecurity.validate_url_format of <security_patches.asvs_v5_validation_p0_fixes.ValidationSecurity object at 0x7a57f2546e70>> = <security_patches.asvs_v5_validation_p0_fixes.ValidationSecurity object at 0x7a57f2546e70>.validate_url_format
+
+projects/Samokoder/tests/test_security_asvs_v5_validation.py:98: AssertionError
+______________ TestValidationSecurity.test_sql_input_sanitization ______________
+
+self = <tests.test_security_asvs_v5_validation.TestValidationSecurity object at 0x7a57f2a54cb0>
+validation_security = <security_patches.asvs_v5_validation_p0_fixes.ValidationSecurity object at 0x7a57f2545a00>
+
+    def test_sql_input_sanitization(self, validation_security):
+        """V5.1.6: Тест санитизации SQL ввода"""
+        # Нормальный ввод
+        normal_input = "SELECT * FROM users"
+        sanitized = validation_security.sanitize_sql_input(normal_input)
+        assert "SELECT" in sanitized
+        assert "*" in sanitized
+    
+        # SQL injection
+        sql_injection = "'; DROP TABLE users; --"
+        sanitized = validation_security.sanitize_sql_input(sql_injection)
+>       assert "DROP" not in sanitized
+E       AssertionError: assert 'DROP' not in ' DROP TABLE users '
+E         'DROP' is contained here:
+E            DROP TABLE users 
+E         ?  ++++
+
+projects/Samokoder/tests/test_security_asvs_v5_validation.py:137: AssertionError
+_______________ TestValidationSecurity.test_html_output_encoding _______________
+
+self = <tests.test_security_asvs_v5_validation.TestValidationSecurity object at 0x7a57f2a55310>
+validation_security = <security_patches.asvs_v5_validation_p0_fixes.ValidationSecurity object at 0x7a57f2546e10>
+
+    def test_html_output_encoding(self, validation_security):
+        """V5.1.8: Тест кодирования вывода для HTML"""
+        # Нормальный текст
+        normal_text = "Hello, world!"
+        encoded = validation_security.encode_output_for_html(normal_text)
+        assert encoded == "Hello, world!"
+    
+        # HTML символы
+        html_text = "<script>alert('xss')</script>"
+        encoded = validation_security.encode_output_for_html(html_text)
+        assert "&lt;" in encoded
+        assert "&gt;" in encoded
+>       assert "&quot;" in encoded
+E       AssertionError: assert '&quot;' in '&lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;'
+
+projects/Samokoder/tests/test_security_asvs_v5_validation.py:164: AssertionError
+_______________ TestValidationSecurity.test_url_output_encoding ________________
+
+self = <tests.test_security_asvs_v5_validation.TestValidationSecurity object at 0x7a57f2a55490>
+validation_security = <security_patches.asvs_v5_validation_p0_fixes.ValidationSecurity object at 0x7a57f2411070>
+
+    def test_url_output_encoding(self, validation_security):
+        """V5.1.9: Тест кодирования вывода для URL"""
+        # Нормальный текст
+        normal_text = "hello world"
+        encoded = validation_security.encode_output_for_url(normal_text)
+        assert encoded == "hello%20world"
+    
+        # Специальные символы
+        special_text = "test@example.com"
+        encoded = validation_security.encode_output_for_url(special_text)
+        assert "@" not in encoded
+>       assert "." not in encoded
+E       AssertionError: assert '.' not in 'test%40example.com'
+E         '.' is contained here:
+E           test%40example.com
+E         ?               +
+
+projects/Samokoder/tests/test_security_asvs_v5_validation.py:178: AssertionError
+__________ TestValidationSecurity.test_comprehensive_validation_flow ___________
+
+self = <tests.test_security_asvs_v5_validation.TestValidationSecurity object at 0x7a57f2a55f10>
+validation_security = <security_patches.asvs_v5_validation_p0_fixes.ValidationSecurity object at 0x7a57f2547020>
+
+    def test_comprehensive_validation_flow(self, validation_security):
+        """V5.1.16: Тест комплексного потока валидации"""
+        # Тестовые данные
+        user_input = "<script>alert('xss')</script>Hello, world!"
+    
+        # 1. Проверка длины
+        assert validation_security.validate_input_length(user_input) is True
+    
+        # 2. Санитизация HTML
+        sanitized_html = validation_security.sanitize_html_input(user_input)
+        assert "<script>" not in sanitized_html
+    
+        # 3. Предотвращение injection атак
+        final_sanitized = validation_security.prevent_injection_attacks(sanitized_html)
+>       assert "alert" not in final_sanitized
+E       AssertionError: assert 'alert' not in '&lt;script&...ello, world!'
+E         'alert' is contained here:
+E           &lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;Hello, world!
+E         ?               +++++
+
+projects/Samokoder/tests/test_security_asvs_v5_validation.py:291: AssertionError
+____________________ TestValidationSecurity.test_edge_cases ____________________
+
+self = <tests.test_security_asvs_v5_validation.TestValidationSecurity object at 0x7a57f2a56090>
+validation_security = <security_patches.asvs_v5_validation_p0_fixes.ValidationSecurity object at 0x7a57f2546210>
+
+    def test_edge_cases(self, validation_security):
+        """V5.1.17: Тест граничных случаев"""
+        # None значения
+        assert validation_security.validate_input_length(None) is True
+        assert validation_security.sanitize_html_input(None) == ""
+        assert validation_security.validate_email_format(None) is False
+    
+        # Пустые строки
+        assert validation_security.validate_input_length("") is True
+        assert validation_security.sanitize_html_input("") == ""
+        assert validation_security.validate_email_format("") is False
+    
+        # Очень длинные строки
+        very_long_string = "a" * 100000
+        assert validation_security.validate_input_length(very_long_string) is False
+    
+        # Специальные символы
+        special_chars = "!@#$%^&*()_+-=[]{}|;:,.<>?"
+        sanitized = validation_security.sanitize_html_input(special_chars)
+        assert "&" in sanitized  # Должно быть закодировано
+>       assert "<" in sanitized  # Должно быть закодировано
+E       AssertionError: assert '<' in '!@#$%^&amp;*()_+-=[]{}|;:,.&lt;&gt;?'
+
+projects/Samokoder/tests/test_security_asvs_v5_validation.py:317: AssertionError
+_________ TestErrorHandlingSecurity.test_anomalous_activity_detection __________
+
+self = <tests.test_security_asvs_v7_errors_logging.TestErrorHandlingSecurity object at 0x7a57f2a88500>
+error_handling = <security_patches.asvs_v7_errors_logging_p0_fixes.ErrorHandlingSecurity object at 0x7a57f242bbc0>
+
+    def test_anomalous_activity_detection(self, error_handling):
+        """V7.1.12: Тест обнаружения аномальной активности"""
+        user_id = "user123"
+    
+        # Создаем несколько неудачных попыток
+        for i in range(6):
+            error_handling.handle_authentication_error(user_id, {"attempt": i})
+    
+        with patch('security_patches.asvs_v7_errors_logging_p0_fixes.logger') as mock_logger:
+            activity_data = {"message": "Multiple failed attempts"}
+            is_anomalous = error_handling.detect_anomalous_activity(user_id, activity_data)
+    
+>           assert is_anomalous is True
+E           assert False is True
+
+projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py:258: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  security_patches.asvs_v7_errors_logging_p0_fixes:asvs_v7_errors_logging_p0_fixes.py:76 Security event: AUTHENTICATION_FAILURE - No message
+WARNING  security_patches.asvs_v7_errors_logging_p0_fixes:asvs_v7_errors_logging_p0_fixes.py:76 Security event: AUTHENTICATION_FAILURE - No message
+WARNING  security_patches.asvs_v7_errors_logging_p0_fixes:asvs_v7_errors_logging_p0_fixes.py:76 Security event: AUTHENTICATION_FAILURE - No message
+WARNING  security_patches.asvs_v7_errors_logging_p0_fixes:asvs_v7_errors_logging_p0_fixes.py:76 Security event: AUTHENTICATION_FAILURE - No message
+WARNING  security_patches.asvs_v7_errors_logging_p0_fixes:asvs_v7_errors_logging_p0_fixes.py:76 Security event: AUTHENTICATION_FAILURE - No message
+WARNING  security_patches.asvs_v7_errors_logging_p0_fixes:asvs_v7_errors_logging_p0_fixes.py:76 Security event: AUTHENTICATION_FAILURE - No message
+____________ TestAuthenticationSecurity.test_mfa_code_verification _____________
+
+self = <tests.test_security_critical_fixes.TestAuthenticationSecurity object at 0x7a57f2a8a630>
+
+    def test_mfa_code_verification(self):
+        """V2.1.1 - Тест проверки MFA кода"""
+        secret = security_fixes.generate_mfa_secret()
+    
+        # Тест с валидным кодом (mock)
+>       with patch('security_patches.minimal_critical_fixes.pyotp') as mock_pyotp:
+
+projects/Samokoder/tests/test_security_critical_fixes.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.12/unittest/mock.py:1458: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7a57e2e86a50>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'security_patches.minimal_critical_fixes' from '/root/projects/Samokoder/security_patches/minimal_critical_fixes.py'> does not have the attribute 'pyotp'
+
+/usr/lib/python3.12/unittest/mock.py:1431: AttributeError
+____________ TestAuthenticationSecurity.test_password_verification _____________
+
+self = <tests.test_security_critical_fixes.TestAuthenticationSecurity object at 0x7a57f2a8a8d0>
+
+    def test_password_verification(self):
+        """V2.1.2 - Тест проверки пароля"""
+        password = "TestPassword123!"
+        hash_result, salt = security_fixes.hash_password(password)
+    
+        # Правильный пароль
+>       assert security_fixes.verify_password(password, hash_result, salt) is True
+E       AssertionError: assert False is True
+E        +  where False = <bound method MinimalSecurityFixes.verify_password of <security_patches.minimal_critical_fixes.MinimalSecurityFixes object at 0x7a57f2a89fd0>>('TestPassword123!', '0ea1624820fb67dbeeb7468503db82f0996efd6fb3e7b1a7fda0cf9c22d880c0', 'b5ed6f80af77d52d80277a6870dae38b')
+E        +    where <bound method MinimalSecurityFixes.verify_password of <security_patches.minimal_critical_fixes.MinimalSecurityFixes object at 0x7a57f2a89fd0>> = <security_patches.minimal_critical_fixes.MinimalSecurityFixes object at 0x7a57f2a89fd0>.verify_password
+
+projects/Samokoder/tests/test_security_critical_fixes.py:57: AssertionError
+__________________ TestInputValidation.test_input_validation ___________________
+
+self = <tests.test_security_critical_fixes.TestInputValidation object at 0x7a57f2a8af90>
+
+    def test_input_validation(self):
+        """V5.1.1 - Тест валидации ввода"""
+        # Нормальный ввод
+        normal_input = "Hello World"
+        validated = security_fixes.validate_input(normal_input)
+        assert validated == "Hello World"
+    
+        # Ввод с опасными символами
+        dangerous_input = "Hello <script>alert('xss')</script> World"
+        validated = security_fixes.validate_input(dangerous_input)
+        assert "<script>" not in validated
+>       assert "alert" not in validated
+E       AssertionError: assert 'alert' not in 'Hello scrip...script World'
+E         'alert' is contained here:
+E           Hello scriptalertxss/script World
+E         ?            +++++
+
+projects/Samokoder/tests/test_security_critical_fixes.py:132: AssertionError
+_______________ TestInputValidation.test_sql_injection_detection _______________
+
+self = <tests.test_security_critical_fixes.TestInputValidation object at 0x7a57f2a8b0e0>
+
+    def test_sql_injection_detection(self):
+        """V5.1.1 - Тест обнаружения SQL injection"""
+        # SQL injection попытки
+        sql_attacks = [
+            "'; DROP TABLE users; --",
+            "1' UNION SELECT * FROM users --",
+            "admin' OR '1'='1",
+            "'; INSERT INTO users VALUES ('hacker', 'password'); --"
+        ]
+    
+        for attack in sql_attacks:
+>           assert security_fixes.detect_sql_injection(attack) is True
+E           assert False is True
+E            +  where False = <bound method MinimalSecurityFixes.detect_sql_injection of <security_patches.minimal_critical_fixes.MinimalSecurityFixes object at 0x7a57f2a89fd0>>("admin' OR '1'='1")
+E            +    where <bound method MinimalSecurityFixes.detect_sql_injection of <security_patches.minimal_critical_fixes.MinimalSecurityFixes object at 0x7a57f2a89fd0>> = <security_patches.minimal_critical_fixes.MinimalSecurityFixes object at 0x7a57f2a89fd0>.detect_sql_injection
+
+projects/Samokoder/tests/test_security_critical_fixes.py:149: AssertionError
+___________ TestSecurityMiddleware.test_middleware_with_test_client ____________
+
+self = <tests.test_security_critical_fixes.TestSecurityMiddleware object at 0x7a57f2a8b830>
+
+    def test_middleware_with_test_client(self):
+        """Тест middleware с тестовым клиентом"""
+        app = FastAPI()
+        app.add_middleware(SecurityMiddleware)
+    
+        @app.get("/test")
+        async def test_endpoint():
+            return {"message": "success"}
+    
+        client = TestClient(app)
+    
+        # Нормальный запрос
+        response = client.get("/test")
+        assert response.status_code == 200
+    
+        # Тест с заблокированным IP
+        security_fixes.block_ip("127.0.0.1", "Test")
+        response = client.get("/test")
+>       assert response.status_code == 403
+E       assert 200 == 403
+E        +  where 200 = <Response [200 OK]>.status_code
+
+projects/Samokoder/tests/test_security_critical_fixes.py:281: AssertionError
+------------------------------ Captured log call -------------------------------
+CRITICAL security_patches.minimal_critical_fixes:minimal_critical_fixes.py:191 IP 127.0.0.1 blocked: Test
+__________ TestPerformanceSecurity.test_password_hashing_performance ___________
+
+self = <tests.test_security_critical_fixes.TestPerformanceSecurity object at 0x7a57f2a8bb30>
+
+    def test_password_hashing_performance(self):
+        """Тест производительности хеширования паролей"""
+        password = "TestPassword123!"
+    
+        start_time = time.time()
+        for _ in range(100):
+            security_fixes.hash_password(password)
+        end_time = time.time()
+    
+        # Хеширование 100 паролей не должно занимать больше 5 секунд
+>       assert (end_time - start_time) < 5.0
+E       assert (1757533249.754267 - 1757533244.737391) < 5.0
+
+projects/Samokoder/tests/test_security_critical_fixes.py:322: AssertionError
+=============================== warnings summary ===============================
+projects/Samokoder/venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:323
+  /root/projects/Samokoder/venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:323: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+projects/Samokoder/backend/models/requests.py:41
+  /root/projects/Samokoder/backend/models/requests.py:41: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('password')
+
+projects/Samokoder/backend/models/requests.py:57
+  /root/projects/Samokoder/backend/models/requests.py:57: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('password')
+
+projects/Samokoder/backend/models/requests.py:76
+  /root/projects/Samokoder/backend/models/requests.py:76: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('name')
+
+projects/Samokoder/backend/models/requests.py:82
+  /root/projects/Samokoder/backend/models/requests.py:82: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('description')
+
+projects/Samokoder/backend/models/requests.py:114
+  /root/projects/Samokoder/backend/models/requests.py:114: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('message')
+
+projects/Samokoder/backend/models/requests.py:134
+  /root/projects/Samokoder/backend/models/requests.py:134: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('key_name')
+
+projects/Samokoder/backend/models/requests.py:140
+  /root/projects/Samokoder/backend/models/requests.py:140: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('api_key')
+
+projects/Samokoder/backend/models/requests.py:175
+  /root/projects/Samokoder/backend/models/requests.py:175: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('filename')
+
+projects/Samokoder/backend/models/requests.py:186
+  /root/projects/Samokoder/backend/models/requests.py:186: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('file_path')
+
+projects/Samokoder/backend/models/requests.py:209
+  /root/projects/Samokoder/backend/models/requests.py:209: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('query')
+
+projects/Samokoder/backend/models/requests.py:221
+  /root/projects/Samokoder/backend/models/requests.py:221: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('keys')
+
+projects/Samokoder/venv/lib/python3.12/site-packages/httpx/_client.py:690
+projects/Samokoder/venv/lib/python3.12/site-packages/httpx/_client.py:690
+projects/Samokoder/venv/lib/python3.12/site-packages/httpx/_client.py:690
+tests/test_security_critical_fixes.py::TestSecurityMiddleware::test_middleware_with_test_client
+  /root/projects/Samokoder/venv/lib/python3.12/site-packages/httpx/_client.py:690: DeprecationWarning: The 'app' shortcut is now deprecated. Use the explicit style 'transport=WSGITransport(app=...)' instead.
+    warnings.warn(message, DeprecationWarning)
+
+projects/Samokoder/tests/test_execution_report.py:16
+  /root/projects/Samokoder/tests/test_execution_report.py:16: PytestCollectionWarning: cannot collect test class 'TestExecutionReporter' because it has a __init__ constructor (from: tests/test_execution_report.py)
+    class TestExecutionReporter:
+
+projects/Samokoder/tests/test_integration_di_container.py:10
+  /root/projects/Samokoder/tests/test_integration_di_container.py:10: PytestCollectionWarning: cannot collect test class 'TestAIService' because it has a __init__ constructor (from: tests/test_integration_di_container.py)
+    class TestAIService:
+
+tests/test_rate_limiter.py::TestRedisRateLimiter::test_redis_rate_limit_success
+tests/test_rate_limiter.py::TestRedisRateLimiter::test_redis_rate_limit_exceeded
+tests/test_rate_limiter.py::TestRedisRateLimiter::test_redis_connection_error_fallback
+  /root/projects/Samokoder/backend/services/rate_limiter.py:83: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    return await self._check_redis_rate_limit(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_security_asvs_v7_errors_logging.py: 10124 warnings
+  /root/projects/Samokoder/security_patches/asvs_v7_errors_logging_p0_fixes.py:51: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "timestamp": datetime.utcnow().isoformat(),
+
+tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_safe_error_response_creation
+tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_comprehensive_error_handling_flow
+  /root/projects/Samokoder/security_patches/asvs_v7_errors_logging_p0_fixes.py:159: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "timestamp": datetime.utcnow().isoformat(),
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED projects/Samokoder/tests/test_encryption.py::TestAPIKeyEncryption::test_encrypt_empty_key
+FAILED projects/Samokoder/tests/test_integration_circuit_breaker.py::TestCircuitBreakerIntegration::test_circuit_breaker_state_transitions
+FAILED projects/Samokoder/tests/test_integration_circuit_breaker.py::TestCircuitBreakerIntegration::test_circuit_breaker_metrics
+FAILED projects/Samokoder/tests/test_integration_circuit_breaker.py::TestCircuitBreakerIntegration::test_circuit_breaker_custom_exceptions
+FAILED projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_manager_initialization_with_settings
+FAILED projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_upgrade_success
+FAILED projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_upgrade_failure
+FAILED projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_downgrade_success
+FAILED projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_downgrade_failure
+FAILED projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_current_revision_success
+FAILED projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_current_revision_failure
+FAILED projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_create_migration_success
+FAILED projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_create_migration_failure
+FAILED projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_history_success
+FAILED projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_history_failure
+FAILED projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_status_check
+FAILED projects/Samokoder/tests/test_integration_migration_manager.py::TestMigrationManagerIntegration::test_migration_environment_variables
+FAILED projects/Samokoder/tests/test_integration_repositories.py::TestProjectRepositoryIntegration::test_search_projects_success
+FAILED projects/Samokoder/tests/test_integration_security.py::TestSecretsManagerIntegration::test_environment_provider_success
+FAILED projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_check_rotation_needed_expired
+FAILED projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_rotate_key_success
+FAILED projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_rotate_key_failure
+FAILED projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_rotate_all_keys_success
+FAILED projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_rotate_all_keys_partial_failure
+FAILED projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_get_rotation_status
+FAILED projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_schedule_rotation_success
+FAILED projects/Samokoder/tests/test_integration_security.py::TestKeyRotationManagerIntegration::test_schedule_rotation_failure
+FAILED projects/Samokoder/tests/test_models.py::TestChatRequest::test_empty_message
+FAILED projects/Samokoder/tests/test_models.py::TestChatRequest::test_invalid_temperature
+FAILED projects/Samokoder/tests/test_models.py::TestChatRequest::test_negative_temperature
+FAILED projects/Samokoder/tests/test_models.py::TestUserSettingsUpdateRequest::test_invalid_theme
+FAILED projects/Samokoder/tests/test_rate_limiter.py::TestRateLimiter::test_different_users_separate_limits
+FAILED projects/Samokoder/tests/test_rate_limiter.py::TestRateLimiter::test_different_endpoints_separate_limits
+FAILED projects/Samokoder/tests/test_rate_limiter.py::TestRateLimiter::test_reset_rate_limit
+FAILED projects/Samokoder/tests/test_rate_limiter.py::TestRateLimiter::test_get_rate_limit_info
+FAILED projects/Samokoder/tests/test_rate_limiter.py::TestRateLimiter::test_cleanup_expired_entries
+FAILED projects/Samokoder/tests/test_rate_limiter.py::TestRedisRateLimiter::test_redis_rate_limit_success
+FAILED projects/Samokoder/tests/test_rate_limiter.py::TestRedisRateLimiter::test_redis_rate_limit_exceeded
+FAILED projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_environment_security_issues
+FAILED projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_config_backup
+FAILED projects/Samokoder/tests/test_security_asvs_v10_configuration.py::TestConfigurationSecurity::test_comprehensive_configuration_flow
+FAILED projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_api_response_sanitization
+FAILED projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_cors_origin_validation
+FAILED projects/Samokoder/tests/test_security_asvs_v12_api_security.py::TestAPISecurity::test_sql_injection_detection
+FAILED projects/Samokoder/tests/test_security_asvs_v2_auth.py::TestAuthenticationSecurity::test_session_token_validation
+FAILED projects/Samokoder/tests/test_security_asvs_v3_sessions.py::TestSessionSecurity::test_concurrent_session_operations
+FAILED projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_resource_id_sanitization
+FAILED projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_principle_of_least_privilege
+FAILED projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_access_attempt_audit
+FAILED projects/Samokoder/tests/test_security_asvs_v4_access_control.py::TestAccessControlSecurity::test_comprehensive_access_control_flow
+FAILED projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_html_input_sanitization
+FAILED projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_email_format_validation
+FAILED projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_url_format_validation
+FAILED projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_sql_input_sanitization
+FAILED projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_html_output_encoding
+FAILED projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_url_output_encoding
+FAILED projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_comprehensive_validation_flow
+FAILED projects/Samokoder/tests/test_security_asvs_v5_validation.py::TestValidationSecurity::test_edge_cases
+FAILED projects/Samokoder/tests/test_security_asvs_v7_errors_logging.py::TestErrorHandlingSecurity::test_anomalous_activity_detection
+FAILED projects/Samokoder/tests/test_security_critical_fixes.py::TestAuthenticationSecurity::test_mfa_code_verification
+FAILED projects/Samokoder/tests/test_security_critical_fixes.py::TestAuthenticationSecurity::test_password_verification
+FAILED projects/Samokoder/tests/test_security_critical_fixes.py::TestInputValidation::test_input_validation
+FAILED projects/Samokoder/tests/test_security_critical_fixes.py::TestInputValidation::test_sql_injection_detection
+FAILED projects/Samokoder/tests/test_security_critical_fixes.py::TestSecurityMiddleware::test_middleware_with_test_client
+FAILED projects/Samokoder/tests/test_security_critical_fixes.py::TestPerformanceSecurity::test_password_hashing_performance
+ERROR projects/Samokoder/tests/test_integration_security.py::TestSecretsManagerIntegration::test_secrets_manager_with_environment_provider
+ERROR projects/Samokoder/tests/test_integration_security.py::TestSecretsManagerIntegration::test_secrets_manager_caching
+ERROR projects/Samokoder/tests/test_integration_security.py::TestSecretsManagerIntegration::test_secrets_manager_fallback
+ERROR projects/Samokoder/tests/test_integration_security.py::TestSecretsManagerIntegration::test_secrets_manager_audit_logging
+=== 65 failed, 223 passed, 98 deselected, 10147 warnings, 4 errors in 14.05s ===

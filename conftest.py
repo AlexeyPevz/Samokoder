@@ -21,6 +21,10 @@ os.environ["SUPABASE_URL"] = "https://test.supabase.co"
 os.environ["SUPABASE_ANON_KEY"] = "test-anon-key"
 os.environ["API_ENCRYPTION_KEY"] = "test-encryption-key-32-chars-long"
 os.environ["API_ENCRYPTION_SALT"] = "test-salt-16"
+os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role-key"
+os.environ["SECRET_KEY"] = "test-secret-key-that-is-32-chars-long"
+os.environ["DATABASE_POOL_SIZE"] = "10"
+os.environ["DATABASE_MAX_OVERFLOW"] = "20"
 
 @pytest.fixture(scope="session")
 def event_loop():
