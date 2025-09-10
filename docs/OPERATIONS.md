@@ -244,6 +244,9 @@ sudo systemctl reload samokoder-nginx
 # Проверка всех сервисов
 ./scripts/health_check.sh
 
+# Автоматическая проверка воспроизводимости
+python scripts/test_reproducibility.py
+
 # Или по отдельности
 curl http://localhost:8000/health
 curl http://localhost:5173
@@ -428,6 +431,39 @@ python -m alembic downgrade <revision_id>
 
 # Откат всех миграций
 python -m alembic downgrade base
+```
+
+## ✅ Проверка воспроизводимости
+
+### 🧪 Тест установки "с нуля"
+
+Для проверки, что приложение можно установить и запустить с нуля:
+
+```bash
+# Запустите автоматическую проверку
+python scripts/test_reproducibility.py
+
+# Или используйте Makefile
+make health
+```
+
+### 🔍 Ручная проверка
+
+```bash
+# 1. Проверьте файлы
+ls -la .env.example README.md requirements.txt
+
+# 2. Проверьте зависимости
+python -c "import fastapi, uvicorn, supabase"
+
+# 3. Проверьте конфигурацию
+python -c "from config.settings import settings; print('Config OK')"
+
+# 4. Проверьте сервер
+curl http://localhost:8000/health
+
+# 5. Проверьте API документацию
+curl http://localhost:8000/docs
 ```
 
 ## 🐛 Устранение неполадок
