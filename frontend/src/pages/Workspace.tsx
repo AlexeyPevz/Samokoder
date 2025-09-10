@@ -6,7 +6,15 @@ import { ProjectPreview } from "@/components/workspace/ProjectPreview"
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader"
 import { MobileWorkspace } from "@/components/workspace/MobileWorkspace"
 import { getProject, type Project } from "@/api/projects"
-import { getChatMessages, type ChatMessage } from "@/api/chat"
+// import { getChatMessages, type ChatMessage } from "@/api/chat"
+
+// Временный тип для чата
+interface ChatMessage {
+  id: string
+  content: string
+  role: 'user' | 'assistant'
+  timestamp: string
+}
 import { useToast } from "@/hooks/useToast"
 import { useMobile } from "@/hooks/useMobile"
 
@@ -23,7 +31,7 @@ export function Workspace() {
     if (projectId) {
       loadWorkspaceData()
     }
-  }, [projectId])
+  }, [projectId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadWorkspaceData = async () => {
     if (!projectId) return
@@ -32,17 +40,15 @@ export function Workspace() {
       console.log('Loading workspace data for project:', projectId)
       setLoading(true)
       
-      const [projectResponse, messagesResponse] = await Promise.all([
-        getProject(projectId),
-        getChatMessages(projectId)
-      ])
+      const projectResponse = await getProject(projectId)
       
       setProject(projectResponse.project)
-      setMessages(messagesResponse.messages)
+      // Временно пустой массив сообщений
+      setMessages([])
       
       console.log('Workspace data loaded:', {
         project: projectResponse.project.name,
-        messagesCount: messagesResponse.messages.length
+        messagesCount: 0
       })
     } catch (error) {
       console.error('Error loading workspace data:', error)

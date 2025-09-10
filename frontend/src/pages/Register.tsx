@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/useToast"
 import {
   UserPlus
 } from "lucide-react"
-import { useAuth } from "@/contexts/AuthContext"
+import { register } from "@/api/auth"
 
 type RegisterForm = {
   email: string
@@ -26,25 +26,29 @@ type RegisterForm = {
 export function Register() {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
-  const { register: registerUser } = useAuth()
   const navigate = useNavigate()
-  const { register, handleSubmit } = useForm<RegisterForm>()
+  const { register: registerForm, handleSubmit } = useForm<RegisterForm>()
 
   const onSubmit = async (data: RegisterForm) => {
     try {
       setLoading(true)
-      await registerUser(data.email, data.password);
-      toast({
-        title: "Success",
-        description: "Account created successfully",
-      })
-      navigate("/login")
+      const response = await register({ email: data.email, password: data.password });
+      
+      if (response.success) {
+        toast({
+          title: "Успешно",
+          description: "Аккаунт создан успешно",
+        })
+        navigate("/login")
+      } else {
+        throw new Error(response.message || "Ошибка регистрации")
+      }
     } catch (error) {
       console.log("Register error:", error)
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error?.message,
+        title: "Ошибка",
+        description: error instanceof Error ? error.message : "Ошибка регистрации",
       })
     } finally {
       setLoading(false)
@@ -66,7 +70,7 @@ export function Register() {
                 id="email"
                 type="email"
                 placeholder="Enter your email"
-                {...register("email", { required: true })}
+                {...registerForm("email", { required: true })}
               />
             </div>
             <div className="space-y-2">
@@ -75,7 +79,7 @@ export function Register() {
                 id="password"
                 type="password"
                 placeholder="Choose a password"
-                {...register("password", { required: true })}
+                {...registerForm("password", { required: true })}
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>

@@ -2,9 +2,8 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Search, MoreVertical, Play, Download, Trash2, RefreshCw } from "lucide-react"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Plus, Search, RefreshCw } from "lucide-react"
 import { motion } from "framer-motion"
 import { getProjects, deleteProject, type Project } from "@/api/projects"
 import { useToast } from "@/hooks/useToast"
@@ -24,7 +23,7 @@ export function Dashboard() {
 
   useEffect(() => {
     loadProjects()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadProjects = async () => {
     try {

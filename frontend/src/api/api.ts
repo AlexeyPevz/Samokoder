@@ -1,4 +1,4 @@
-import axios, { AxiosRequestConfig, AxiosError, InternalAxiosRequestConfig, AxiosInstance } from 'axios';
+import axios, { AxiosRequestConfig, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import JSONbig from 'json-bigint';
 
 
@@ -17,12 +17,8 @@ const localApi = axios.create({
 
 let accessToken: string | null = null;
 
-const getApiInstance = (url: string) => {
+const getApiInstance = () => {
   return localApi;
-};
-
-const isAuthEndpoint = (url: string): boolean => {
-  return url.includes("/api/auth");
 };
 
 // Check if the URL is for the refresh token endpoint to avoid infinite loops
@@ -48,7 +44,7 @@ const setupInterceptors = (apiInstance: typeof axios) => {
 
   apiInstance.interceptors.response.use(
     (response) => response,
-    async (error: AxiosError): Promise<any> => {
+    async (error: AxiosError): Promise<unknown> => {
       const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
       // Only refresh token when we get a 401/403 error (token is invalid/expired)
@@ -67,7 +63,7 @@ const setupInterceptors = (apiInstance: typeof axios) => {
             refreshToken,
           });
 
-          if (response.data.data) {
+          if (response.data.success && response.data.data) {
             const newAccessToken = response.data.data.accessToken;
             const newRefreshToken = response.data.data.refreshToken;
 
@@ -110,19 +106,19 @@ const api = {
     return apiInstance(config);
   },
   get: (url: string, config?: AxiosRequestConfig) => {
-    const apiInstance = getApiInstance(url);
+    const apiInstance = getApiInstance();
     return apiInstance.get(url, config);
   },
-  post: (url: string, data?: any, config?: AxiosRequestConfig) => {
-    const apiInstance = getApiInstance(url);
+  post: (url: string, data?: unknown, config?: AxiosRequestConfig) => {
+    const apiInstance = getApiInstance();
     return apiInstance.post(url, data, config);
   },
-  put: (url: string, data?: any, config?: AxiosRequestConfig) => {
-    const apiInstance = getApiInstance(url);
+  put: (url: string, data?: unknown, config?: AxiosRequestConfig) => {
+    const apiInstance = getApiInstance();
     return apiInstance.put(url, data, config);
   },
   delete: (url: string, config?: AxiosRequestConfig) => {
-    const apiInstance = getApiInstance(url);
+    const apiInstance = getApiInstance();
     return apiInstance.delete(url, config);
   },
 };

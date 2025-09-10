@@ -4,7 +4,25 @@ import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Send, Mic, Copy, ThumbsUp, ThumbsDown, Loader2 } from "lucide-react"
-import { ChatMessage, sendChatMessage } from "@/api/chat"
+// import { ChatMessage, sendChatMessage } from "@/api/chat"
+
+// Временные типы и функции для чата
+interface ChatMessage {
+  id: string
+  content: string
+  role: 'user' | 'assistant'
+  timestamp: string
+}
+
+const sendChatMessage = async (projectId: string, message: string): Promise<ChatMessage> => {
+  // Временная заглушка
+  return {
+    id: Date.now().toString(),
+    content: `Ответ на: ${message}`,
+    role: 'assistant',
+    timestamp: new Date().toISOString()
+  }
+}
 import { useToast } from "@/hooks/useToast"
 import { formatDistanceToNow } from "date-fns"
 import { ru } from "date-fns/locale"

@@ -4,20 +4,18 @@ import { getUserProfile } from "@/api/users"
 interface User {
   _id: string
   email: string
+  name?: string
   preferences?: {
-    language: string
-    theme: string
-    notifications: {
-      email: boolean
-      browser: boolean
-      projectCompletion: boolean
-    }
+    language?: string
+    theme?: string
+    emailNotifications?: boolean
+    browserNotifications?: boolean
   }
-  apiSettings?: {
-    provider: string
-    apiKey: string
-    model: string
-  }
+  apiProvider?: string
+  apiKey?: string
+  createdAt?: string
+  lastLoginAt?: string
+  isActive?: boolean
 }
 
 interface AuthContextType {

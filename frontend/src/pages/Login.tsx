@@ -38,9 +38,21 @@ export function Login() {
       const response = await login({ email, password })
       console.log('Login response received:', response)
       
-      if (response.success && response.user) {
+      if (response.success && response.data) {
         console.log('Login successful, setting user and navigating')
-        setUser(response.user)
+        
+        // Сохраняем токены
+        if (response.data.accessToken) {
+          localStorage.setItem('accessToken', response.data.accessToken)
+        }
+        if (response.data.refreshToken) {
+          localStorage.setItem('refreshToken', response.data.refreshToken)
+        }
+        
+        // Устанавливаем пользователя
+        if (response.data.user) {
+          setUser(response.data.user)
+        }
         
         toast({
           title: "Успешно",
