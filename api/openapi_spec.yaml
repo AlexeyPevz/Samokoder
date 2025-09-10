@@ -1,0 +1,1398 @@
+openapi: 3.0.3
+info:
+  title: Samokoder API
+  description: |
+    AI-powered code generation platform API
+    
+    ## Features
+    - User authentication and management
+    - Project creation and management
+    - AI-powered code generation
+    - Real-time chat with AI
+    - File management and export
+    - Usage tracking and analytics
+    
+    ## Authentication
+    All endpoints require authentication except `/health` and `/docs`.
+    Use Bearer token authentication with JWT tokens.
+    
+    ## Rate Limiting
+    - Authentication endpoints: 5 requests per minute
+    - API endpoints: 100 requests per minute
+    - AI endpoints: 20 requests per minute
+    
+    ## Error Handling
+    All errors follow a consistent format with appropriate HTTP status codes.
+    
+    ## Versioning
+    Current API version: 1.0.0
+    API versioning is handled via URL path prefix `/api/v1/`
+    
+  version: 1.0.0
+  contact:
+    name: Samokoder Support
+    email: support@samokoder.com
+    url: https://samokoder.com/support
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: https://samokoder.com/terms
+
+servers:
+  - url: https://api.samokoder.com
+    description: Production server
+  - url: https://staging-api.samokoder.com
+    description: Staging server
+  - url: http://localhost:8000
+    description: Development server
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+paths:
+  # === HEALTH ENDPOINTS ===
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check if the API is healthy
+      security: []
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+        '503':
+          description: API is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /health/detailed:
+    get:
+      tags:
+        - Health
+      summary: Detailed health check
+      description: Get detailed health information including services status
+      security: []
+      responses:
+        '200':
+          description: Detailed health information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedHealthResponse'
+
+  # === AUTHENTICATION ENDPOINTS ===
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and return access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              valid_login:
+                summary: Valid login
+                value:
+                  email: "user@example.com"
+                  password: "SecurePassword123!"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: User registration
+      description: Register a new user account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              valid_registration:
+                summary: Valid registration
+                value:
+                  email: "newuser@example.com"
+                  password: "SecurePassword123!"
+                  full_name: "John Doe"
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Logout user and invalidate token
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Get current authenticated user information
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # === PROJECT ENDPOINTS ===
+  /api/projects:
+    get:
+      tags:
+        - Projects
+      summary: List user projects
+      description: Get list of user's projects with pagination
+      parameters:
+        - name: limit
+          in: query
+          description: Number of projects per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: offset
+          in: query
+          description: Number of projects to skip
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: status
+          in: query
+          description: Filter by project status
+          required: false
+          schema:
+            $ref: '#/components/schemas/ProjectStatus'
+        - name: search
+          in: query
+          description: Search in project names and descriptions
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        '200':
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Projects
+      summary: Create new project
+      description: Create a new project for the authenticated user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreateRequest'
+            examples:
+              web_app:
+                summary: Web application project
+                value:
+                  name: "E-commerce Website"
+                  description: "A modern e-commerce website built with React and Node.js"
+                  tech_stack:
+                    frontend: ["React", "TypeScript", "Tailwind CSS"]
+                    backend: ["Node.js", "Express", "PostgreSQL"]
+                  ai_config:
+                    model: "deepseek/deepseek-v3"
+                    provider: "openrouter"
+      responses:
+        '201':
+          description: Project created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectCreateResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/projects/{project_id}:
+    get:
+      tags:
+        - Projects
+      summary: Get project by ID
+      description: Get detailed information about a specific project
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Project information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Projects
+      summary: Update project
+      description: Update project information
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectUpdateRequest'
+      responses:
+        '200':
+          description: Project updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Projects
+      summary: Delete project
+      description: Soft delete a project (mark as inactive)
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Project deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # === AI ENDPOINTS ===
+  /api/ai/chat:
+    post:
+      tags:
+        - AI
+      summary: Chat with AI
+      description: Send a message to AI and get a response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            examples:
+              code_generation:
+                summary: Code generation request
+                value:
+                  message: "Create a React component for a user profile card"
+                  context: "react_component"
+                  model: "deepseek/deepseek-v3"
+                  provider: "openrouter"
+                  max_tokens: 2048
+                  temperature: 0.7
+      responses:
+        '200':
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: AI service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/ai/chat/stream:
+    post:
+      tags:
+        - AI
+      summary: Stream chat with AI
+      description: Send a message to AI and get a streaming response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Streaming AI response
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: Server-sent events stream
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: AI service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/ai/usage:
+    get:
+      tags:
+        - AI
+      summary: Get AI usage statistics
+      description: Get AI usage statistics for the authenticated user
+      parameters:
+        - name: days
+          in: query
+          description: Number of days to include in statistics
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+            default: 30
+      responses:
+        '200':
+          description: AI usage statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIUsageStatsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/ai/providers:
+    get:
+      tags:
+        - AI
+      summary: Get available AI providers
+      description: Get list of available AI providers and their information
+      responses:
+        '200':
+          description: List of AI providers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIProvidersResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # === METRICS ENDPOINT ===
+  /metrics:
+    get:
+      tags:
+        - Monitoring
+      summary: Get system metrics
+      description: Get Prometheus-compatible metrics
+      security: []
+      responses:
+        '200':
+          description: System metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: Prometheus metrics format
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login endpoint
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for programmatic access
+
+  schemas:
+    # === ENUMS ===
+    ProjectStatus:
+      type: string
+      enum:
+        - draft
+        - generating
+        - completed
+        - error
+        - archived
+      description: Project status
+
+    SubscriptionTier:
+      type: string
+      enum:
+        - free
+        - starter
+        - professional
+        - business
+        - enterprise
+      description: User subscription tier
+
+    AIProvider:
+      type: string
+      enum:
+        - openrouter
+        - openai
+        - anthropic
+        - groq
+      description: AI provider
+
+    # === REQUEST SCHEMAS ===
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: "user@example.com"
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          description: User password
+          example: "SecurePassword123!"
+      additionalProperties: false
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: "newuser@example.com"
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          description: User password
+          example: "SecurePassword123!"
+        full_name:
+          type: string
+          maxLength: 100
+          description: User full name
+          example: "John Doe"
+      additionalProperties: false
+
+    ProjectCreateRequest:
+      type: object
+      required:
+        - name
+        - description
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Project name
+          example: "E-commerce Website"
+        description:
+          type: string
+          minLength: 10
+          maxLength: 1000
+          description: Project description
+          example: "A modern e-commerce website built with React and Node.js"
+        tech_stack:
+          type: object
+          description: Technology stack
+          additionalProperties: true
+          example:
+            frontend: ["React", "TypeScript", "Tailwind CSS"]
+            backend: ["Node.js", "Express", "PostgreSQL"]
+        ai_config:
+          type: object
+          description: AI configuration
+          additionalProperties: true
+          example:
+            model: "deepseek/deepseek-v3"
+            provider: "openrouter"
+      additionalProperties: false
+
+    ProjectUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Project name
+          example: "Updated Project Name"
+        description:
+          type: string
+          minLength: 10
+          maxLength: 1000
+          description: Project description
+          example: "Updated project description"
+        tech_stack:
+          type: object
+          description: Technology stack
+          additionalProperties: true
+        ai_config:
+          type: object
+          description: AI configuration
+          additionalProperties: true
+        status:
+          $ref: '#/components/schemas/ProjectStatus'
+      additionalProperties: false
+
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          description: User message
+          example: "Create a React component for a user profile card"
+        context:
+          type: string
+          maxLength: 50
+          default: "chat"
+          description: Chat context
+          example: "react_component"
+        model:
+          type: string
+          maxLength: 100
+          description: AI model to use
+          example: "deepseek/deepseek-v3"
+        provider:
+          $ref: '#/components/schemas/AIProvider'
+        max_tokens:
+          type: integer
+          minimum: 1
+          maximum: 32000
+          default: 4096
+          description: Maximum number of tokens
+        temperature:
+          type: number
+          minimum: 0.0
+          maximum: 2.0
+          default: 0.7
+          description: Generation temperature
+      additionalProperties: false
+
+    # === RESPONSE SCHEMAS ===
+    BaseResponse:
+      type: object
+      required:
+        - success
+        - message
+        - timestamp
+      properties:
+        success:
+          type: boolean
+          description: Operation success status
+          example: true
+        message:
+          type: string
+          description: Response message
+          example: "Operation completed successfully"
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+          example: "2024-12-19T15:30:00Z"
+      additionalProperties: false
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+        - message
+        - timestamp
+      properties:
+        success:
+          type: boolean
+          description: Operation success status
+          example: false
+        error:
+          type: string
+          description: Error type
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          description: Error message
+          example: "Invalid input data"
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+          example: "2024-12-19T15:30:00Z"
+      additionalProperties: false
+
+    UserResponse:
+      type: object
+      required:
+        - id
+        - email
+        - subscription_tier
+        - subscription_status
+        - api_credits_balance
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        email:
+          type: string
+          format: email
+          description: User email
+          example: "user@example.com"
+        full_name:
+          type: string
+          description: User full name
+          example: "John Doe"
+        avatar_url:
+          type: string
+          format: uri
+          description: Avatar URL
+          example: "https://example.com/avatar.jpg"
+        subscription_tier:
+          $ref: '#/components/schemas/SubscriptionTier'
+        subscription_status:
+          type: string
+          description: Subscription status
+          example: "active"
+        api_credits_balance:
+          type: number
+          format: float
+          description: API credits balance
+          example: 100.50
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2024-12-19T15:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2024-12-19T15:30:00Z"
+      additionalProperties: false
+
+    LoginResponse:
+      type: object
+      required:
+        - success
+        - message
+        - user
+        - access_token
+        - token_type
+        - expires_in
+      properties:
+        success:
+          type: boolean
+          description: Login success status
+          example: true
+        message:
+          type: string
+          description: Login message
+          example: "Успешный вход"
+        user:
+          $ref: '#/components/schemas/UserResponse'
+        access_token:
+          type: string
+          description: JWT access token
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        token_type:
+          type: string
+          description: Token type
+          example: "bearer"
+        expires_in:
+          type: integer
+          description: Token expiration time in seconds
+          example: 3600
+      additionalProperties: false
+
+    RegisterResponse:
+      type: object
+      required:
+        - success
+        - message
+        - user_id
+        - email
+      properties:
+        success:
+          type: boolean
+          description: Registration success status
+          example: true
+        message:
+          type: string
+          description: Registration message
+          example: "Пользователь успешно зарегистрирован"
+        user_id:
+          type: string
+          format: uuid
+          description: Created user ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        email:
+          type: string
+          format: email
+          description: User email
+          example: "newuser@example.com"
+      additionalProperties: false
+
+    ProjectResponse:
+      type: object
+      required:
+        - id
+        - user_id
+        - name
+        - description
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Project ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        user_id:
+          type: string
+          format: uuid
+          description: Owner user ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        name:
+          type: string
+          description: Project name
+          example: "E-commerce Website"
+        description:
+          type: string
+          description: Project description
+          example: "A modern e-commerce website built with React and Node.js"
+        status:
+          $ref: '#/components/schemas/ProjectStatus'
+        tech_stack:
+          type: object
+          description: Technology stack
+          additionalProperties: true
+          example:
+            frontend: ["React", "TypeScript", "Tailwind CSS"]
+            backend: ["Node.js", "Express", "PostgreSQL"]
+        ai_config:
+          type: object
+          description: AI configuration
+          additionalProperties: true
+          example:
+            model: "deepseek/deepseek-v3"
+            provider: "openrouter"
+        file_count:
+          type: integer
+          description: Number of files in project
+          example: 15
+        total_size_bytes:
+          type: integer
+          description: Total project size in bytes
+          example: 1024000
+        generation_time_seconds:
+          type: integer
+          description: Generation time in seconds
+          example: 120
+        generation_progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Generation progress percentage
+          example: 75
+        current_agent:
+          type: string
+          description: Current AI agent
+          example: "code_generator"
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2024-12-19T15:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2024-12-19T15:30:00Z"
+        archived_at:
+          type: string
+          format: date-time
+          description: Archive timestamp
+          example: null
+      additionalProperties: false
+
+    ProjectListResponse:
+      type: object
+      required:
+        - projects
+        - total_count
+        - page
+        - limit
+      properties:
+        projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectResponse'
+          description: List of projects
+        total_count:
+          type: integer
+          description: Total number of projects
+          example: 25
+        page:
+          type: integer
+          description: Current page number
+          example: 1
+        limit:
+          type: integer
+          description: Number of projects per page
+          example: 10
+      additionalProperties: false
+
+    ProjectCreateResponse:
+      type: object
+      required:
+        - success
+        - message
+        - project_id
+        - status
+        - workspace
+      properties:
+        success:
+          type: boolean
+          description: Creation success status
+          example: true
+        message:
+          type: string
+          description: Creation message
+          example: "Проект создан, готов к работе"
+        project_id:
+          type: string
+          format: uuid
+          description: Created project ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        status:
+          $ref: '#/components/schemas/ProjectStatus'
+        workspace:
+          type: string
+          description: Workspace path
+          example: "workspaces/user123/project456"
+      additionalProperties: false
+
+    AIResponse:
+      type: object
+      required:
+        - content
+        - provider
+        - model
+        - tokens_used
+        - cost_usd
+        - response_time
+      properties:
+        content:
+          type: string
+          description: AI response content
+          example: "Here's a React component for a user profile card..."
+        provider:
+          $ref: '#/components/schemas/AIProvider'
+        model:
+          type: string
+          description: AI model used
+          example: "deepseek/deepseek-v3"
+        tokens_used:
+          type: integer
+          description: Number of tokens used
+          example: 150
+        cost_usd:
+          type: number
+          format: float
+          description: Cost in USD
+          example: 0.0015
+        response_time:
+          type: number
+          format: float
+          description: Response time in seconds
+          example: 2.5
+      additionalProperties: false
+
+    AIUsageStatsResponse:
+      type: object
+      required:
+        - total_requests
+        - total_tokens
+        - total_cost
+        - success_rate
+        - providers
+      properties:
+        total_requests:
+          type: integer
+          description: Total number of AI requests
+          example: 150
+        total_tokens:
+          type: integer
+          description: Total tokens used
+          example: 50000
+        total_cost:
+          type: number
+          format: float
+          description: Total cost in USD
+          example: 5.25
+        success_rate:
+          type: number
+          format: float
+          description: Success rate percentage
+          example: 98.5
+        providers:
+          type: object
+          description: Statistics by provider
+          additionalProperties:
+            type: object
+            properties:
+              requests:
+                type: integer
+                description: Number of requests
+              tokens:
+                type: integer
+                description: Tokens used
+              cost:
+                type: number
+                format: float
+                description: Cost in USD
+      additionalProperties: false
+
+    AIProvidersResponse:
+      type: object
+      required:
+        - providers
+      properties:
+        providers:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - name
+              - display_name
+              - requires_key
+            properties:
+              id:
+                type: string
+                description: Provider ID
+                example: "openrouter"
+              name:
+                type: string
+                description: Provider name
+                example: "openrouter"
+              display_name:
+                type: string
+                description: Display name
+                example: "OpenRouter"
+              website_url:
+                type: string
+                format: uri
+                description: Provider website
+                example: "https://openrouter.ai"
+              documentation_url:
+                type: string
+                format: uri
+                description: Documentation URL
+                example: "https://openrouter.ai/docs"
+              requires_api_key:
+                type: boolean
+                description: Whether API key is required
+                example: true
+              pricing_info:
+                type: object
+                description: Pricing information
+                additionalProperties: true
+      additionalProperties: false
+
+    HealthCheckResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - version
+        - uptime
+        - services
+      properties:
+        status:
+          type: string
+          description: System status
+          example: "healthy"
+        timestamp:
+          type: string
+          format: date-time
+          description: Check timestamp
+          example: "2024-12-19T15:30:00Z"
+        version:
+          type: string
+          description: API version
+          example: "1.0.0"
+        uptime:
+          type: number
+          format: float
+          description: Uptime in seconds
+          example: 86400.5
+        services:
+          type: object
+          description: Service statuses
+          additionalProperties:
+            type: string
+          example:
+            database: "healthy"
+            redis: "healthy"
+            ai_service: "healthy"
+      additionalProperties: false
+
+    DetailedHealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - version
+        - uptime
+        - services
+        - external_services
+        - active_projects
+        - memory_usage
+        - disk_usage
+      properties:
+        status:
+          type: string
+          description: System status
+          example: "healthy"
+        timestamp:
+          type: string
+          format: date-time
+          description: Check timestamp
+          example: "2024-12-19T15:30:00Z"
+        version:
+          type: string
+          description: API version
+          example: "1.0.0"
+        uptime:
+          type: number
+          format: float
+          description: Uptime in seconds
+          example: 86400.5
+        services:
+          type: object
+          description: Internal service statuses
+          additionalProperties:
+            type: string
+        external_services:
+          type: object
+          description: External service statuses
+          additionalProperties:
+            type: string
+        active_projects:
+          type: integer
+          description: Number of active projects
+          example: 150
+        memory_usage:
+          type: object
+          description: Memory usage statistics
+          additionalProperties: true
+        disk_usage:
+          type: object
+          description: Disk usage statistics
+          additionalProperties: true
+      additionalProperties: false
+
+  # === EXAMPLES ===
+  examples:
+    LoginExample:
+      summary: Successful login
+      value:
+        email: "user@example.com"
+        password: "SecurePassword123!"
+
+    RegisterExample:
+      summary: Successful registration
+      value:
+        email: "newuser@example.com"
+        password: "SecurePassword123!"
+        full_name: "John Doe"
+
+    ProjectCreateExample:
+      summary: Web application project
+      value:
+        name: "E-commerce Website"
+        description: "A modern e-commerce website built with React and Node.js"
+        tech_stack:
+          frontend: ["React", "TypeScript", "Tailwind CSS"]
+          backend: ["Node.js", "Express", "PostgreSQL"]
+        ai_config:
+          model: "deepseek/deepseek-v3"
+          provider: "openrouter"
+
+    ChatExample:
+      summary: Code generation request
+      value:
+        message: "Create a React component for a user profile card"
+        context: "react_component"
+        model: "deepseek/deepseek-v3"
+        provider: "openrouter"
+        max_tokens: 2048
+        temperature: 0.7
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Authentication
+    description: User authentication and management
+  - name: Projects
+    description: Project management operations
+  - name: AI
+    description: AI-powered code generation and chat
+  - name: Monitoring
+    description: System monitoring and metrics
