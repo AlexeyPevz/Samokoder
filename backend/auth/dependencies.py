@@ -23,11 +23,22 @@ security = HTTPBearer()
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict:
     """
-    Получает текущего пользователя из JWT токена
+    Получает текущего пользователя из JWT токена (с поддержкой mock режима)
     """
     try:
         # Извлекаем токен
         token = credentials.credentials
+        
+        # Проверяем, это mock токен?
+        if token.startswith("mock_token_"):
+            # Mock аутентификация
+            email = token.replace("mock_token_", "")
+            return {
+                "id": f"mock_user_{email}",
+                "email": email,
+                "created_at": "2025-01-01T00:00:00Z",
+                "is_mock": True
+            }
         
         # Проверяем токен через Supabase
         if supabase is None:

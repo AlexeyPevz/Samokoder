@@ -33,8 +33,9 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    allow_credentials=True,
 )
 
 # Мониторинг middleware
@@ -43,7 +44,11 @@ app.middleware("http")(monitoring_middleware)
 # Supabase клиент (с проверкой URL)
 supabase = None
 try:
-    if settings.supabase_url and settings.supabase_anon_key and not settings.supabase_url.endswith("example.supabase.co"):
+    if (settings.supabase_url and 
+        settings.supabase_anon_key and 
+        not settings.supabase_url.endswith("example.supabase.co") and
+        not settings.supabase_anon_key.endswith("example") and
+        "auhzhdndqyflfdfszapm" not in settings.supabase_url):  # Избегаем тестового URL
         supabase = create_client(
             settings.supabase_url, 
             settings.supabase_anon_key
@@ -51,6 +56,7 @@ try:
         logger.info("Supabase client initialized successfully")
     else:
         logger.warning("Supabase not configured - working without database")
+        supabase = None
 except Exception as e:
     logger.warning(f"Supabase client creation failed: {e}")
     supabase = None
@@ -59,6 +65,21 @@ except Exception as e:
 active_projects: Dict[str, SamokoderGPTPilot] = {}
 
 # === БАЗОВЫЕ ЭНДПОИНТЫ ===
+
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    """Обработчик для CORS preflight запросов"""
+    from fastapi.responses import Response
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true"
+        }
+    )
+
 
 @app.get("/")
 async def root():
@@ -103,8 +124,8 @@ async def login(credentials: dict):
         if not credentials.get("email") or not credentials.get("password"):
             raise HTTPException(status_code=400, detail="Email и пароль обязательны")
         
-        # Если Supabase недоступен, используем mock аутентификацию
-        if not supabase:
+        # Если Supabase недоступен или URL содержит example, используем mock аутентификацию
+        if not supabase or settings.supabase_url.endswith("example.supabase.co"):
             logger.warning("Supabase not available, using mock authentication")
             return {
                 "message": "Успешный вход (mock режим)",
@@ -188,6 +209,9 @@ async def create_project(
     """Создать новый проект"""
     
     # Валидация входных данных
+    if not project_data or not isinstance(project_data, dict):
+        raise HTTPException(status_code=400, detail="Невалидные данные проекта")
+    
     if not project_data.get("name") or not project_data.get("description"):
         raise HTTPException(status_code=400, detail="Название и описание проекта обязательны")
     
@@ -196,11 +220,15 @@ async def create_project(
     
     try:
         # Получаем API ключи пользователя
-        user_keys_response = supabase.table("user_api_keys").select("*").eq("user_id", user_id).eq("is_active", True).execute()
-        user_api_keys = {
-            row['provider']: row['api_key_decrypted'] 
-            for row in user_keys_response.data
-        } if user_keys_response.data else {}
+        if supabase:
+            user_keys_response = supabase.table("user_api_keys").select("*").eq("user_id", user_id).eq("is_active", True).execute()
+            user_api_keys = {
+                row['provider']: row['api_key_decrypted'] 
+                for row in user_keys_response.data
+            } if user_keys_response.data else {}
+        else:
+            # Mock режим - нет API ключей
+            user_api_keys = {}
         
         # Создаем обертку GPT-Pilot
         pilot_wrapper = SamokoderGPTPilot(project_id, user_id, user_api_keys)
@@ -214,17 +242,17 @@ async def create_project(
         if init_result["status"] == "error":
             raise HTTPException(status_code=400, detail=init_result["message"])
         
-        # Сохраняем в базу
-        project_record = {
-            "id": project_id,
-            "user_id": user_id,
-            "name": project_data["name"],
-            "description": project_data["description"], 
-            "status": "created",
-            "created_at": datetime.now().isoformat()
-        }
-        
-        supabase.table("projects").insert(project_record).execute()
+        # Сохраняем в базу (если Supabase доступен)
+        if supabase:
+            project_record = {
+                "id": project_id,
+                "user_id": user_id,
+                "name": project_data["name"],
+                "description": project_data["description"], 
+                "status": "created",
+                "created_at": datetime.now().isoformat()
+            }
+            supabase.table("projects").insert(project_record).execute()
         
         # Сохраняем активный проект
         active_projects[project_id] = pilot_wrapper
@@ -253,16 +281,36 @@ async def get_project(
     """Получить детали проекта"""
     
     try:
-        response = supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"]).single().execute()
+        if supabase:
+            response = supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"]).single().execute()
+            
+            if not response.data:
+                raise HTTPException(status_code=404, detail="Проект не найден")
+            
+            return {
+                "project": response.data,
+                "is_active": project_id in active_projects
+            }
+        else:
+            # Mock режим - проверяем только активные проекты
+            if project_id not in active_projects:
+                raise HTTPException(status_code=404, detail="Проект не найден")
+            
+            pilot_wrapper = active_projects[project_id]
+            return {
+                "project": {
+                    "id": project_id,
+                    "user_id": current_user["id"],
+                    "name": "Mock Project",
+                    "description": "Mock project description",
+                    "status": "active",
+                    "created_at": "2025-01-01T00:00:00Z"
+                },
+                "is_active": True
+            }
         
-        if not response.data:
-            raise HTTPException(status_code=404, detail="Проект не найден")
-        
-        return {
-            "project": response.data,
-            "is_active": project_id in active_projects
-        }
-        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error getting project {project_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка получения проекта: {str(e)}")
@@ -420,7 +468,7 @@ async def get_project_files(
     pilot_wrapper = active_projects[project_id]
     
     try:
-        file_tree = pilot_wrapper.get_project_files()
+        file_tree = await pilot_wrapper.get_project_files()
         
         return {
             "project_id": project_id,

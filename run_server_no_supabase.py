@@ -29,6 +29,9 @@ def main():
     print("🚀 Запуск Samokoder Backend API (без Supabase)...")
     print(f"📍 Host: {settings.host}")
     print(f"🔌 Port: {settings.port}")
+    # Используем другой порт если 8000 занят
+    if settings.port == 8000:
+        settings.port = 8001
     print(f"🌍 Environment: {settings.environment}")
     print(f"🐛 Debug: {settings.debug}")
     print(f"📚 Docs: http://{settings.host}:{settings.port}/docs")
