@@ -16,9 +16,30 @@ from backend.services.ai_service import get_ai_service
 from backend.auth.dependencies import get_current_user
 from backend.monitoring import monitoring, monitoring_middleware, get_metrics_response
 
-# Настройка логирования
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Настройка структурированного логирования
+import structlog
+from config.settings import settings
+
+# Настройка structlog
+structlog.configure(
+    processors=[
+        structlog.stdlib.filter_by_level,
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.processors.UnicodeDecoder(),
+        structlog.processors.JSONRenderer()
+    ],
+    context_class=dict,
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    wrapper_class=structlog.stdlib.BoundLogger,
+    cache_logger_on_first_use=True,
+)
+
+logger = structlog.get_logger(__name__)
 
 # Создаем FastAPI приложение
 app = FastAPI(
@@ -53,12 +74,12 @@ try:
             settings.supabase_url, 
             settings.supabase_anon_key
         )
-        logger.info("Supabase client initialized successfully")
+        logger.info("supabase_client_initialized", status="success")
     else:
-        logger.warning("Supabase not configured - working without database")
+        logger.warning("supabase_not_configured", reason="invalid_config")
         supabase = None
 except Exception as e:
-    logger.warning(f"Supabase client creation failed: {e}")
+    logger.warning("supabase_client_failed", error=str(e), error_type=type(e).__name__)
     supabase = None
 
 # Хранилище активных проектов (в продакшне использовать Redis)
@@ -136,7 +157,7 @@ async def login(credentials: dict):
         
         # Если Supabase недоступен или URL содержит example, используем mock аутентификацию
         if not supabase or settings.supabase_url.endswith("example.supabase.co"):
-            logger.warning("Supabase not available, using mock authentication")
+            logger.warning("supabase_unavailable", fallback="mock_auth")
             return {
                 "message": "Успешный вход (mock режим)",
                 "user": {
@@ -156,7 +177,7 @@ async def login(credentials: dict):
         })
         
         if response.user:
-            logger.info(f"User {response.user.email} logged in successfully")
+            logger.info("user_login_success", user_email=response.user.email)
             return {
                 "message": "Успешный вход",
                 "user": response.user,
@@ -166,7 +187,7 @@ async def login(credentials: dict):
             raise HTTPException(status_code=401, detail="Неверные учетные данные")
             
     except Exception as e:
-        logger.error(f"Login error: {e}")
+        logger.error("login_error", error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=401, detail=f"Ошибка входа: {str(e)}")
 
 @app.post("/api/auth/logout")
@@ -174,10 +195,10 @@ async def logout(current_user: dict = Depends(get_current_user)):
     """Выход из системы"""
     try:
         supabase.auth.sign_out()
-        logger.info(f"User {current_user.get('email')} logged out")
+        logger.info("user_logout_success", user_email=current_user.get('email'))
         return {"message": "Успешный выход"}
     except Exception as e:
-        logger.error(f"Logout error: {e}")
+        logger.error("logout_error", error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=400, detail=f"Ошибка выхода: {str(e)}")
 
 @app.get("/api/auth/user")
@@ -207,7 +228,7 @@ async def get_projects(current_user: dict = Depends(get_current_user)):
             "total_count": len(response.data)
         }
     except Exception as e:
-        logger.error(f"Error getting projects: {e}")
+        logger.error("get_projects_error", error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=500, detail=f"Ошибка получения проектов: {str(e)}")
 
 @app.post("/api/projects")
@@ -267,7 +288,7 @@ async def create_project(
         # Сохраняем активный проект
         active_projects[project_id] = pilot_wrapper
         
-        logger.info(f"Project {project_id} created successfully for user {user_id}")
+        logger.info("project_created", project_id=project_id, user_id=user_id)
         
         return {
             "project_id": project_id,
@@ -277,7 +298,7 @@ async def create_project(
         }
         
     except Exception as e:
-        logger.error(f"Error creating project: {e}")
+        logger.error("create_project_error", error=str(e), error_type=type(e).__name__)
         # Очищаем активные проекты в случае ошибки
         if project_id in active_projects:
             del active_projects[project_id]
@@ -322,7 +343,7 @@ async def get_project(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting project {project_id}: {e}")
+        logger.error("get_project_error", project_id=project_id, error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=500, detail=f"Ошибка получения проекта: {str(e)}")
 
 @app.delete("/api/projects/{project_id}")
@@ -346,12 +367,12 @@ async def delete_project(
         # Удаляем из базы
         supabase.table("projects").delete().eq("id", project_id).execute()
         
-        logger.info(f"Project {project_id} deleted successfully")
+        logger.info("project_deleted", project_id=project_id)
         
         return {"message": "Проект успешно удален"}
         
     except Exception as e:
-        logger.error(f"Error deleting project {project_id}: {e}")
+        logger.error("delete_project_error", project_id=project_id, error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=500, detail=f"Ошибка удаления проекта: {str(e)}")
 
 # === ЧАТ И ГЕНЕРАЦИЯ ===
@@ -385,7 +406,7 @@ async def chat_with_project(
             ):
                 yield f"data: {json.dumps(update)}\n\n"
         except Exception as e:
-            logger.error(f"Error in chat stream: {e}")
+            logger.error("chat_stream_error", error=str(e), error_type=type(e).__name__)
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
         finally:
             # Очищаем ресурсы если нужно
@@ -422,7 +443,7 @@ async def generate_project(
             "updated_at": datetime.now().isoformat()
         }).eq("id", project_id).execute()
     except Exception as e:
-        logger.error(f"Error updating project status: {e}")
+        logger.error("update_project_status_error", error=str(e), error_type=type(e).__name__)
     
     async def stream_generation():
         try:
@@ -436,7 +457,7 @@ async def generate_project(
             }).eq("id", project_id).execute()
             
         except Exception as e:
-            logger.error(f"Error in generation stream: {e}")
+            logger.error("generation_stream_error", error=str(e), error_type=type(e).__name__)
             # Обновляем статус при ошибке
             try:
                 supabase.table("projects").update({
@@ -444,7 +465,7 @@ async def generate_project(
                     "updated_at": datetime.now().isoformat()
                 }).eq("id", project_id).execute()
             except Exception as update_error:
-                logger.error(f"Error updating project status on error: {update_error}")
+                logger.error("update_project_status_on_error", error=str(update_error), error_type=type(update_error).__name__)
             
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
         finally:
@@ -486,7 +507,7 @@ async def get_project_files(
             "updated_at": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"Error getting project files: {e}")
+        logger.error("get_project_files_error", error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=500, detail=f"Ошибка получения файлов: {str(e)}")
 
 @app.get("/api/projects/{project_id}/files/{file_path:path}")
@@ -515,7 +536,7 @@ async def get_file_content(
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Файл не найден")
     except Exception as e:
-        logger.error(f"Error getting file content: {e}")
+        logger.error("get_file_content_error", error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=500, detail=f"Ошибка получения файла: {str(e)}")
 
 # === ЭКСПОРТ ===
@@ -538,7 +559,7 @@ async def export_project(
     try:
         zip_path = pilot_wrapper.create_zip_export()
         
-        logger.info(f"Project {project_id} exported successfully")
+        logger.info("project_exported", project_id=project_id)
         
         return FileResponse(
             zip_path,
@@ -546,7 +567,7 @@ async def export_project(
             filename=f"samokoder_project_{project_id}.zip"
         )
     except Exception as e:
-        logger.error(f"Error exporting project: {e}")
+        logger.error("export_project_error", error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=500, detail=f"Ошибка экспорта: {str(e)}")
 
 # === AI СЕРВИС ===
@@ -610,7 +631,7 @@ async def ai_chat(
         }
         
     except Exception as e:
-        logger.error(f"AI chat error: {e}")
+        logger.error("ai_chat_error", error=str(e), error_type=type(e).__name__)
         monitoring.log_error(e, {"user_id": current_user["id"], "action": "ai_chat"})
         raise HTTPException(status_code=500, detail=f"Ошибка AI чата: {str(e)}")
 
@@ -635,7 +656,7 @@ async def get_ai_usage(current_user: dict = Depends(get_current_user)):
         return stats
         
     except Exception as e:
-        logger.error(f"AI usage stats error: {e}")
+        logger.error("ai_usage_stats_error", error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=500, detail=f"Ошибка получения статистики: {str(e)}")
 
 @app.get("/api/ai/providers")
@@ -700,7 +721,7 @@ async def validate_ai_keys(
         }
         
     except Exception as e:
-        logger.error(f"AI keys validation error: {e}")
+        logger.error("ai_keys_validation_error", error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=500, detail=f"Ошибка проверки ключей: {str(e)}")
 
 # === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
@@ -733,10 +754,10 @@ async def load_project_to_memory(project_id: str, user_id: str):
         
         active_projects[project_id] = pilot_wrapper
         
-        logger.info(f"Project {project_id} loaded to memory successfully")
+        logger.info("project_loaded_to_memory", project_id=project_id)
         
     except Exception as e:
-        logger.error(f"Error loading project to memory: {e}")
+        logger.error("load_project_to_memory_error", error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=500, detail=f"Ошибка загрузки проекта: {str(e)}")
 
 # === MIDDLEWARE ДЛЯ ЛОГИРОВАНИЯ ===
@@ -751,9 +772,11 @@ async def log_requests(request: Request, call_next):
     process_time = (datetime.now() - start_time).total_seconds()
     
     logger.info(
-        f"{request.method} {request.url.path} - "
-        f"Status: {response.status_code} - "
-        f"Time: {process_time:.3f}s"
+        "request_completed",
+        method=request.method,
+        path=request.url.path,
+        status_code=response.status_code,
+        process_time=process_time
     )
     
     return response
