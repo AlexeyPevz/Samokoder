@@ -11,12 +11,20 @@ import { Home } from "./pages/Home"
 import { Dashboard } from "./pages/Dashboard"
 import { Workspace } from "./pages/Workspace"
 import { Settings } from "./pages/Settings"
+import { SkipLinks } from "./components/accessibility/SkipLink"
+import { ScreenReaderSupport } from "./components/accessibility/ScreenReaderSupport"
+import { useCommonShortcuts } from "./hooks/useKeyboardShortcuts"
+import "./styles/accessibility.css"
 
 function App() {
+  useCommonShortcuts()
+  
   return (
   <AuthProvider>
     <ThemeProvider defaultTheme="light" storageKey="ui-theme">
       <Router>
+        <SkipLinks />
+        <ScreenReaderSupport />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
