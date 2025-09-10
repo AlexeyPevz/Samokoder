@@ -65,12 +65,23 @@ export function CreateProjectDialog({ open, onOpenChange, onProjectCreated }: Cr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-white">
+      <DialogContent 
+        className="sm:max-w-md bg-white"
+        role="dialog"
+        aria-labelledby="create-project-title"
+        aria-describedby="create-project-description"
+      >
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-blue-600" />
+          <DialogTitle 
+            id="create-project-title"
+            className="flex items-center gap-2"
+          >
+            <Sparkles className="h-5 w-5 text-blue-600" aria-hidden="true" />
             Создать новый проект
           </DialogTitle>
+          <p id="create-project-description" className="text-sm text-muted-foreground">
+            Заполните форму для создания нового проекта
+          </p>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
