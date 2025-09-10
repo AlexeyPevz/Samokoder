@@ -17,6 +17,7 @@ import {
   LazyRegister, 
   LazyBlankPage 
 } from "./pages/LazyPages"
+import BrandShowcase from "./pages/BrandShowcase"
 import "./styles/accessibility.css"
 
 function App() {
@@ -75,6 +76,14 @@ function App() {
               element={
                 <LazyWrapper>
                   <LazySettings />
+                </LazyWrapper>
+              } 
+            />
+            <Route 
+              path="brand" 
+              element={
+                <LazyWrapper>
+                  <BrandShowcase />
                 </LazyWrapper>
               } 
             />

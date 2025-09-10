@@ -4,6 +4,8 @@ import { Button } from "./ui/button"
 import { ThemeToggle } from "./ui/theme-toggle"
 import { useAuth } from "@/contexts/AuthContext"
 import { useNavigate, useLocation } from "react-router-dom"
+import SamokoderLogo from "./ui/SamokoderLogo"
+import { SamokoderIcon } from "./ui/SamokoderIcons"
 
 export function Header() {
   const { logout } = useAuth()
@@ -25,13 +27,15 @@ export function Header() {
     <header className="fixed top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
       <div className="flex h-16 items-center justify-between px-6">
         <div
-          className="text-xl font-bold cursor-pointer flex items-center gap-2 text-blue-600"
+          className="cursor-pointer"
           onClick={() => navigate("/")}
         >
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">
-            С
-          </div>
-          Самокодер
+          <SamokoderLogo 
+            variant="default" 
+            size="md" 
+            showText={true}
+            className="hover:opacity-80 transition-opacity"
+          />
         </div>
 
         <nav 
@@ -44,7 +48,7 @@ export function Header() {
             variant={isActive("/") ? "default" : "ghost"}
             size="sm"
             onClick={() => navigate("/")}
-            className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-samokoder-blue focus-visible:ring-offset-2"
             aria-current={isActive("/") ? "page" : undefined}
           >
             <Home className="h-4 w-4" aria-hidden="true" />
@@ -54,7 +58,7 @@ export function Header() {
             variant={isActive("/dashboard") ? "default" : "ghost"}
             size="sm"
             onClick={() => navigate("/dashboard")}
-            className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-samokoder-blue focus-visible:ring-offset-2"
             aria-current={isActive("/dashboard") ? "page" : undefined}
           >
             <FolderOpen className="h-4 w-4" aria-hidden="true" />
@@ -64,11 +68,21 @@ export function Header() {
             variant={isActive("/settings") ? "default" : "ghost"}
             size="sm"
             onClick={() => navigate("/settings")}
-            className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-samokoder-blue focus-visible:ring-offset-2"
             aria-current={isActive("/settings") ? "page" : undefined}
           >
             <Settings className="h-4 w-4" aria-hidden="true" />
             Настройки
+          </Button>
+          <Button
+            variant={isActive("/brand") ? "default" : "ghost"}
+            size="sm"
+            onClick={() => navigate("/brand")}
+            className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-samokoder-blue focus-visible:ring-offset-2"
+            aria-current={isActive("/brand") ? "page" : undefined}
+          >
+            <SamokoderIcon className="h-4 w-4" />
+            Бренд
           </Button>
         </nav>
 
@@ -78,7 +92,7 @@ export function Header() {
             variant="ghost" 
             size="icon"
             aria-label="Уведомления"
-            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-samokoder-blue focus-visible:ring-offset-2"
           >
             <Bell className="h-5 w-5" aria-hidden="true" />
           </Button>
@@ -87,7 +101,7 @@ export function Header() {
             size="icon" 
             onClick={handleLogout}
             aria-label="Выйти из системы"
-            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-samokoder-blue focus-visible:ring-offset-2"
           >
             <LogOut className="h-5 w-5" aria-hidden="true" />
           </Button>
@@ -123,7 +137,7 @@ export function Header() {
                 navigate("/")
                 setMobileMenuOpen(false)
               }}
-              className="w-full justify-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="w-full justify-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-samokoder-blue focus-visible:ring-offset-2"
               aria-current={isActive("/") ? "page" : undefined}
             >
               <Home className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -136,7 +150,7 @@ export function Header() {
                 navigate("/dashboard")
                 setMobileMenuOpen(false)
               }}
-              className="w-full justify-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="w-full justify-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-samokoder-blue focus-visible:ring-offset-2"
               aria-current={isActive("/dashboard") ? "page" : undefined}
             >
               <FolderOpen className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -149,11 +163,24 @@ export function Header() {
                 navigate("/settings")
                 setMobileMenuOpen(false)
               }}
-              className="w-full justify-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="w-full justify-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-samokoder-blue focus-visible:ring-offset-2"
               aria-current={isActive("/settings") ? "page" : undefined}
             >
               <Settings className="h-4 w-4 mr-2" aria-hidden="true" />
               Настройки
+            </Button>
+            <Button
+              variant={isActive("/brand") ? "default" : "ghost"}
+              size="sm"
+              onClick={() => {
+                navigate("/brand")
+                setMobileMenuOpen(false)
+              }}
+              className="w-full justify-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-samokoder-blue focus-visible:ring-offset-2"
+              aria-current={isActive("/brand") ? "page" : undefined}
+            >
+              <SamokoderIcon className="h-4 w-4 mr-2" />
+              Бренд
             </Button>
           </div>
         </nav>
