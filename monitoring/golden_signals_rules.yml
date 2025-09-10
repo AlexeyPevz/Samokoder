@@ -1,0 +1,382 @@
+# Golden Signals Alerting Rules
+# DevOps/SRE Engineer - 20 лет опыта
+
+groups:
+  # === LATENCY ALERTS ===
+  - name: latency_alerts
+    rules:
+      # API Response Time Alerts
+      - alert: HighAPILatency
+        expr: samokoder:api_response_time_p95 > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          service: api
+          signal: latency
+        annotations:
+          summary: "High API latency detected"
+          description: "API response time P95 is {{ $value }}s, threshold is 0.5s"
+          runbook_url: "https://docs.samokoder.com/runbooks/high-api-latency"
+
+      - alert: CriticalAPILatency
+        expr: samokoder:api_response_time_p95 > 1.0
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+          signal: latency
+        annotations:
+          summary: "Critical API latency detected"
+          description: "API response time P95 is {{ $value }}s, threshold is 1.0s"
+          runbook_url: "https://docs.samokoder.com/runbooks/critical-api-latency"
+
+      # Database Query Time Alerts
+      - alert: HighDatabaseLatency
+        expr: samokoder:db_query_time_p95 > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: database
+          signal: latency
+        annotations:
+          summary: "High database query latency"
+          description: "Database query time P95 is {{ $value }}s, threshold is 0.1s"
+
+      - alert: CriticalDatabaseLatency
+        expr: samokoder:db_query_time_p95 > 0.5
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+          signal: latency
+        annotations:
+          summary: "Critical database query latency"
+          description: "Database query time P95 is {{ $value }}s, threshold is 0.5s"
+
+      # AI Generation Time Alerts
+      - alert: HighAIGenerationLatency
+        expr: samokoder:ai_generation_time_p95 > 5
+        for: 3m
+        labels:
+          severity: warning
+          service: ai
+          signal: latency
+        annotations:
+          summary: "High AI generation latency"
+          description: "AI generation time P95 is {{ $value }}s, threshold is 5s"
+
+      - alert: CriticalAIGenerationLatency
+        expr: samokoder:ai_generation_time_p95 > 10
+        for: 2m
+        labels:
+          severity: critical
+          service: ai
+          signal: latency
+        annotations:
+          summary: "Critical AI generation latency"
+          description: "AI generation time P95 is {{ $value }}s, threshold is 10s"
+
+  # === TRAFFIC ALERTS ===
+  - name: traffic_alerts
+    rules:
+      # High Traffic Alerts
+      - alert: HighTraffic
+        expr: samokoder:requests_per_second > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+          signal: traffic
+        annotations:
+          summary: "High traffic detected"
+          description: "Requests per second is {{ $value }}, threshold is 100"
+
+      - alert: CriticalTraffic
+        expr: samokoder:requests_per_second > 500
+        for: 2m
+        labels:
+          severity: critical
+          service: api
+          signal: traffic
+        annotations:
+          summary: "Critical traffic spike"
+          description: "Requests per second is {{ $value }}, threshold is 500"
+
+      # Low Traffic Alerts
+      - alert: LowTraffic
+        expr: samokoder:requests_per_second < 1
+        for: 10m
+        labels:
+          severity: warning
+          service: api
+          signal: traffic
+        annotations:
+          summary: "Low traffic detected"
+          description: "Requests per second is {{ $value }}, threshold is 1"
+
+      # Active Users Alerts
+      - alert: HighActiveUsers
+        expr: samokoder:active_users > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+          signal: traffic
+        annotations:
+          summary: "High number of active users"
+          description: "Active users is {{ $value }}, threshold is 1000"
+
+  # === ERROR ALERTS ===
+  - name: error_alerts
+    rules:
+      # API Error Rate Alerts
+      - alert: HighErrorRate
+        expr: samokoder:error_rate > 0.01
+        for: 2m
+        labels:
+          severity: warning
+          service: api
+          signal: errors
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }}, threshold is 1%"
+
+      - alert: CriticalErrorRate
+        expr: samokoder:error_rate > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+          signal: errors
+        annotations:
+          summary: "Critical error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }}, threshold is 5%"
+
+      # Exception Rate Alerts
+      - alert: HighExceptionRate
+        expr: samokoder:exception_rate > 0.001
+        for: 2m
+        labels:
+          severity: warning
+          service: api
+          signal: errors
+        annotations:
+          summary: "High exception rate detected"
+          description: "Exception rate is {{ $value }}/s, threshold is 0.001/s"
+
+      - alert: CriticalExceptionRate
+        expr: samokoder:exception_rate > 0.01
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+          signal: errors
+        annotations:
+          summary: "Critical exception rate detected"
+          description: "Exception rate is {{ $value }}/s, threshold is 0.01/s"
+
+      # Database Error Alerts
+      - alert: HighDatabaseErrorRate
+        expr: samokoder:db_error_rate > 0.001
+        for: 2m
+        labels:
+          severity: warning
+          service: database
+          signal: errors
+        annotations:
+          summary: "High database error rate"
+          description: "Database error rate is {{ $value }}/s, threshold is 0.001/s"
+
+      - alert: CriticalDatabaseErrorRate
+        expr: samokoder:db_error_rate > 0.01
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+          signal: errors
+        annotations:
+          summary: "Critical database error rate"
+          description: "Database error rate is {{ $value }}/s, threshold is 0.01/s"
+
+  # === SATURATION ALERTS ===
+  - name: saturation_alerts
+    rules:
+      # CPU Usage Alerts
+      - alert: HighCPUUsage
+        expr: samokoder:cpu_usage_percent > 70
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+          signal: saturation
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}%, threshold is 70%"
+
+      - alert: CriticalCPUUsage
+        expr: samokoder:cpu_usage_percent > 90
+        for: 2m
+        labels:
+          severity: critical
+          service: system
+          signal: saturation
+        annotations:
+          summary: "Critical CPU usage detected"
+          description: "CPU usage is {{ $value }}%, threshold is 90%"
+
+      # Memory Usage Alerts
+      - alert: HighMemoryUsage
+        expr: samokoder:memory_usage_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+          signal: saturation
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}%, threshold is 80%"
+
+      - alert: CriticalMemoryUsage
+        expr: samokoder:memory_usage_percent > 95
+        for: 2m
+        labels:
+          severity: critical
+          service: system
+          signal: saturation
+        annotations:
+          summary: "Critical memory usage detected"
+          description: "Memory usage is {{ $value }}%, threshold is 95%"
+
+      # Database Connection Usage Alerts
+      - alert: HighDatabaseConnections
+        expr: samokoder:db_connection_usage_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+          signal: saturation
+        annotations:
+          summary: "High database connection usage"
+          description: "Database connection usage is {{ $value }}%, threshold is 80%"
+
+      - alert: CriticalDatabaseConnections
+        expr: samokoder:db_connection_usage_percent > 95
+        for: 2m
+        labels:
+          severity: critical
+          service: database
+          signal: saturation
+        annotations:
+          summary: "Critical database connection usage"
+          description: "Database connection usage is {{ $value }}%, threshold is 95%"
+
+      # Disk Usage Alerts
+      - alert: HighDiskUsage
+        expr: samokoder:disk_usage_percent > 85
+        for: 10m
+        labels:
+          severity: warning
+          service: system
+          signal: saturation
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage is {{ $value }}%, threshold is 85%"
+
+      - alert: CriticalDiskUsage
+        expr: samokoder:disk_usage_percent > 95
+        for: 5m
+        labels:
+          severity: critical
+          service: system
+          signal: saturation
+        annotations:
+          summary: "Critical disk usage detected"
+          description: "Disk usage is {{ $value }}%, threshold is 95%"
+
+  # === SERVICE HEALTH ALERTS ===
+  - name: service_health_alerts
+    rules:
+      # Service Down Alerts
+      - alert: ServiceDown
+        expr: up{job="samokoder-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+          signal: availability
+        annotations:
+          summary: "Service is down"
+          description: "Samokoder application is not responding"
+
+      - alert: DatabaseDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+          signal: availability
+        annotations:
+          summary: "Database is down"
+          description: "PostgreSQL database is not responding"
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+          signal: availability
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cache is not responding"
+
+      # Health Check Alerts
+      - alert: HealthCheckFailed
+        expr: health_check_status != 1
+        for: 2m
+        labels:
+          severity: warning
+          service: api
+          signal: health
+        annotations:
+          summary: "Health check failed"
+          description: "Application health check is failing"
+
+  # === BUSINESS METRICS ALERTS ===
+  - name: business_metrics_alerts
+    rules:
+      # User Registration Alerts
+      - alert: LowUserRegistrations
+        expr: rate(user_registrations_total[1h]) < 0.1
+        for: 30m
+        labels:
+          severity: warning
+          service: business
+          signal: growth
+        annotations:
+          summary: "Low user registration rate"
+          description: "User registration rate is {{ $value }}/s, threshold is 0.1/s"
+
+      # Project Creation Alerts
+      - alert: LowProjectCreation
+        expr: rate(projects_created_total[1h]) < 0.05
+        for: 30m
+        labels:
+          severity: warning
+          service: business
+          signal: engagement
+        annotations:
+          summary: "Low project creation rate"
+          description: "Project creation rate is {{ $value }}/s, threshold is 0.05/s"
+
+      # AI Usage Alerts
+      - alert: HighAIUsage
+        expr: rate(ai_requests_total[1h]) > 10
+        for: 10m
+        labels:
+          severity: warning
+          service: ai
+          signal: usage
+        annotations:
+          summary: "High AI usage detected"
+          description: "AI requests rate is {{ $value }}/s, threshold is 10/s"
