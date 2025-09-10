@@ -364,16 +364,17 @@ class AIService:
                 self.user_api_keys['groq']
             )
         
-        # Fallback на системные ключи если нет пользовательских
+        # Fallback на системные ключи если нет пользовательских (только для демо)
         if not self.clients:
-            if settings.system_openrouter_key:
+            if settings.system_openrouter_key and settings.system_openrouter_key != "":
                 self.clients[AIProvider.OPENROUTER] = OpenRouterClient(
                     settings.system_openrouter_key
                 )
-            elif settings.system_openai_key:
+            elif settings.system_openai_key and settings.system_openai_key != "":
                 self.clients[AIProvider.OPENAI] = OpenAIClient(
                     settings.system_openai_key
                 )
+            # Если нет системных ключей, оставляем clients пустым
     
     async def route_request(self, 
                           messages: List[Dict[str, str]], 
@@ -385,6 +386,19 @@ class AIService:
         """
         Маршрутизация запроса к нужному AI провайдеру
         """
+        
+        # Проверяем, есть ли доступные провайдеры
+        if not self.clients:
+            return AIResponse(
+                content="",
+                tokens_used=0,
+                cost_usd=0.0,
+                provider=AIProvider.OPENROUTER,
+                model="",
+                response_time=0.0,
+                success=False,
+                error="No AI providers configured. Please add your API keys in the settings."
+            )
         
         # Определяем провайдера и модель
         if provider and provider in [p.value for p in AIProvider]:
@@ -523,8 +537,12 @@ class AIService:
             if provider in self.clients:
                 return provider
         
-        # Если ничего не найдено, возвращаем первый доступный
-        return list(self.clients.keys())[0] if self.clients else AIProvider.OPENROUTER
+        # Если ничего не найдено, возвращаем первый доступный или OpenRouter по умолчанию
+        if self.clients:
+            return list(self.clients.keys())[0]
+        else:
+            # Нет доступных провайдеров - это нормально, будет обработано в route_request
+            return AIProvider.OPENROUTER
     
     def _get_default_model_for_provider(self, provider: AIProvider) -> str:
         """Получение модели по умолчанию для провайдера"""

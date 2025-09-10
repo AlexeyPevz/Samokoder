@@ -65,17 +65,18 @@ class SamokoderGPTPilotRealAdapter:
             os.environ['MODEL_NAME'] = 'llama-3.1-70b-versatile'
             os.environ['ENDPOINT'] = 'GROQ'
         else:
-            # Fallback на системные ключи
-            if os.getenv('SYSTEM_OPENROUTER_KEY'):
+            # Fallback на системные ключи (только если они есть)
+            if os.getenv('SYSTEM_OPENROUTER_KEY') and os.getenv('SYSTEM_OPENROUTER_KEY') != "":
                 os.environ['OPENROUTER_API_KEY'] = os.getenv('SYSTEM_OPENROUTER_KEY')
                 os.environ['MODEL_NAME'] = 'deepseek/deepseek-v3'
                 os.environ['ENDPOINT'] = 'OPENROUTER'
-            elif os.getenv('SYSTEM_OPENAI_KEY'):
+            elif os.getenv('SYSTEM_OPENAI_KEY') and os.getenv('SYSTEM_OPENAI_KEY') != "":
                 os.environ['OPENAI_API_KEY'] = os.getenv('SYSTEM_OPENAI_KEY')
                 os.environ['MODEL_NAME'] = 'gpt-4o-mini'
                 os.environ['ENDPOINT'] = 'OPENAI'
             else:
-                logger.warning("No API keys provided, using dummy keys")
+                # Нет API ключей - это нормально, будет работать в режиме симуляции
+                logger.info("No API keys provided, GPT-Pilot will work in simulation mode")
                 os.environ['OPENAI_API_KEY'] = 'sk-dummy-key'
                 os.environ['MODEL_NAME'] = 'gpt-4o-mini'
                 os.environ['ENDPOINT'] = 'OPENAI'
@@ -473,7 +474,7 @@ test('renders samokoder message', () => {
                 count += 1
         return count
     
-    def get_project_files(self) -> Dict:
+    async def get_project_files(self) -> Dict:
         """Возвращает структуру файлов проекта"""
         try:
             files = {}
@@ -499,11 +500,12 @@ test('renders samokoder message', () => {
             
             files = build_tree(self.workspace)
             
+            total_files = await self._count_project_files()
             return {
                 "project_id": self.project_id,
                 "workspace": str(self.workspace),
                 "files": files,
-                "total_files": await self._count_project_files()
+                "total_files": total_files
             }
             
         except Exception as e:

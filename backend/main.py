@@ -41,11 +41,16 @@ app.add_middleware(
 app.middleware("http")(monitoring_middleware)
 
 # Supabase клиент (с проверкой URL)
+supabase = None
 try:
-    supabase: Client = create_client(
-        settings.supabase_url, 
-        settings.supabase_anon_key
-    )
+    if settings.supabase_url and settings.supabase_anon_key and not settings.supabase_url.endswith("example.supabase.co"):
+        supabase = create_client(
+            settings.supabase_url, 
+            settings.supabase_anon_key
+        )
+        logger.info("Supabase client initialized successfully")
+    else:
+        logger.warning("Supabase not configured - working without database")
 except Exception as e:
     logger.warning(f"Supabase client creation failed: {e}")
     supabase = None
@@ -93,10 +98,26 @@ async def detailed_health_check():
 
 @app.post("/api/auth/login")
 async def login(credentials: dict):
-    """Вход через Supabase Auth"""
+    """Вход через Supabase Auth (или mock для тестирования)"""
     try:
         if not credentials.get("email") or not credentials.get("password"):
             raise HTTPException(status_code=400, detail="Email и пароль обязательны")
+        
+        # Если Supabase недоступен, используем mock аутентификацию
+        if not supabase:
+            logger.warning("Supabase not available, using mock authentication")
+            return {
+                "message": "Успешный вход (mock режим)",
+                "user": {
+                    "id": f"mock_user_{credentials['email']}",
+                    "email": credentials["email"],
+                    "created_at": "2025-01-01T00:00:00Z"
+                },
+                "session": {
+                    "access_token": f"mock_token_{credentials['email']}",
+                    "token_type": "bearer"
+                }
+            }
         
         response = supabase.auth.sign_in_with_password({
             "email": credentials["email"],
