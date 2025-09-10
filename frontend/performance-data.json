@@ -1,0 +1,87 @@
+{
+  "config": {
+    "LCP_THRESHOLD": 2500,
+    "INP_THRESHOLD": 200,
+    "CLS_THRESHOLD": 0.1,
+    "FCP_THRESHOLD": 1800,
+    "FID_THRESHOLD": 100,
+    "TTFB_THRESHOLD": 800
+  },
+  "before": {
+    "lcp": 3200,
+    "inp": 280,
+    "cls": 0.15,
+    "fcp": 2100,
+    "fid": 120,
+    "ttfb": 950,
+    "bundleSize": 850,
+    "jsResources": 12,
+    "cssResources": 3,
+    "imageResources": 8
+  },
+  "after": {
+    "lcp": 2100,
+    "inp": 150,
+    "cls": 0.08,
+    "fcp": 1400,
+    "fid": 80,
+    "ttfb": 650,
+    "bundleSize": 520,
+    "jsResources": 8,
+    "cssResources": 2,
+    "imageResources": 6
+  },
+  "improvement": {
+    "lcp": {
+      "absolute": 1100,
+      "percent": 34.375,
+      "improved": true
+    },
+    "inp": {
+      "absolute": 130,
+      "percent": 46.42857142857143,
+      "improved": true
+    },
+    "cls": {
+      "absolute": 0.06999999999999999,
+      "percent": 46.666666666666664,
+      "improved": true
+    },
+    "fcp": {
+      "absolute": 700,
+      "percent": 33.33333333333333,
+      "improved": true
+    },
+    "fid": {
+      "absolute": 40,
+      "percent": 33.33333333333333,
+      "improved": true
+    },
+    "ttfb": {
+      "absolute": 300,
+      "percent": 31.57894736842105,
+      "improved": true
+    },
+    "bundleSize": {
+      "absolute": 330,
+      "percent": 38.82352941176471,
+      "improved": true
+    },
+    "jsResources": {
+      "absolute": 4,
+      "percent": 33.33333333333333,
+      "improved": true
+    },
+    "cssResources": {
+      "absolute": 1,
+      "percent": 33.33333333333333,
+      "improved": true
+    },
+    "imageResources": {
+      "absolute": 2,
+      "percent": 25,
+      "improved": true
+    }
+  },
+  "timestamp": "2025-09-10T16:03:28.962Z"
+}
