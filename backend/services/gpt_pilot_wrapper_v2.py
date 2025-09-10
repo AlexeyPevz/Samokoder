@@ -14,8 +14,9 @@ from datetime import datetime
 import zipfile
 import logging
 
-# Импортируем наш упрощенный адаптер
+# Импортируем адаптеры
 from backend.services.gpt_pilot_simple_adapter import SamokoderGPTPilotSimpleAdapter
+from backend.services.gpt_pilot_real_adapter import SamokoderGPTPilotRealAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +35,13 @@ class SamokoderGPTPilot:
         self.workspace = Path(f"workspaces/{user_id}/{project_id}")
         self.workspace.mkdir(parents=True, exist_ok=True)
         
-        # Создаем упрощенный адаптер GPT-Pilot
-        self.adapter = SamokoderGPTPilotSimpleAdapter(project_id, user_id, user_api_keys)
+        # Создаем адаптер GPT-Pilot (пробуем реальный, fallback на упрощенный)
+        try:
+            self.adapter = SamokoderGPTPilotRealAdapter(project_id, user_id, user_api_keys)
+            logger.info("Using real GPT-Pilot adapter")
+        except Exception as e:
+            logger.warning(f"Failed to initialize real adapter, using simple: {e}")
+            self.adapter = SamokoderGPTPilotSimpleAdapter(project_id, user_id, user_api_keys)
         
         logger.info(f"SamokoderGPTPilot initialized for project {project_id}")
     

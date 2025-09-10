@@ -59,3 +59,9 @@ redis==5.0.1
 
 # Load testing
 locust==2.17.0
+
+# Monitoring
+prometheus-client==0.22.1
+
+# Additional utilities
+python-dateutil==2.9.0

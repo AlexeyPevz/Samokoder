@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from supabase import create_client, Client
 from typing import Dict, Optional
@@ -233,13 +233,47 @@ def validate_user_permissions(required_permissions: list):
     
     return check_permissions
 
-def rate_limit(requests_per_minute: int = 60):
+def rate_limit(requests_per_minute: int = 60, requests_per_hour: int = 1000):
     """
-    Декоратор для rate limiting (базовая реализация)
+    Декоратор для rate limiting с Redis поддержкой
     """
-    async def check_rate_limit(current_user: Dict = Depends(get_current_user)) -> Dict:
-        # Здесь должна быть реализация rate limiting
-        # Пока возвращаем пользователя без проверки
+    async def check_rate_limit(
+        request: Request,
+        current_user: Dict = Depends(get_current_user)
+    ) -> Dict:
+        from backend.services.rate_limiter import rate_limiter
+        
+        # Получаем endpoint из запроса
+        endpoint = request.url.path
+        
+        # Проверяем rate limit
+        allowed, rate_info = await rate_limiter.check_rate_limit(
+            user_id=current_user["id"],
+            endpoint=endpoint,
+            limit_per_minute=requests_per_minute,
+            limit_per_hour=requests_per_hour
+        )
+        
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={
+                    "message": "Rate limit exceeded",
+                    "minute_requests": rate_info["minute_requests"],
+                    "hour_requests": rate_info["hour_requests"],
+                    "minute_limit": rate_info["minute_limit"],
+                    "hour_limit": rate_info["hour_limit"],
+                    "retry_after": 60 if not rate_info["minute_allowed"] else 3600
+                },
+                headers={
+                    "Retry-After": str(60 if not rate_info["minute_allowed"] else 3600),
+                    "X-RateLimit-Limit-Minute": str(rate_info["minute_limit"]),
+                    "X-RateLimit-Limit-Hour": str(rate_info["hour_limit"]),
+                    "X-RateLimit-Remaining-Minute": str(max(0, rate_info["minute_limit"] - rate_info["minute_requests"])),
+                    "X-RateLimit-Remaining-Hour": str(max(0, rate_info["hour_limit"] - rate_info["hour_requests"]))
+                }
+            )
+        
         return current_user
     
     return check_rate_limit
