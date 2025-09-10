@@ -1,0 +1,69 @@
+name: Dependency Update
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Каждый понедельник в 9:00
+  workflow_dispatch:
+
+jobs:
+  update-dependencies:
+    runs-on: ubuntu-latest
+    name: Update Dependencies
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.9"
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "18"
+    
+    - name: Update Python dependencies
+      run: |
+        echo "📦 Updating Python dependencies..."
+        pip install pip-tools
+        pip-compile --upgrade requirements.in
+        pip-compile --upgrade requirements-dev.in
+    
+    - name: Update Node.js dependencies
+      run: |
+        echo "📦 Updating Node.js dependencies..."
+        cd frontend
+        npm update
+        npm audit fix
+    
+    - name: Check for updates
+      id: check-updates
+      run: |
+        if git diff --quiet requirements.txt frontend/package.json; then
+          echo "no-updates=true" >> $GITHUB_OUTPUT
+        else
+          echo "no-updates=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create Pull Request
+      if: steps.check-updates.outputs.no-updates == 'false'
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "chore: update dependencies"
+        title: "🔄 Automated dependency update"
+        body: |
+          This PR contains automated dependency updates.
+          
+          ## Changes
+          - Updated Python dependencies
+          - Updated Node.js dependencies
+          
+          ## Testing
+          Please review and test the changes before merging.
+        branch: dependency-update
+        delete-branch: true

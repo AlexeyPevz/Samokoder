@@ -1,224 +1,300 @@
 """
-Rate Limiting сервис для API
-Использует Redis для хранения счетчиков и лимитов
+Rate Limiter сервис для защиты от DDoS атак и злоупотреблений
+Поддерживает Redis и in-memory режимы
 """
 
 import asyncio
-import json
 import time
-from typing import Dict, Optional, Tuple
+import json
+from typing import Dict, Tuple, Optional
 from datetime import datetime, timedelta
-import redis
 import logging
+from dataclasses import dataclass
+
+try:
+    import redis.asyncio as redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
 
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
+@dataclass
+class RateLimitInfo:
+    """Информация о rate limit"""
+    minute_requests: int
+    hour_requests: int
+    minute_limit: int
+    hour_limit: int
+    minute_allowed: bool
+    hour_allowed: bool
+    reset_time_minute: int
+    reset_time_hour: int
+
 class RateLimiter:
     """
-    Rate Limiter с поддержкой Redis и in-memory fallback
+    Rate Limiter с поддержкой Redis и in-memory режимов
     """
     
     def __init__(self):
         self.redis_client = None
-        self.memory_store = {}  # Fallback для случаев когда Redis недоступен
+        self.memory_store = {}  # Fallback для in-memory режима
+        self._init_redis()
+    
+    def _init_redis(self):
+        """Инициализация Redis клиента"""
+        if not REDIS_AVAILABLE:
+            logger.warning("Redis not available, using in-memory rate limiting")
+            return
         
-        # Инициализируем Redis если доступен
         try:
-            self.redis_client = redis.from_url(settings.redis_url)
-            # Проверяем подключение
-            self.redis_client.ping()
-            logger.info("Rate limiter using Redis")
+            self.redis_client = redis.from_url(
+                settings.redis_url,
+                decode_responses=True,
+                socket_connect_timeout=5,
+                socket_timeout=5,
+                retry_on_timeout=True
+            )
+            logger.info("Redis rate limiter initialized")
         except Exception as e:
-            logger.warning(f"Redis not available, using memory store: {e}")
+            logger.warning(f"Redis connection failed: {e}, using in-memory rate limiting")
             self.redis_client = None
     
     async def check_rate_limit(
-        self, 
-        user_id: str, 
-        endpoint: str, 
+        self,
+        user_id: str,
+        endpoint: str,
         limit_per_minute: int = 60,
         limit_per_hour: int = 1000
-    ) -> Tuple[bool, Dict[str, any]]:
+    ) -> Tuple[bool, RateLimitInfo]:
         """
         Проверяет rate limit для пользователя и эндпоинта
         
         Returns:
-            (is_allowed, rate_info)
+            Tuple[bool, RateLimitInfo]: (разрешен ли запрос, информация о лимитах)
         """
-        
         current_time = int(time.time())
         minute_key = f"rate_limit:{user_id}:{endpoint}:minute:{current_time // 60}"
         hour_key = f"rate_limit:{user_id}:{endpoint}:hour:{current_time // 3600}"
         
-        try:
-            if self.redis_client:
-                return await self._check_redis_rate_limit(
-                    minute_key, hour_key, limit_per_minute, limit_per_hour
-                )
-            else:
-                return await self._check_memory_rate_limit(
-                    user_id, endpoint, limit_per_minute, limit_per_hour
-                )
-        except Exception as e:
-            logger.error(f"Rate limit check failed: {e}")
-            # В случае ошибки разрешаем запрос
-            return True, {
-                "allowed": True,
-                "minute_requests": 0,
-                "hour_requests": 0,
-                "minute_limit": limit_per_minute,
-                "hour_limit": limit_per_hour,
-                "error": str(e)
-            }
+        if self.redis_client:
+            return await self._check_redis_rate_limit(
+                minute_key, hour_key, limit_per_minute, limit_per_hour, current_time
+            )
+        else:
+            return await self._check_memory_rate_limit(
+                user_id, endpoint, limit_per_minute, limit_per_hour, current_time
+            )
     
     async def _check_redis_rate_limit(
-        self, 
-        minute_key: str, 
-        hour_key: str, 
-        limit_per_minute: int, 
-        limit_per_hour: int
-    ) -> Tuple[bool, Dict[str, any]]:
+        self,
+        minute_key: str,
+        hour_key: str,
+        limit_per_minute: int,
+        limit_per_hour: int,
+        current_time: int
+    ) -> Tuple[bool, RateLimitInfo]:
         """Проверка rate limit через Redis"""
-        
-        pipe = self.redis_client.pipeline()
-        
-        # Получаем текущие счетчики
-        pipe.get(minute_key)
-        pipe.get(hour_key)
-        
-        # Увеличиваем счетчики
-        pipe.incr(minute_key)
-        pipe.incr(hour_key)
-        
-        # Устанавливаем TTL
-        pipe.expire(minute_key, 60)  # 1 минута
-        pipe.expire(hour_key, 3600)  # 1 час
-        
-        results = pipe.execute()
-        
-        minute_requests = int(results[0] or 0) + 1
-        hour_requests = int(results[1] or 0) + 1
-        
-        # Проверяем лимиты
-        minute_allowed = minute_requests <= limit_per_minute
-        hour_allowed = hour_requests <= limit_per_hour
-        
-        allowed = minute_allowed and hour_allowed
-        
-        return allowed, {
-            "allowed": allowed,
-            "minute_requests": minute_requests,
-            "hour_requests": hour_requests,
-            "minute_limit": limit_per_minute,
-            "hour_limit": limit_per_hour,
-            "minute_allowed": minute_allowed,
-            "hour_allowed": hour_allowed
-        }
+        try:
+            # Используем pipeline для атомарности операций
+            pipe = self.redis_client.pipeline()
+            
+            # Увеличиваем счетчики
+            pipe.incr(minute_key)
+            pipe.incr(hour_key)
+            
+            # Устанавливаем TTL
+            pipe.expire(minute_key, 60)  # 1 минута
+            pipe.expire(hour_key, 3600)  # 1 час
+            
+            # Получаем значения
+            pipe.get(minute_key)
+            pipe.get(hour_key)
+            
+            results = await pipe.execute()
+            
+            minute_requests = int(results[2] or 0)
+            hour_requests = int(results[3] or 0)
+            
+            minute_allowed = minute_requests <= limit_per_minute
+            hour_allowed = hour_requests <= limit_per_hour
+            
+            allowed = minute_allowed and hour_allowed
+            
+            rate_info = RateLimitInfo(
+                minute_requests=minute_requests,
+                hour_requests=hour_requests,
+                minute_limit=limit_per_minute,
+                hour_limit=limit_per_hour,
+                minute_allowed=minute_allowed,
+                hour_allowed=hour_allowed,
+                reset_time_minute=current_time + 60,
+                reset_time_hour=current_time + 3600
+            )
+            
+            return allowed, rate_info
+            
+        except Exception as e:
+            logger.error(f"Redis rate limit error: {e}")
+            # Fallback на memory режим
+            return await self._check_memory_rate_limit(
+                "fallback", "fallback", limit_per_minute, limit_per_hour, current_time
+            )
     
     async def _check_memory_rate_limit(
-        self, 
-        user_id: str, 
-        endpoint: str, 
-        limit_per_minute: int, 
-        limit_per_hour: int
-    ) -> Tuple[bool, Dict[str, any]]:
-        """Проверка rate limit через память (fallback)"""
+        self,
+        user_id: str,
+        endpoint: str,
+        limit_per_minute: int,
+        limit_per_hour: int,
+        current_time: int
+    ) -> Tuple[bool, RateLimitInfo]:
+        """Проверка rate limit в памяти"""
+        key = f"{user_id}:{endpoint}"
+        current_minute = current_time // 60
+        current_hour = current_time // 3600
         
-        current_time = time.time()
-        minute_window = int(current_time // 60)
-        hour_window = int(current_time // 3600)
+        # Инициализируем структуру данных если нужно
+        if key not in self.memory_store:
+            self.memory_store[key] = {
+                'minute': {'count': 0, 'window': current_minute},
+                'hour': {'count': 0, 'window': current_hour}
+            }
         
-        # Очищаем старые записи
-        self._cleanup_memory_store(current_time)
+        store = self.memory_store[key]
         
-        # Ключи для хранения
-        minute_key = f"{user_id}:{endpoint}:minute:{minute_window}"
-        hour_key = f"{user_id}:{endpoint}:hour:{hour_window}"
+        # Сбрасываем счетчики если окно изменилось
+        if store['minute']['window'] != current_minute:
+            store['minute'] = {'count': 0, 'window': current_minute}
         
-        # Получаем текущие счетчики
-        minute_requests = self.memory_store.get(minute_key, 0) + 1
-        hour_requests = self.memory_store.get(hour_key, 0) + 1
+        if store['hour']['window'] != current_hour:
+            store['hour'] = {'count': 0, 'window': current_hour}
         
-        # Обновляем счетчики
-        self.memory_store[minute_key] = minute_requests
-        self.memory_store[hour_key] = hour_requests
+        # Увеличиваем счетчики
+        store['minute']['count'] += 1
+        store['hour']['count'] += 1
         
-        # Проверяем лимиты
+        minute_requests = store['minute']['count']
+        hour_requests = store['hour']['count']
+        
         minute_allowed = minute_requests <= limit_per_minute
         hour_allowed = hour_requests <= limit_per_hour
         
         allowed = minute_allowed and hour_allowed
         
-        return allowed, {
-            "allowed": allowed,
-            "minute_requests": minute_requests,
-            "hour_requests": hour_requests,
-            "minute_limit": limit_per_minute,
-            "hour_limit": limit_per_hour,
-            "minute_allowed": minute_allowed,
-            "hour_allowed": hour_allowed
-        }
+        rate_info = RateLimitInfo(
+            minute_requests=minute_requests,
+            hour_requests=hour_requests,
+            minute_limit=limit_per_minute,
+            hour_limit=limit_per_hour,
+            minute_allowed=minute_allowed,
+            hour_allowed=hour_allowed,
+            reset_time_minute=current_time + 60,
+            reset_time_hour=current_time + 3600
+        )
+        
+        return allowed, rate_info
     
-    def _cleanup_memory_store(self, current_time: float):
-        """Очищает старые записи из memory store"""
+    async def get_rate_limit_info(
+        self,
+        user_id: str,
+        endpoint: str
+    ) -> Optional[RateLimitInfo]:
+        """Получает информацию о текущих лимитах без увеличения счетчика"""
+        current_time = int(time.time())
+        minute_key = f"rate_limit:{user_id}:{endpoint}:minute:{current_time // 60}"
+        hour_key = f"rate_limit:{user_id}:{endpoint}:hour:{current_time // 3600}"
         
-        current_minute = int(current_time // 60)
-        current_hour = int(current_time // 3600)
+        if self.redis_client:
+            try:
+                minute_requests = await self.redis_client.get(minute_key)
+                hour_requests = await self.redis_client.get(hour_key)
+                
+                return RateLimitInfo(
+                    minute_requests=int(minute_requests or 0),
+                    hour_requests=int(hour_requests or 0),
+                    minute_limit=60,  # Default limits
+                    hour_limit=1000,
+                    minute_allowed=True,
+                    hour_allowed=True,
+                    reset_time_minute=current_time + 60,
+                    reset_time_hour=current_time + 3600
+                )
+            except Exception as e:
+                logger.error(f"Redis get rate limit info error: {e}")
+                return None
+        else:
+            # Memory mode
+            key = f"{user_id}:{endpoint}"
+            if key in self.memory_store:
+                store = self.memory_store[key]
+                return RateLimitInfo(
+                    minute_requests=store['minute']['count'],
+                    hour_requests=store['hour']['count'],
+                    minute_limit=60,
+                    hour_limit=1000,
+                    minute_allowed=True,
+                    hour_allowed=True,
+                    reset_time_minute=current_time + 60,
+                    reset_time_hour=current_time + 3600
+                )
+            return None
+    
+    async def reset_rate_limit(self, user_id: str, endpoint: str):
+        """Сбрасывает rate limit для пользователя и эндпоинта"""
+        current_time = int(time.time())
+        minute_key = f"rate_limit:{user_id}:{endpoint}:minute:{current_time // 60}"
+        hour_key = f"rate_limit:{user_id}:{endpoint}:hour:{current_time // 3600}"
         
-        # Удаляем записи старше 2 часов
+        if self.redis_client:
+            try:
+                await self.redis_client.delete(minute_key, hour_key)
+                logger.info(f"Rate limit reset for {user_id}:{endpoint}")
+            except Exception as e:
+                logger.error(f"Redis reset rate limit error: {e}")
+        else:
+            # Memory mode
+            key = f"{user_id}:{endpoint}"
+            if key in self.memory_store:
+                del self.memory_store[key]
+                logger.info(f"Rate limit reset for {user_id}:{endpoint}")
+    
+    async def cleanup_expired_entries(self):
+        """Очищает устаревшие записи (только для memory режима)"""
+        if self.redis_client:
+            return  # Redis автоматически удаляет записи по TTL
+        
+        current_time = int(time.time())
+        current_minute = current_time // 60
+        current_hour = current_time // 3600
+        
         keys_to_remove = []
-        for key in self.memory_store.keys():
-            if ":minute:" in key:
-                minute = int(key.split(":")[-1])
-                if minute < current_minute - 2:
-                    keys_to_remove.append(key)
-            elif ":hour:" in key:
-                hour = int(key.split(":")[-1])
-                if hour < current_hour - 2:
-                    keys_to_remove.append(key)
+        for key, store in self.memory_store.items():
+            if (store['minute']['window'] < current_minute - 1 or 
+                store['hour']['window'] < current_hour - 1):
+                keys_to_remove.append(key)
         
         for key in keys_to_remove:
             del self.memory_store[key]
-    
-    async def get_rate_limit_info(self, user_id: str, endpoint: str) -> Dict[str, any]:
-        """Получает информацию о текущих лимитах пользователя"""
         
-        current_time = int(time.time())
-        minute_key = f"rate_limit:{user_id}:{endpoint}:minute:{current_time // 60}"
-        hour_key = f"rate_limit:{user_id}:{endpoint}:hour:{current_time // 3600}"
-        
-        try:
-            if self.redis_client:
-                minute_requests = int(self.redis_client.get(minute_key) or 0)
-                hour_requests = int(self.redis_client.get(hour_key) or 0)
-            else:
-                minute_window = int(current_time // 60)
-                hour_window = int(current_time // 3600)
-                minute_key_mem = f"{user_id}:{endpoint}:minute:{minute_window}"
-                hour_key_mem = f"{user_id}:{endpoint}:hour:{hour_window}"
-                minute_requests = self.memory_store.get(minute_key_mem, 0)
-                hour_requests = self.memory_store.get(hour_key_mem, 0)
-            
-            return {
-                "user_id": user_id,
-                "endpoint": endpoint,
-                "minute_requests": minute_requests,
-                "hour_requests": hour_requests,
-                "timestamp": current_time
-            }
-            
-        except Exception as e:
-            logger.error(f"Failed to get rate limit info: {e}")
-            return {
-                "user_id": user_id,
-                "endpoint": endpoint,
-                "minute_requests": 0,
-                "hour_requests": 0,
-                "timestamp": current_time,
-                "error": str(e)
-            }
+        if keys_to_remove:
+            logger.info(f"Cleaned up {len(keys_to_remove)} expired rate limit entries")
 
 # Глобальный экземпляр rate limiter
 rate_limiter = RateLimiter()
+
+# Функция для периодической очистки
+async def cleanup_rate_limits():
+    """Периодическая очистка устаревших записей"""
+    while True:
+        try:
+            await asyncio.sleep(300)  # Каждые 5 минут
+            await rate_limiter.cleanup_expired_entries()
+        except Exception as e:
+            logger.error(f"Rate limit cleanup error: {e}")
+
+# Запуск фоновой задачи очистки
+if not REDIS_AVAILABLE:
+    asyncio.create_task(cleanup_rate_limits())
