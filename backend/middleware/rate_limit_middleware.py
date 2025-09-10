@@ -5,14 +5,13 @@ Rate Limiting Middleware для FastAPI
 
 from fastapi import Request, HTTPException, status
 from fastapi.responses import JSONResponse
-from typing import Callable
-import logging
+import structlog
 from datetime import datetime
 
 from backend.services.rate_limiter import rate_limiter
 from config.settings import settings
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 class RateLimitMiddleware:
     """Middleware для автоматического rate limiting"""
@@ -58,7 +57,7 @@ class RateLimitMiddleware:
             )
             
             if not allowed:
-                logger.warning(f"Rate limit exceeded for user {user_id} on {endpoint}")
+                logger.warning("rate_limit_exceeded", user_id=user_id, endpoint=endpoint)
                 
                 response = JSONResponse(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -106,7 +105,7 @@ class RateLimitMiddleware:
             return f"user_{hash(token) % 1000000}"
             
         except Exception as e:
-            logger.debug(f"Error getting user ID: {e}")
+            logger.debug("get_user_id_error", error=str(e), error_type=type(e).__name__)
             return "anonymous"
 
 def create_rate_limit_decorator(

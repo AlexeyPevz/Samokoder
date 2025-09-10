@@ -2,14 +2,13 @@
 Circuit Breaker Pattern Implementation
 """
 import asyncio
-import time
-import logging
+import structlog
 from enum import Enum
 from typing import Callable, Any, Optional
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 class CircuitState(Enum):
     """Circuit Breaker states"""
@@ -39,7 +38,7 @@ class CircuitBreaker:
         self.last_success_time = None
         self._lock = asyncio.Lock()
         
-        logger.info(f"Circuit breaker '{name}' initialized with config: {self.config}")
+        logger.info("circuit_breaker_initialized", name=name, config=self.config.__dict__)
     
     async def call(self, func: Callable, *args, **kwargs) -> Any:
         """Execute function with circuit breaker protection"""
@@ -50,7 +49,7 @@ class CircuitBreaker:
                 if self._should_attempt_reset():
                     self.state = CircuitState.HALF_OPEN
                     self.success_count = 0
-                    logger.info(f"Circuit breaker '{self.name}' moved to HALF_OPEN state")
+                    logger.info("circuit_breaker_half_open", name=self.name)
                 else:
                     raise CircuitBreakerOpenException(f"Circuit breaker '{self.name}' is OPEN")
         
@@ -85,12 +84,12 @@ class CircuitBreaker:
             
             if self.state == CircuitState.HALF_OPEN:
                 self.success_count += 1
-                logger.debug(f"Circuit breaker '{self.name}' success count: {self.success_count}")
+                logger.debug("circuit_breaker_success", name=self.name, success_count=self.success_count)
                 
                 if self.success_count >= self.config.success_threshold:
                     self.state = CircuitState.CLOSED
                     self.failure_count = 0
-                    logger.info(f"Circuit breaker '{self.name}' moved to CLOSED state")
+                    logger.info("circuit_breaker_closed", name=self.name)
             
             elif self.state == CircuitState.CLOSED:
                 # Reset failure count on success
@@ -102,17 +101,17 @@ class CircuitBreaker:
             self.last_failure_time = datetime.now()
             self.failure_count += 1
             
-            logger.warning(f"Circuit breaker '{self.name}' failure count: {self.failure_count}, error: {error}")
+            logger.warning("circuit_breaker_failure", name=self.name, failure_count=self.failure_count, error=str(error))
             
             if self.state == CircuitState.HALF_OPEN:
                 # Any failure in half-open state opens the circuit
                 self.state = CircuitState.OPEN
-                logger.warning(f"Circuit breaker '{self.name}' moved to OPEN state from HALF_OPEN")
+                logger.warning("circuit_breaker_open_from_half_open", name=self.name)
                 
             elif self.state == CircuitState.CLOSED and self.failure_count >= self.config.failure_threshold:
                 # Too many failures, open the circuit
                 self.state = CircuitState.OPEN
-                logger.warning(f"Circuit breaker '{self.name}' moved to OPEN state")
+                logger.warning("circuit_breaker_open", name=self.name)
     
     def _should_attempt_reset(self) -> bool:
         """Check if enough time has passed to attempt reset"""
@@ -146,7 +145,7 @@ class CircuitBreaker:
         self.success_count = 0
         self.last_failure_time = None
         self.last_success_time = None
-        logger.info(f"Circuit breaker '{self.name}' manually reset")
+        logger.info("circuit_breaker_reset", name=self.name)
 
 class CircuitBreakerException(Exception):
     """Base exception for circuit breaker"""
