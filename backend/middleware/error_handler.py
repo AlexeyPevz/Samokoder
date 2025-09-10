@@ -15,6 +15,12 @@ from pydantic import ValidationError
 import sys
 
 from backend.models.responses import ErrorResponse
+from backend.core.exceptions import (
+    SamokoderException, AuthenticationError, AuthorizationError,
+    ValidationError as SamokoderValidationError, NotFoundError,
+    ConflictError, RateLimitError, AIServiceError, DatabaseError,
+    ExternalServiceError, convert_to_http_exception
+)
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +83,22 @@ class ErrorHandler:
     def handle_general_exception(self, exc: Exception, request: Request) -> JSONResponse:
         """Обработка общих исключений"""
         error_id = str(uuid.uuid4())
+        
+        # Обрабатываем Samokoder custom exceptions
+        if isinstance(exc, SamokoderException):
+            http_exc = convert_to_http_exception(exc)
+            return JSONResponse(
+                status_code=http_exc.status_code,
+                content=ErrorResponse(
+                    error=exc.__class__.__name__,
+                    message=exc.message,
+                    details={
+                        "error_id": error_id,
+                        "timestamp": datetime.now().isoformat(),
+                        "additional_details": exc.details
+                    }
+                ).dict()
+            )
         
         # Логируем полную информацию об ошибке
         logger.error(
