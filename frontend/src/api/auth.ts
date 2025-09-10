@@ -13,7 +13,8 @@ export const login = async (data: { email: string; password: string }) => {
     return response.data;
   } catch (error: unknown) {
     console.error('API: Login error:', error)
-    throw new Error((error as any)?.response?.data?.message || (error as Error).message);
+    const errorMessage = (error as any)?.response?.data?.message || (error as Error).message;
+    throw new Error(errorMessage);
   }
 };
 
@@ -30,7 +31,8 @@ export const register = async (data: { email: string; password: string }) => {
     return response.data;
   } catch (error: unknown) {
     console.error('API: Registration error:', error)
-    throw new Error((error as any)?.response?.data?.message || (error as Error).message);
+    const errorMessage = (error as any)?.response?.data?.message || (error as Error).message;
+    throw new Error(errorMessage);
   }
 };
 
@@ -47,6 +49,7 @@ export const logout = async () => {
     return response.data;
   } catch (error: unknown) {
     console.error('API: Logout error:', error)
-    throw new Error((error as any)?.response?.data?.message || (error as Error).message);
+    const errorMessage = (error as any)?.response?.data?.message || (error as Error).message;
+    throw new Error(errorMessage);
   }
 };

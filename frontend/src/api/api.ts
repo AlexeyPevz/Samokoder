@@ -15,8 +15,7 @@ const localApi = axios.create({
 
 
 
-let accessToken: string | null = null;
-
+// Удаляем глобальную переменную accessToken - будем всегда читать из localStorage
 const getApiInstance = () => {
   return localApi;
 };
@@ -29,12 +28,10 @@ const isRefreshTokenEndpoint = (url: string): boolean => {
 const setupInterceptors = (apiInstance: typeof axios) => {
   apiInstance.interceptors.request.use(
     (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
-
-      if (!accessToken) {
-        accessToken = localStorage.getItem('accessToken');
-      }
-      if (accessToken && config.headers) {
-        config.headers.Authorization = `Bearer ${accessToken}`;
+      // Всегда читаем токен из localStorage
+      const token = localStorage.getItem('accessToken');
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
       }
 
       return config;
@@ -69,7 +66,6 @@ const setupInterceptors = (apiInstance: typeof axios) => {
 
             localStorage.setItem('accessToken', newAccessToken);
             localStorage.setItem('refreshToken', newRefreshToken);
-            accessToken = newAccessToken;
 
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -77,15 +73,11 @@ const setupInterceptors = (apiInstance: typeof axios) => {
           } else {
             throw new Error('Invalid response from refresh token endpoint');
           }
-
-          if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-          }
-          return getApiInstance(originalRequest.url || '')(originalRequest);
+          return getApiInstance()(originalRequest);
         } catch (err) {
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('accessToken');
-          accessToken = null;
+          // Токены уже удалены из localStorage
           window.location.href = '/login';
           return Promise.reject(err);
         }

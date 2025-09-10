@@ -17,6 +17,7 @@ import {
   UserPlus
 } from "lucide-react"
 import { register } from "@/api/auth"
+import { useAuth } from "@/contexts/AuthContext"
 
 type RegisterForm = {
   email: string
@@ -26,6 +27,7 @@ type RegisterForm = {
 export function Register() {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
+  const { setUser } = useAuth()
   const navigate = useNavigate()
   const { register: registerForm, handleSubmit } = useForm<RegisterForm>()
 
@@ -34,12 +36,25 @@ export function Register() {
       setLoading(true)
       const response = await register({ email: data.email, password: data.password });
       
-      if (response.success) {
+      if (response.success && response.data) {
+        // Сохраняем токены
+        if (response.data.accessToken) {
+          localStorage.setItem('accessToken', response.data.accessToken)
+        }
+        if (response.data.refreshToken) {
+          localStorage.setItem('refreshToken', response.data.refreshToken)
+        }
+        
+        // Устанавливаем пользователя
+        if (response.data.user) {
+          setUser(response.data.user)
+        }
+        
         toast({
           title: "Успешно",
           description: "Аккаунт создан успешно",
         })
-        navigate("/login")
+        navigate("/dashboard")
       } else {
         throw new Error(response.message || "Ошибка регистрации")
       }

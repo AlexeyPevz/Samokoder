@@ -20,7 +20,8 @@ export const getProjects = async (): Promise<{ projects: Project[] }> => {
     const response = await api.get('/api/projects');
     return { projects: response.data.projects };
   } catch (error: unknown) {
-    throw new Error((error as any)?.response?.data?.message || (error as Error).message);
+    const errorMessage = (error as any)?.response?.data?.message || (error as Error).message;
+    throw new Error(errorMessage);
   }
 };
 
@@ -33,7 +34,8 @@ export const createProject = async (data: { name: string; description: string })
     const response = await api.post('/api/projects', data);
     return { project: response.data.project };
   } catch (error: unknown) {
-    throw new Error((error as any)?.response?.data?.message || (error as Error).message);
+    const errorMessage = (error as any)?.response?.data?.message || (error as Error).message;
+    throw new Error(errorMessage);
   }
 };
 
@@ -46,7 +48,8 @@ export const deleteProject = async (projectId: string): Promise<{ success: boole
     const response = await api.delete(`/api/projects/${projectId}`);
     return { success: response.data.success };
   } catch (error: unknown) {
-    throw new Error((error as any)?.response?.data?.message || (error as Error).message);
+    const errorMessage = (error as any)?.response?.data?.message || (error as Error).message;
+    throw new Error(errorMessage);
   }
 };
 
@@ -59,6 +62,7 @@ export const getProject = async (projectId: string): Promise<{ project: Project 
     const response = await api.get(`/api/projects/${projectId}`);
     return { project: response.data.project };
   } catch (error: unknown) {
-    throw new Error((error as any)?.response?.data?.message || (error as Error).message);
+    const errorMessage = (error as any)?.response?.data?.message || (error as Error).message;
+    throw new Error(errorMessage);
   }
 };
