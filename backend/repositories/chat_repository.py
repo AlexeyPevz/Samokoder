@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any
 from uuid import UUID
 from backend.contracts.database import ChatRepositoryProtocol
 from backend.services.connection_pool import connection_pool_manager
+from backend.core.database_config import db_config
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class ChatRepository(ChatRepositoryProtocol):
         """Find chat session by ID"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("chat_sessions").select("*").eq("id", str(session_id)).execute()
+            response = supabase.table(db_config.TABLES["chat_sessions"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["id"], str(session_id)).execute()
             return response.data[0] if response.data else None
         except Exception as e:
             logger.error(f"Failed to find chat session by ID {session_id}: {e}")
@@ -35,7 +36,7 @@ class ChatRepository(ChatRepositoryProtocol):
         """Find chat sessions by project ID"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("chat_sessions").select("*").eq("project_id", str(project_id)).eq("is_active", True).range(offset, offset + limit - 1).order("created_at", desc=True).execute()
+            response = supabase.table(db_config.TABLES["chat_sessions"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["project_id"], str(project_id)).eq(db_config.COLUMNS["is_active"], True).range(offset, offset + limit - 1).order(db_config.QUERIES["order_created_desc"], desc=True).execute()
             return response.data or []
         except Exception as e:
             logger.error(f"Failed to find chat sessions by project ID {project_id}: {e}")
@@ -45,7 +46,7 @@ class ChatRepository(ChatRepositoryProtocol):
         """Save chat session"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("chat_sessions").insert(session_data).execute()
+            response = supabase.table(db_config.TABLES["chat_sessions"]).insert(session_data).execute()
             return response.data[0] if response.data else {}
         except Exception as e:
             logger.error(f"Failed to save chat session: {e}")
@@ -55,7 +56,7 @@ class ChatRepository(ChatRepositoryProtocol):
         """Find messages by session ID"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("chat_messages").select("*").eq("session_id", str(session_id)).range(offset, offset + limit - 1).order("created_at", desc=False).execute()
+            response = supabase.table(db_config.TABLES["chat_messages"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["session_id"], str(session_id)).range(offset, offset + limit - 1).order(db_config.QUERIES["order_created_desc"], desc=False).execute()
             return response.data or []
         except Exception as e:
             logger.error(f"Failed to find messages by session ID {session_id}: {e}")
@@ -65,7 +66,7 @@ class ChatRepository(ChatRepositoryProtocol):
         """Save chat message"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("chat_messages").insert(message_data).execute()
+            response = supabase.table(db_config.TABLES["chat_messages"]).insert(message_data).execute()
             return response.data[0] if response.data else {}
         except Exception as e:
             logger.error(f"Failed to save chat message: {e}")
@@ -75,7 +76,7 @@ class ChatRepository(ChatRepositoryProtocol):
         """Find chat sessions by user ID"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("chat_sessions").select("*").eq("user_id", str(user_id)).eq("is_active", True).range(offset, offset + limit - 1).order("updated_at", desc=True).execute()
+            response = supabase.table(db_config.TABLES["chat_sessions"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["user_id"], str(user_id)).eq(db_config.COLUMNS["is_active"], True).range(offset, offset + limit - 1).order(db_config.QUERIES["order_updated_desc"], desc=True).execute()
             return response.data or []
         except Exception as e:
             logger.error(f"Failed to find chat sessions by user ID {user_id}: {e}")
@@ -85,7 +86,7 @@ class ChatRepository(ChatRepositoryProtocol):
         """Find recent chat sessions for user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("chat_sessions").select("*").eq("user_id", str(user_id)).eq("is_active", True).order("updated_at", desc=True).limit(limit).execute()
+            response = supabase.table(db_config.TABLES["chat_sessions"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["user_id"], str(user_id)).eq(db_config.COLUMNS["is_active"], True).order(db_config.QUERIES["order_updated_desc"], desc=True).limit(limit).execute()
             return response.data or []
         except Exception as e:
             logger.error(f"Failed to find recent chat sessions for user {user_id}: {e}")
@@ -95,7 +96,7 @@ class ChatRepository(ChatRepositoryProtocol):
         """Update chat session"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("chat_sessions").update(session_data).eq("id", str(session_id)).execute()
+            response = supabase.table(db_config.TABLES["chat_sessions"]).update(session_data).eq(db_config.COLUMNS["id"], str(session_id)).execute()
             return response.data[0] if response.data else {}
         except Exception as e:
             logger.error(f"Failed to update chat session {session_id}: {e}")
@@ -105,7 +106,7 @@ class ChatRepository(ChatRepositoryProtocol):
         """Delete chat session (soft delete)"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("chat_sessions").update({"is_active": False}).eq("id", str(session_id)).execute()
+            response = supabase.table(db_config.TABLES["chat_sessions"]).update({db_config.COLUMNS["is_active"]: False}).eq(db_config.COLUMNS["id"], str(session_id)).execute()
             return len(response.data) > 0
         except Exception as e:
             logger.error(f"Failed to delete chat session {session_id}: {e}")
@@ -115,7 +116,7 @@ class ChatRepository(ChatRepositoryProtocol):
         """Count messages in session"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("chat_messages").select("id", count="exact").eq("session_id", str(session_id)).execute()
+            response = supabase.table(db_config.TABLES["chat_messages"]).select(db_config.QUERIES["count_exact"], count="exact").eq(db_config.COLUMNS["session_id"], str(session_id)).execute()
             return response.count or 0
         except Exception as e:
             logger.error(f"Failed to count messages for session {session_id}: {e}")

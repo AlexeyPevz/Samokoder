@@ -6,6 +6,7 @@ from typing import Optional, Dict, Any
 from uuid import UUID
 from backend.contracts.database import UserRepositoryProtocol
 from backend.services.connection_pool import connection_pool_manager
+from backend.core.database_config import db_config
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class UserRepository(UserRepositoryProtocol):
         """Find user by ID"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("profiles").select("*").eq("id", str(user_id)).execute()
+            response = supabase.table(db_config.TABLES["profiles"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["id"], str(user_id)).execute()
             return response.data[0] if response.data else None
         except Exception as e:
             logger.error(f"Failed to find user by ID {user_id}: {e}")
@@ -35,7 +36,7 @@ class UserRepository(UserRepositoryProtocol):
         """Find user by email"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("profiles").select("*").eq("email", email).execute()
+            response = supabase.table(db_config.TABLES["profiles"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["email"], email).execute()
             return response.data[0] if response.data else None
         except Exception as e:
             logger.error(f"Failed to find user by email {email}: {e}")
@@ -45,7 +46,7 @@ class UserRepository(UserRepositoryProtocol):
         """Save user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("profiles").insert(user_data).execute()
+            response = supabase.table(db_config.TABLES["profiles"]).insert(user_data).execute()
             return response.data[0] if response.data else {}
         except Exception as e:
             logger.error(f"Failed to save user: {e}")
@@ -55,7 +56,7 @@ class UserRepository(UserRepositoryProtocol):
         """Update user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("profiles").update(user_data).eq("id", str(user_id)).execute()
+            response = supabase.table(db_config.TABLES["profiles"]).update(user_data).eq(db_config.COLUMNS["id"], str(user_id)).execute()
             return response.data[0] if response.data else {}
         except Exception as e:
             logger.error(f"Failed to update user {user_id}: {e}")
@@ -65,7 +66,7 @@ class UserRepository(UserRepositoryProtocol):
         """Delete user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("profiles").delete().eq("id", str(user_id)).execute()
+            response = supabase.table(db_config.TABLES["profiles"]).delete().eq(db_config.COLUMNS["id"], str(user_id)).execute()
             return len(response.data) > 0
         except Exception as e:
             logger.error(f"Failed to delete user {user_id}: {e}")
@@ -75,7 +76,7 @@ class UserRepository(UserRepositoryProtocol):
         """Find users by subscription tier"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("profiles").select("*").eq("subscription_tier", tier).execute()
+            response = supabase.table(db_config.TABLES["profiles"]).select(db_config.QUERIES["select_all"]).eq("subscription_tier", tier).execute()
             return response.data or []
         except Exception as e:
             logger.error(f"Failed to find users by subscription tier {tier}: {e}")
@@ -85,7 +86,7 @@ class UserRepository(UserRepositoryProtocol):
         """Find active users"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("profiles").select("*").eq("subscription_status", "active").range(offset, offset + limit - 1).execute()
+            response = supabase.table(db_config.TABLES["profiles"]).select(db_config.QUERIES["select_all"]).eq("subscription_status", db_config.STATUS["active"]).range(offset, offset + limit - 1).execute()
             return response.data or []
         except Exception as e:
             logger.error(f"Failed to find active users: {e}")
@@ -95,10 +96,10 @@ class UserRepository(UserRepositoryProtocol):
         """Update user subscription"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("profiles").update({
+            response = supabase.table(db_config.TABLES["profiles"]).update({
                 "subscription_tier": tier,
                 "subscription_status": status
-            }).eq("id", str(user_id)).execute()
+            }).eq(db_config.COLUMNS["id"], str(user_id)).execute()
             return len(response.data) > 0
         except Exception as e:
             logger.error(f"Failed to update subscription for user {user_id}: {e}")

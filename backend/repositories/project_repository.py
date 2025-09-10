@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any
 from uuid import UUID
 from backend.contracts.database import ProjectRepositoryProtocol
 from backend.services.connection_pool import connection_pool_manager
+from backend.core.database_config import db_config
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class ProjectRepository(ProjectRepositoryProtocol):
         """Find project by ID"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("projects").select("*").eq("id", str(project_id)).execute()
+            response = supabase.table(db_config.TABLES["projects"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["id"], str(project_id)).execute()
             return response.data[0] if response.data else None
         except Exception as e:
             logger.error(f"Failed to find project by ID {project_id}: {e}")
@@ -35,7 +36,7 @@ class ProjectRepository(ProjectRepositoryProtocol):
         """Find projects by user ID"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("projects").select("*").eq("user_id", str(user_id)).eq("is_active", True).range(offset, offset + limit - 1).order("created_at", desc=True).execute()
+            response = supabase.table(db_config.TABLES["projects"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["user_id"], str(user_id)).eq(db_config.COLUMNS["is_active"], True).range(offset, offset + limit - 1).order(db_config.QUERIES["order_created_desc"], desc=True).execute()
             return response.data or []
         except Exception as e:
             logger.error(f"Failed to find projects by user ID {user_id}: {e}")
@@ -45,7 +46,7 @@ class ProjectRepository(ProjectRepositoryProtocol):
         """Save project"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("projects").insert(project_data).execute()
+            response = supabase.table(db_config.TABLES["projects"]).insert(project_data).execute()
             return response.data[0] if response.data else {}
         except Exception as e:
             logger.error(f"Failed to save project: {e}")
@@ -55,7 +56,7 @@ class ProjectRepository(ProjectRepositoryProtocol):
         """Update project"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("projects").update(project_data).eq("id", str(project_id)).execute()
+            response = supabase.table(db_config.TABLES["projects"]).update(project_data).eq(db_config.COLUMNS["id"], str(project_id)).execute()
             return response.data[0] if response.data else {}
         except Exception as e:
             logger.error(f"Failed to update project {project_id}: {e}")
@@ -65,7 +66,7 @@ class ProjectRepository(ProjectRepositoryProtocol):
         """Delete project (soft delete)"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("projects").update({"is_active": False}).eq("id", str(project_id)).execute()
+            response = supabase.table(db_config.TABLES["projects"]).update({db_config.COLUMNS["is_active"]: False}).eq(db_config.COLUMNS["id"], str(project_id)).execute()
             return len(response.data) > 0
         except Exception as e:
             logger.error(f"Failed to delete project {project_id}: {e}")
@@ -75,7 +76,7 @@ class ProjectRepository(ProjectRepositoryProtocol):
         """Find project by name for user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("projects").select("*").eq("user_id", str(user_id)).eq("name", name).eq("is_active", True).execute()
+            response = supabase.table(db_config.TABLES["projects"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["user_id"], str(user_id)).eq("name", name).eq(db_config.COLUMNS["is_active"], True).execute()
             return response.data[0] if response.data else None
         except Exception as e:
             logger.error(f"Failed to find project by name {name} for user {user_id}: {e}")
@@ -85,7 +86,7 @@ class ProjectRepository(ProjectRepositoryProtocol):
         """Find recent projects for user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("projects").select("*").eq("user_id", str(user_id)).eq("is_active", True).order("updated_at", desc=True).limit(limit).execute()
+            response = supabase.table(db_config.TABLES["projects"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["user_id"], str(user_id)).eq(db_config.COLUMNS["is_active"], True).order(db_config.QUERIES["order_updated_desc"], desc=True).limit(limit).execute()
             return response.data or []
         except Exception as e:
             logger.error(f"Failed to find recent projects for user {user_id}: {e}")
@@ -95,7 +96,7 @@ class ProjectRepository(ProjectRepositoryProtocol):
         """Search projects by name or description"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("projects").select("*").eq("user_id", str(user_id)).eq("is_active", True).or_(f"name.ilike.%{query}%,description.ilike.%{query}%").range(offset, offset + limit - 1).execute()
+            response = supabase.table(db_config.TABLES["projects"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["user_id"], str(user_id)).eq(db_config.COLUMNS["is_active"], True).or_(f"name.ilike.%{query}%,description.ilike.%{query}%").range(offset, offset + limit - 1).execute()
             return response.data or []
         except Exception as e:
             logger.error(f"Failed to search projects for user {user_id} with query {query}: {e}")
@@ -105,7 +106,7 @@ class ProjectRepository(ProjectRepositoryProtocol):
         """Count projects for user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("projects").select("id", count="exact").eq("user_id", str(user_id)).eq("is_active", True).execute()
+            response = supabase.table(db_config.TABLES["projects"]).select(db_config.QUERIES["count_exact"], count="exact").eq(db_config.COLUMNS["user_id"], str(user_id)).eq(db_config.COLUMNS["is_active"], True).execute()
             return response.count or 0
         except Exception as e:
             logger.error(f"Failed to count projects for user {user_id}: {e}")

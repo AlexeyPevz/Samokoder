@@ -17,91 +17,130 @@ class MigrationManager:
         
     def _get_database_url(self) -> str:
         """Получить URL БД из настроек"""
-        return f"postgresql://postgres:{settings.database_password}@{settings.database_host}:{settings.database_port}/{settings.database_name}"
+        # Используем environment variable или fallback на settings
+        import os
+        db_url = os.getenv("DATABASE_URL")
+        if db_url:
+            return db_url
+        
+        # Fallback на settings (для development)
+        return f"postgresql://{settings.database_user}:{settings.database_password}@{settings.database_host}:{settings.database_port}/{settings.database_name}"
     
     async def upgrade(self, revision: str = "head") -> bool:
         """Применить миграции до указанной ревизии"""
         try:
             logger.info(f"Applying migrations up to revision: {revision}")
-            result = subprocess.run(
-                ["alembic", "upgrade", revision],
+            # Используем async subprocess для лучшей производительности
+            process = await asyncio.create_subprocess_exec(
+                "alembic", "upgrade", revision,
                 cwd=Path(__file__).parent.parent.parent,
-                capture_output=True,
-                text=True,
-                check=True
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env={**os.environ, "DATABASE_URL": self.database_url}
             )
-            logger.info(f"Migration upgrade successful: {result.stdout}")
+            stdout, stderr = await process.communicate()
+            
+            if process.returncode != 0:
+                logger.error(f"Migration upgrade failed: {stderr.decode()}")
+                return False
+                
+            logger.info(f"Migration upgrade successful: {stdout.decode()}")
             return True
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Migration upgrade failed: {e.stderr}")
+        except Exception as e:
+            logger.error(f"Migration upgrade failed: {e}")
             return False
     
     async def downgrade(self, revision: str = "-1") -> bool:
         """Откатить миграции до указанной ревизии"""
         try:
             logger.info(f"Downgrading migrations to revision: {revision}")
-            result = subprocess.run(
-                ["alembic", "downgrade", revision],
+            # Используем async subprocess для лучшей производительности
+            process = await asyncio.create_subprocess_exec(
+                "alembic", "downgrade", revision,
                 cwd=Path(__file__).parent.parent.parent,
-                capture_output=True,
-                text=True,
-                check=True
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env={**os.environ, "DATABASE_URL": self.database_url}
             )
-            logger.info(f"Migration downgrade successful: {result.stdout}")
+            stdout, stderr = await process.communicate()
+            
+            if process.returncode != 0:
+                logger.error(f"Migration downgrade failed: {stderr.decode()}")
+                return False
+                
+            logger.info(f"Migration downgrade successful: {stdout.decode()}")
             return True
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Migration downgrade failed: {e.stderr}")
+        except Exception as e:
+            logger.error(f"Migration downgrade failed: {e}")
             return False
     
     async def current_revision(self) -> Optional[str]:
         """Получить текущую ревизию"""
         try:
-            result = subprocess.run(
-                ["alembic", "current"],
+            process = await asyncio.create_subprocess_exec(
+                "alembic", "current",
                 cwd=Path(__file__).parent.parent.parent,
-                capture_output=True,
-                text=True,
-                check=True
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env={**os.environ, "DATABASE_URL": self.database_url}
             )
+            stdout, stderr = await process.communicate()
+            
+            if process.returncode != 0:
+                logger.error(f"Failed to get current revision: {stderr.decode()}")
+                return None
+                
             # Парсим вывод для получения ревизии
-            output = result.stdout.strip()
+            output = stdout.decode().strip()
             if output and " (head)" in output:
                 return output.split(" (head)")[0]
             return output if output else None
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to get current revision: {e.stderr}")
+        except Exception as e:
+            logger.error(f"Failed to get current revision: {e}")
             return None
     
     async def create_migration(self, message: str) -> bool:
         """Создать новую миграцию"""
         try:
             logger.info(f"Creating migration: {message}")
-            result = subprocess.run(
-                ["alembic", "revision", "--autogenerate", "-m", message],
+            process = await asyncio.create_subprocess_exec(
+                "alembic", "revision", "--autogenerate", "-m", message,
                 cwd=Path(__file__).parent.parent.parent,
-                capture_output=True,
-                text=True,
-                check=True
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env={**os.environ, "DATABASE_URL": self.database_url}
             )
-            logger.info(f"Migration created successfully: {result.stdout}")
+            stdout, stderr = await process.communicate()
+            
+            if process.returncode != 0:
+                logger.error(f"Failed to create migration: {stderr.decode()}")
+                return False
+                
+            logger.info(f"Migration created successfully: {stdout.decode()}")
             return True
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to create migration: {e.stderr}")
+        except Exception as e:
+            logger.error(f"Failed to create migration: {e}")
             return False
     
     async def history(self) -> List[str]:
         """Получить историю миграций"""
         try:
-            result = subprocess.run(
-                ["alembic", "history"],
+            process = await asyncio.create_subprocess_exec(
+                "alembic", "history",
                 cwd=Path(__file__).parent.parent.parent,
-                capture_output=True,
-                text=True,
-                check=True
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env={**os.environ, "DATABASE_URL": self.database_url}
             )
-            return result.stdout.strip().split('\n')
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to get migration history: {e.stderr}")
+            stdout, stderr = await process.communicate()
+            
+            if process.returncode != 0:
+                logger.error(f"Failed to get migration history: {stderr.decode()}")
+                return []
+                
+            return stdout.decode().strip().split('\n')
+        except Exception as e:
+            logger.error(f"Failed to get migration history: {e}")
             return []
     
     async def check_migration_status(self) -> dict:

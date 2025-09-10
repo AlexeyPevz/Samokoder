@@ -28,8 +28,9 @@ class KeyRotationManager:
     def generate_secure_key(self, key_type: str, length: int = 32) -> str:
         """Генерировать криптографически стойкий ключ"""
         if key_type in ['api_encryption_key', 'jwt_secret', 'csrf_secret']:
-            # Для ключей шифрования используем base64
-            return base64.urlsafe_b64encode(secrets.token_bytes(length)).decode('utf-8').rstrip('=')
+            # Для ключей шифрования используем base64 без padding
+            # Используем base64.urlsafe_b64encode без rstrip для сохранения entropy
+            return base64.urlsafe_b64encode(secrets.token_bytes(length)).decode('utf-8')
         else:
             # Для API ключей используем hex
             return secrets.token_hex(length)
