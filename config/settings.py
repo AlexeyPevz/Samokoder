@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     
     # API Encryption
     api_encryption_key: str
-    api_encryption_salt: str = "samokoder_salt_2025"
+    api_encryption_salt: str
     
     # System API Keys (fallback)
     system_openrouter_key: str = ""
@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379"
     
     # Security
-    secret_key: str = "QvXgcQGd8pz8YETjvWhCLnAJ5SHD2A6uQzBn3_5dNaE"
+    secret_key: str
     access_token_expire_minutes: int = 30
     
     # Database

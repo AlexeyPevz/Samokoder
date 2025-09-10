@@ -26,8 +26,11 @@ if config.config_file_name is not None:
 
 # Set the database URL from environment or settings
 if not config.get_main_option("sqlalchemy.url"):
-    # Use default URL from alembic.ini
-    pass
+    # Try to get from environment variables
+    from config.settings import settings
+    
+    database_url = f"postgresql://{settings.database_user}:{settings.database_password}@{settings.database_host}:{settings.database_port}/{settings.database_name}"
+    config.set_main_option("sqlalchemy.url", database_url)
 
 # add your model's MetaData object here
 # for 'autogenerate' support

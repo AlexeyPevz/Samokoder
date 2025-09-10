@@ -162,7 +162,7 @@ class UserSettingsUpdateRequest(BaseModel):
     auto_export: Optional[bool] = Field(None, description="Автоматический экспорт")
     notifications_email: Optional[bool] = Field(None, description="Email уведомления")
     notifications_generation: Optional[bool] = Field(None, description="Уведомления о генерации")
-    theme: Optional[str] = Field(None, regex="^(light|dark|auto)$", description="Тема интерфейса")
+    theme: Optional[str] = Field(None, pattern="^(light|dark|auto)$", description="Тема интерфейса")
 
 # === ФАЙЛЫ ===
 
@@ -194,7 +194,7 @@ class FileContentRequest(BaseModel):
 
 class ExportRequest(BaseModel):
     """Запрос на экспорт проекта"""
-    format: str = Field("zip", regex="^(zip|tar|tar\.gz)$", description="Формат экспорта")
+    format: str = Field("zip", pattern="^(zip|tar|tar\.gz)$", description="Формат экспорта")
     include_dependencies: bool = Field(True, description="Включить зависимости")
     include_documentation: bool = Field(True, description="Включить документацию")
 
