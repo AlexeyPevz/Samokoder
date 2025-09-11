@@ -30,6 +30,10 @@ async def create_api_key(
 ):
     """Создать новый API ключ"""
     try:
+        # Получаем Supabase клиент через connection manager
+        from backend.services.connection_manager import connection_manager
+        
+        supabase = connection_manager.get_pool('supabase')
         if not supabase:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -65,7 +69,7 @@ async def create_api_key(
                 detail="Ошибка сохранения API ключа"
             )
         
-        logger.info(f"API ключ создан для пользователя {user_id}, провайдер {request.provider.value}")
+        logger.info(f"API ключ создан для пользователя {user_id[:8]}***, провайдер {request.provider.value}")
         
         return APIKeyResponse(
             id=api_key_record["id"],
@@ -100,7 +104,7 @@ async def create_api_key(
         logger.error(f"Ошибка создания API ключа: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка создания API ключа: {str(e)}"
+            detail="Ошибка создания API ключа"
         )
 
 @router.get("/", response_model=APIKeyListResponse)
@@ -109,6 +113,10 @@ async def get_api_keys(
 ):
     """Получить список API ключей пользователя"""
     try:
+        # Получаем Supabase клиент через connection manager
+        from backend.services.connection_manager import connection_manager
+        
+        supabase = connection_manager.get_pool('supabase')
         if not supabase:
             return APIKeyListResponse(keys=[], total_count=0)
         
@@ -162,6 +170,10 @@ async def get_api_key(
 ):
     """Получить конкретный API ключ"""
     try:
+        # Получаем Supabase клиент через connection manager
+        from backend.services.connection_manager import connection_manager
+        
+        supabase = connection_manager.get_pool('supabase')
         if not supabase:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -220,6 +232,10 @@ async def toggle_api_key(
 ):
     """Включить/выключить API ключ"""
     try:
+        # Получаем Supabase клиент через connection manager
+        from backend.services.connection_manager import connection_manager
+        
+        supabase = connection_manager.get_pool('supabase')
         if not supabase:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -284,6 +300,10 @@ async def delete_api_key(
 ):
     """Удалить API ключ"""
     try:
+        # Получаем Supabase клиент через connection manager
+        from backend.services.connection_manager import connection_manager
+        
+        supabase = connection_manager.get_pool('supabase')
         if not supabase:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
