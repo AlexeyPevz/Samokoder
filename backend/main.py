@@ -17,6 +17,12 @@ from backend.models.requests import LoginRequest
 from backend.services.connection_manager import connection_manager
 from backend.services.supabase_manager import supabase_manager, execute_supabase_operation
 from backend.services.project_state_manager import project_state_manager, get_active_project, add_active_project, remove_active_project, is_project_active
+from backend.core.exceptions import (
+    SamokoderException, AuthenticationError, AuthorizationError, ValidationError,
+    NotFoundError, ConflictError, RateLimitError, AIServiceError, DatabaseError,
+    ExternalServiceError, ConfigurationError, ConnectionError, TimeoutError,
+    EncryptionError, ProjectError, FileSystemError, NetworkError, CacheError
+)
 
 # Настройка структурированного логирования
 import structlog
@@ -86,8 +92,15 @@ async def startup_event():
         await connection_manager.initialize()
         await project_state_manager.initialize()
         logger.info("All managers initialized")
+    except ConfigurationError as e:
+        logger.error(f"Configuration error during initialization: {e}")
+        raise
+    except ConnectionError as e:
+        logger.error(f"Connection error during initialization: {e}")
+        raise
     except Exception as e:
-        logger.error(f"Failed to initialize managers: {e}")
+        logger.error(f"Unexpected error during initialization: {e}")
+        raise ConfigurationError(f"Failed to initialize managers: {e}")
 
 # === БАЗОВЫЕ ЭНДПОИНТЫ ===
 
@@ -139,6 +152,9 @@ async def health_check():
     """
     try:
         return monitoring.get_health_status()
+    except MonitoringError as e:
+        logger.error("monitoring_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=503, detail="Monitoring service unavailable")
     except Exception as e:
         logger.error("health_check_error", error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=500, detail="Health check failed")
@@ -212,9 +228,15 @@ async def login(credentials: LoginRequest):
             
     except HTTPException:
         raise
+    except AuthenticationError as e:
+        logger.error("authentication_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=401, detail="Authentication failed")
+    except DatabaseError as e:
+        logger.error("database_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=503, detail="Database unavailable")
     except Exception as e:
         logger.error("login_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(status_code=401, detail="Ошибка входа")
+        raise HTTPException(status_code=401, detail="Login failed")
 
 @app.post("/api/auth/register")
 async def register(user_data: dict):
@@ -338,9 +360,15 @@ async def get_projects(current_user: dict = Depends(get_current_user)):
             "projects": projects_with_status,
             "total_count": len(projects_with_status)
         }
+    except DatabaseError as e:
+        logger.error("database_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    except ProjectError as e:
+        logger.error("project_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail="Project service error")
     except Exception as e:
         logger.error("get_projects_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(status_code=500, detail=f"Ошибка получения проектов: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get projects")
 
 @app.post("/api/projects")
 async def create_project(
@@ -436,11 +464,18 @@ async def create_project(
             "workspace": init_result.get("workspace", f"workspaces/{user_id}/{project_id}")
         }
         
+    except ProjectError as e:
+        logger.error("project_error", error=str(e), error_type=type(e).__name__)
+        await remove_active_project(project_id, user_id)
+        raise HTTPException(status_code=500, detail="Project creation failed")
+    except DatabaseError as e:
+        logger.error("database_error", error=str(e), error_type=type(e).__name__)
+        await remove_active_project(project_id, user_id)
+        raise HTTPException(status_code=503, detail="Database unavailable")
     except Exception as e:
         logger.error("create_project_error", error=str(e), error_type=type(e).__name__)
-        # Очищаем активные проекты в случае ошибки
         await remove_active_project(project_id, user_id)
-        raise HTTPException(status_code=500, detail=f"Ошибка создания проекта: {str(e)}")
+        raise HTTPException(status_code=500, detail="Project creation failed")
 
 @app.get("/api/projects/{project_id}")
 async def get_project(
@@ -700,10 +735,16 @@ async def get_file_content(
             "size": len(content)
         }
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Файл не найден")
+        raise HTTPException(status_code=404, detail="File not found")
+    except FileSystemError as e:
+        logger.error("filesystem_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail="File system error")
+    except ProjectError as e:
+        logger.error("project_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail="Project access error")
     except Exception as e:
         logger.error("get_file_content_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(status_code=500, detail=f"Ошибка получения файла: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get file content")
 
 # === ЭКСПОРТ ===
 
@@ -732,9 +773,15 @@ async def export_project(
             media_type="application/zip",
             filename=f"samokoder_project_{project_id}.zip"
         )
+    except FileSystemError as e:
+        logger.error("filesystem_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail="File system error during export")
+    except ProjectError as e:
+        logger.error("project_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail="Project export error")
     except Exception as e:
         logger.error("export_project_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(status_code=500, detail=f"Ошибка экспорта: {str(e)}")
+        raise HTTPException(status_code=500, detail="Export failed")
 
 # === MFA ===
 
@@ -840,10 +887,17 @@ async def ai_chat(
             "response_time": response.response_time
         }
         
+    except AIServiceError as e:
+        logger.error("ai_service_error", error=str(e), error_type=type(e).__name__)
+        monitoring.log_error(e, {"user_id": current_user["id"], "action": "ai_chat"})
+        raise HTTPException(status_code=502, detail="AI service unavailable")
+    except RateLimitError as e:
+        logger.error("rate_limit_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
     except Exception as e:
         logger.error("ai_chat_error", error=str(e), error_type=type(e).__name__)
         monitoring.log_error(e, {"user_id": current_user["id"], "action": "ai_chat"})
-        raise HTTPException(status_code=500, detail=f"Ошибка AI чата: {str(e)}")
+        raise HTTPException(status_code=500, detail="AI chat failed")
 
 @app.get("/api/ai/usage")
 async def get_ai_usage(current_user: dict = Depends(get_current_user)):

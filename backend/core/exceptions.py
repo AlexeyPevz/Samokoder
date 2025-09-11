@@ -1,103 +1,83 @@
 """
-Custom exceptions for the application
+Централизованные исключения для Samokoder
+Заменяет общие Exception на специфичные типы ошибок
 """
-from fastapi import HTTPException, status
-from typing import Optional, Dict, Any
 
 class SamokoderException(Exception):
-    """Base exception for Samokoder application"""
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+    """Базовое исключение Samokoder"""
+    def __init__(self, message: str, details: dict = None):
         self.message = message
         self.details = details or {}
         super().__init__(self.message)
 
 class AuthenticationError(SamokoderException):
-    """Authentication related errors"""
+    """Ошибка аутентификации"""
     pass
 
 class AuthorizationError(SamokoderException):
-    """Authorization related errors"""
+    """Ошибка авторизации"""
     pass
 
 class ValidationError(SamokoderException):
-    """Validation related errors"""
+    """Ошибка валидации данных"""
     pass
 
 class NotFoundError(SamokoderException):
-    """Resource not found errors"""
+    """Ресурс не найден"""
     pass
 
 class ConflictError(SamokoderException):
-    """Resource conflict errors"""
+    """Конфликт ресурсов"""
     pass
 
 class RateLimitError(SamokoderException):
-    """Rate limiting errors"""
+    """Превышен лимит запросов"""
     pass
 
 class AIServiceError(SamokoderException):
-    """AI service related errors"""
+    """Ошибка AI сервиса"""
     pass
 
 class DatabaseError(SamokoderException):
-    """Database related errors"""
+    """Ошибка базы данных"""
     pass
 
 class ExternalServiceError(SamokoderException):
-    """External service related errors"""
+    """Ошибка внешнего сервиса"""
     pass
 
-def convert_to_http_exception(exc: SamokoderException) -> HTTPException:
-    """Convert SamokoderException to HTTPException"""
-    
-    if isinstance(exc, AuthenticationError):
-        return HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=exc.message,
-            headers={"WWW-Authenticate": "Bearer"}
-        )
-    elif isinstance(exc, AuthorizationError):
-        return HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=exc.message
-        )
-    elif isinstance(exc, ValidationError):
-        return HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=exc.message
-        )
-    elif isinstance(exc, NotFoundError):
-        return HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=exc.message
-        )
-    elif isinstance(exc, ConflictError):
-        return HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=exc.message
-        )
-    elif isinstance(exc, RateLimitError):
-        return HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=exc.message
-        )
-    elif isinstance(exc, AIServiceError):
-        return HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=exc.message
-        )
-    elif isinstance(exc, DatabaseError):
-        return HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=exc.message
-        )
-    elif isinstance(exc, ExternalServiceError):
-        return HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=exc.message
-        )
-    else:
-        return HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=exc.message
-        )
+class ConfigurationError(SamokoderException):
+    """Ошибка конфигурации"""
+    pass
+
+class ConnectionError(SamokoderException):
+    """Ошибка соединения"""
+    pass
+
+class TimeoutError(SamokoderException):
+    """Ошибка таймаута"""
+    pass
+
+class EncryptionError(SamokoderException):
+    """Ошибка шифрования"""
+    pass
+
+class ProjectError(SamokoderException):
+    """Ошибка проекта"""
+    pass
+
+class FileSystemError(SamokoderException):
+    """Ошибка файловой системы"""
+    pass
+
+class NetworkError(SamokoderException):
+    """Ошибка сети"""
+    pass
+
+class CacheError(SamokoderException):
+    """Ошибка кэша"""
+    pass
+
+class MonitoringError(SamokoderException):
+    """Ошибка мониторинга"""
+    pass

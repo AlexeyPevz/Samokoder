@@ -8,25 +8,15 @@ from backend.auth.dependencies import get_current_user
 from backend.models.requests import APIKeyCreateRequest
 from backend.models.responses import APIKeyResponse, APIKeyListResponse
 from backend.services.encryption_service import get_encryption_service
-from supabase import create_client, Client
 from typing import List, Dict
 import uuid
 import logging
+from backend.services.connection_manager import connection_manager
+from backend.services.supabase_manager import execute_supabase_operation
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-# Получаем клиент Supabase
-try:
-    from config.settings import settings
-    supabase: Client = create_client(
-        settings.supabase_url,
-        settings.supabase_service_role_key
-    )
-except Exception as e:
-    logger.warning(f"Supabase не настроен: {e}")
-    supabase = None
 
 @router.post("/", response_model=APIKeyResponse)
 async def create_api_key(
@@ -59,7 +49,10 @@ async def create_api_key(
             "is_active": True
         }
         
-        response = supabase.table("user_api_keys").insert(api_key_record).execute()
+        response = await execute_supabase_operation(
+            lambda client: client.table("user_api_keys").insert(api_key_record).execute(),
+            "anon"
+        )
         
         if not response.data:
             raise HTTPException(
@@ -98,7 +91,10 @@ async def get_api_keys(
         
         user_id = current_user["id"]
         
-        response = supabase.table("user_api_keys").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
+        response = await execute_supabase_operation(
+            lambda client: client.table("user_api_keys").select("*").eq("user_id", user_id).order("created_at", desc=True).execute(),
+            "anon"
+        )
         
         if not response.data:
             return APIKeyListResponse(keys=[], total_count=0)
@@ -139,7 +135,10 @@ async def get_api_key(
         
         user_id = current_user["id"]
         
-        response = supabase.table("user_api_keys").select("*").eq("id", key_id).eq("user_id", user_id).single().execute()
+        response = await execute_supabase_operation(
+            lambda client: client.table("user_api_keys").select("*").eq("id", key_id).eq("user_id", user_id).single().execute(),
+            "anon"
+        )
         
         if not response.data:
             raise HTTPException(
@@ -183,7 +182,10 @@ async def toggle_api_key(
         user_id = current_user["id"]
         
         # Получаем текущее состояние ключа
-        response = supabase.table("user_api_keys").select("is_active").eq("id", key_id).eq("user_id", user_id).single().execute()
+        response = await execute_supabase_operation(
+            lambda client: client.table("user_api_keys").select("is_active").eq("id", key_id).eq("user_id", user_id).single().execute(),
+            "anon"
+        )
         
         if not response.data:
             raise HTTPException(
@@ -195,7 +197,10 @@ async def toggle_api_key(
         new_status = not current_status
         
         # Обновляем статус
-        supabase.table("user_api_keys").update({"is_active": new_status}).eq("id", key_id).execute()
+        await execute_supabase_operation(
+            lambda client: client.table("user_api_keys").update({"is_active": new_status}).eq("id", key_id).execute(),
+            "anon"
+        )
         
         logger.info(f"API ключ {key_id} {'включен' if new_status else 'выключен'}")
         
@@ -229,7 +234,10 @@ async def delete_api_key(
         user_id = current_user["id"]
         
         # Проверяем, что ключ принадлежит пользователю
-        response = supabase.table("user_api_keys").select("id").eq("id", key_id).eq("user_id", user_id).single().execute()
+        response = await execute_supabase_operation(
+            lambda client: client.table("user_api_keys").select("id").eq("id", key_id).eq("user_id", user_id).single().execute(),
+            "anon"
+        )
         
         if not response.data:
             raise HTTPException(
@@ -238,7 +246,10 @@ async def delete_api_key(
             )
         
         # Удаляем ключ
-        supabase.table("user_api_keys").delete().eq("id", key_id).execute()
+        await execute_supabase_operation(
+            lambda client: client.table("user_api_keys").delete().eq("id", key_id).execute(),
+            "anon"
+        )
         
         logger.info(f"API ключ {key_id} удален")
         

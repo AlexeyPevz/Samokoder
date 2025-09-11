@@ -21,7 +21,9 @@ from backend.core.exceptions import (
     SamokoderException, AuthenticationError, AuthorizationError,
     ValidationError as SamokoderValidationError, NotFoundError,
     ConflictError, RateLimitError, AIServiceError, DatabaseError,
-    ExternalServiceError
+    ExternalServiceError, ConfigurationError, ConnectionError, TimeoutError,
+    EncryptionError, ProjectError, FileSystemError, NetworkError, CacheError,
+    MonitoringError
 )
 
 logger = logging.getLogger(__name__)
@@ -260,6 +262,160 @@ class SpecificErrorHandler:
         )
     
     @staticmethod
+    async def handle_configuration_error(request: Request, exc: ConfigurationError) -> JSONResponse:
+        """Обработка ошибок конфигурации"""
+        logger.error(
+            "configuration_error",
+            path=request.url.path,
+            method=request.method,
+            error_type=type(exc).__name__,
+            error_detail=str(exc),
+            client_ip=request.client.host if request.client else "unknown"
+        )
+        
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "configuration_error",
+                "detail": "Configuration error. Contact administrator.",
+                "error_code": "CONFIGURATION_ERROR",
+                "path": request.url.path
+            }
+        )
+    
+    @staticmethod
+    async def handle_encryption_error(request: Request, exc: EncryptionError) -> JSONResponse:
+        """Обработка ошибок шифрования"""
+        logger.error(
+            "encryption_error",
+            path=request.url.path,
+            method=request.method,
+            error_type=type(exc).__name__,
+            error_detail=str(exc),
+            client_ip=request.client.host if request.client else "unknown"
+        )
+        
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "encryption_error",
+                "detail": "Encryption/decryption failed",
+                "error_code": "ENCRYPTION_ERROR",
+                "path": request.url.path
+            }
+        )
+    
+    @staticmethod
+    async def handle_project_error(request: Request, exc: ProjectError) -> JSONResponse:
+        """Обработка ошибок проекта"""
+        logger.error(
+            "project_error",
+            path=request.url.path,
+            method=request.method,
+            error_type=type(exc).__name__,
+            error_detail=str(exc),
+            client_ip=request.client.host if request.client else "unknown"
+        )
+        
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "project_error",
+                "detail": "Project operation failed",
+                "error_code": "PROJECT_ERROR",
+                "path": request.url.path
+            }
+        )
+    
+    @staticmethod
+    async def handle_filesystem_error(request: Request, exc: FileSystemError) -> JSONResponse:
+        """Обработка ошибок файловой системы"""
+        logger.error(
+            "filesystem_error",
+            path=request.url.path,
+            method=request.method,
+            error_type=type(exc).__name__,
+            error_detail=str(exc),
+            client_ip=request.client.host if request.client else "unknown"
+        )
+        
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "filesystem_error",
+                "detail": "File system operation failed",
+                "error_code": "FILESYSTEM_ERROR",
+                "path": request.url.path
+            }
+        )
+    
+    @staticmethod
+    async def handle_network_error(request: Request, exc: NetworkError) -> JSONResponse:
+        """Обработка ошибок сети"""
+        logger.error(
+            "network_error",
+            path=request.url.path,
+            method=request.method,
+            error_type=type(exc).__name__,
+            error_detail=str(exc),
+            client_ip=request.client.host if request.client else "unknown"
+        )
+        
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": "network_error",
+                "detail": "Network operation failed",
+                "error_code": "NETWORK_ERROR",
+                "path": request.url.path
+            }
+        )
+    
+    @staticmethod
+    async def handle_cache_error(request: Request, exc: CacheError) -> JSONResponse:
+        """Обработка ошибок кэша"""
+        logger.error(
+            "cache_error",
+            path=request.url.path,
+            method=request.method,
+            error_type=type(exc).__name__,
+            error_detail=str(exc),
+            client_ip=request.client.host if request.client else "unknown"
+        )
+        
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": "cache_error",
+                "detail": "Cache operation failed",
+                "error_code": "CACHE_ERROR",
+                "path": request.url.path
+            }
+        )
+    
+    @staticmethod
+    async def handle_monitoring_error(request: Request, exc: MonitoringError) -> JSONResponse:
+        """Обработка ошибок мониторинга"""
+        logger.error(
+            "monitoring_error",
+            path=request.url.path,
+            method=request.method,
+            error_type=type(exc).__name__,
+            error_detail=str(exc),
+            client_ip=request.client.host if request.client else "unknown"
+        )
+        
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": "monitoring_error",
+                "detail": "Monitoring service unavailable",
+                "error_code": "MONITORING_ERROR",
+                "path": request.url.path
+            }
+        )
+    
+    @staticmethod
     async def handle_general_exception(request: Request, exc: Exception) -> JSONResponse:
         """Обработка общих исключений (последний резерв)"""
         error_id = f"ERR_{hash(str(exc)) % 1000000:06d}"
@@ -295,6 +451,13 @@ def setup_specific_error_handlers(app):
     app.add_exception_handler(HTTPException, handler.handle_http_exception)
     app.add_exception_handler(StarletteHTTPException, handler.handle_http_exception)
     app.add_exception_handler(SamokoderException, handler.handle_samokoder_exception)
+    app.add_exception_handler(ConfigurationError, handler.handle_configuration_error)
+    app.add_exception_handler(EncryptionError, handler.handle_encryption_error)
+    app.add_exception_handler(ProjectError, handler.handle_project_error)
+    app.add_exception_handler(FileSystemError, handler.handle_filesystem_error)
+    app.add_exception_handler(NetworkError, handler.handle_network_error)
+    app.add_exception_handler(CacheError, handler.handle_cache_error)
+    app.add_exception_handler(MonitoringError, handler.handle_monitoring_error)
     app.add_exception_handler(SQLAlchemyError, handler.handle_database_error)
     app.add_exception_handler(RedisError, handler.handle_redis_error)
     app.add_exception_handler(HTTPError, handler.handle_http_client_error)
