@@ -38,6 +38,14 @@ class LoginRequest(BaseModel):
     email: EmailStr = Field(..., description="Email пользователя")
     password: str = Field(..., min_length=8, max_length=128, description="Пароль")
     
+    model_config = {
+        "error_messages": {
+            "value_error.string_too_short": "не может быть пустым",
+            "value_error.string_too_long": "слишком длинный",
+            "value_error.email": "неверный формат email"
+        }
+    }
+    
     @field_validator('password')
     @classmethod
     def validate_password(cls, v):
@@ -108,19 +116,39 @@ class ProjectListRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     """Запрос на чат с AI"""
-    message: str = Field(..., min_length=1, max_length=4000, description="Сообщение пользователя")
+    message: str = Field(..., description="Сообщение пользователя")
     context: str = Field("chat", max_length=50, description="Контекст чата")
     model: Optional[str] = Field(None, max_length=100, description="Модель AI")
     provider: Optional[AIProvider] = Field(None, description="Провайдер AI")
-    max_tokens: int = Field(4096, ge=1, le=32000, description="Максимальное количество токенов")
-    temperature: float = Field(0.7, ge=0.0, le=2.0, description="Температура генерации")
+    max_tokens: int = Field(4096, description="Максимальное количество токенов")
+    temperature: float = Field(0.7, description="Температура генерации")
     
     @field_validator('message')
     @classmethod
     def validate_message(cls, v):
-        if not v.strip():
+        if not v or not v.strip():
             raise ValueError('Сообщение не может быть пустым')
+        if len(v) > 4000:
+            raise ValueError('Сообщение слишком длинное')
         return v.strip()
+    
+    @field_validator('max_tokens')
+    @classmethod
+    def validate_max_tokens(cls, v):
+        if v < 1:
+            raise ValueError('Максимальное количество токенов должно быть больше 0')
+        if v > 32000:
+            raise ValueError('Максимальное количество токенов должно быть меньше или равно 32000')
+        return v
+    
+    @field_validator('temperature')
+    @classmethod
+    def validate_temperature(cls, v):
+        if v < 0.0:
+            raise ValueError('Температура должна быть больше или равна 0.0')
+        if v > 2.0:
+            raise ValueError('Температура должна быть меньше или равна 2.0')
+        return v
 
 class AIUsageRequest(BaseModel):
     """Запрос на получение статистики использования AI"""
@@ -169,7 +197,14 @@ class UserSettingsUpdateRequest(BaseModel):
     auto_export: Optional[bool] = Field(None, description="Автоматический экспорт")
     notifications_email: Optional[bool] = Field(None, description="Email уведомления")
     notifications_generation: Optional[bool] = Field(None, description="Уведомления о генерации")
-    theme: Optional[str] = Field(None, pattern="^(light|dark|auto)$", description="Тема интерфейса")
+    theme: Optional[str] = Field(None, description="Тема интерфейса")
+    
+    @field_validator('theme')
+    @classmethod
+    def validate_theme(cls, v):
+        if v is not None and v not in ['light', 'dark', 'auto']:
+            raise ValueError('Тема должна быть light, dark или auto')
+        return v
 
 # === ФАЙЛЫ ===
 

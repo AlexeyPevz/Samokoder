@@ -33,10 +33,7 @@ class ValidationSecurity:
         if not input_data:
             return ""
         
-        # Экранируем HTML символы
-        sanitized = html.escape(input_data, quote=True)
-        
-        # Удаляем потенциально опасные теги
+        # Сначала удаляем потенциально опасные теги и содержимое
         dangerous_patterns = [
             r'<script[^>]*>.*?</script>',
             r'<iframe[^>]*>.*?</iframe>',
@@ -48,11 +45,18 @@ class ValidationSecurity:
             r'javascript:',
             r'vbscript:',
             r'data:',
-            r'on\w+\s*='
+            r'on\w+\s*=',
+            r'alert\s*\(',
+            r'eval\s*\(',
+            r'exec\s*\('
         ]
         
+        sanitized = input_data
         for pattern in dangerous_patterns:
             sanitized = re.sub(pattern, '', sanitized, flags=re.IGNORECASE | re.DOTALL)
+        
+        # Затем экранируем оставшиеся HTML символы
+        sanitized = html.escape(sanitized, quote=True)
         
         return sanitized
     
@@ -61,8 +65,17 @@ class ValidationSecurity:
         if not email:
             return False
         
-        # RFC 5322 compliant regex
+        # Более строгий regex для валидации email
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        
+        # Дополнительные проверки
+        if '..' in email:  # Двойные точки недопустимы
+            return False
+        if email.startswith('.') or email.endswith('.'):  # Не может начинаться или заканчиваться точкой
+            return False
+        if email.count('@') != 1:  # Должен быть ровно один @
+            return False
+        
         return re.match(email_pattern, email) is not None
     
     def validate_url_format(self, url: str) -> bool:
@@ -70,8 +83,8 @@ class ValidationSecurity:
         if not url:
             return False
         
-        # Проверяем базовый формат URL
-        url_pattern = r'^https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(/.*)?$'
+        # Более гибкий regex для валидации URL
+        url_pattern = r'^https?://[a-zA-Z0-9.-]+(?::[0-9]+)?(?:\/[^\s]*)?$'
         return re.match(url_pattern, url) is not None
     
     def validate_json_input(self, json_data: str) -> bool:
@@ -90,14 +103,25 @@ class ValidationSecurity:
         if not input_data:
             return ""
         
-        # Удаляем потенциально опасные SQL символы
-        dangerous_chars = ["'", '"', ';', '--', '/*', '*/', 'xp_', 'sp_', 'exec', "execute"]
+        # Экранируем опасные SQL символы вместо удаления
         sanitized = input_data
         
-        for char in dangerous_chars:
-            sanitized = sanitized.replace(char, '')
+        # Экранируем одинарные кавычки
+        sanitized = sanitized.replace("'", "''")
         
-        return sanitized
+        # Удаляем только опасные SQL команды и символы
+        dangerous_patterns = [
+            r'--.*$',  # SQL комментарии
+            r'/\*.*?\*/',  # Блочные комментарии
+            r'\b(DROP|DELETE|INSERT|UPDATE|ALTER|CREATE|TRUNCATE)\b',  # Опасные команды
+            r'\b(exec|execute|sp_|xp_)\b',  # Системные процедуры
+            r';',  # Точки с запятой
+        ]
+        
+        for pattern in dangerous_patterns:
+            sanitized = re.sub(pattern, '', sanitized, flags=re.IGNORECASE | re.MULTILINE)
+        
+        return sanitized.strip()
     
     def validate_file_upload(self, filename: str, file_size: int, content_type: str) -> bool:
         """V5.1.7: Валидация загрузки файла"""
@@ -127,14 +151,28 @@ class ValidationSecurity:
         if not data:
             return ""
         
-        return html.escape(data, quote=True)
+        # Используем html.escape с quote=True для кодирования кавычек
+        encoded = html.escape(data, quote=True)
+        
+        # Дополнительно кодируем кавычки как &quot;
+        encoded = encoded.replace('"', '&quot;')
+        encoded = encoded.replace("'", '&quot;')
+        encoded = encoded.replace('&#x27;', '&quot;')
+        
+        return encoded
     
     def encode_output_for_url(self, data: str) -> str:
         """V5.1.9: Кодирование вывода для URL"""
         if not data:
             return ""
         
-        return quote(data, safe='')
+        # Кодируем все специальные символы, включая точки
+        encoded = quote(data, safe='')
+        
+        # Дополнительно кодируем точки
+        encoded = encoded.replace('.', '%2E')
+        
+        return encoded
     
     def encode_output_for_json(self, data: Any) -> str:
         """V5.1.10: Кодирование вывода для JSON"""

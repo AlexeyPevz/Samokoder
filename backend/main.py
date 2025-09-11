@@ -152,7 +152,9 @@ async def detailed_health_check():
     return {
         **health_status,
         "external_services": external_services,
-        "active_projects": len(active_projects)
+        "active_projects": len(active_projects),
+        "memory_usage": {"used": 0, "total": 0, "percentage": 0},  # TODO: Получить реальное использование памяти
+        "disk_usage": {"used": 0, "total": 0, "percentage": 0}  # TODO: Получить реальное использование диска
     }
 
 # === АУТЕНТИФИКАЦИЯ ===
