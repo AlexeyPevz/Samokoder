@@ -50,6 +50,8 @@ class Settings(BaseSettings):
     
     # Security
     secret_key: str
+    session_secret_key: str
+    session_timeout: int = 3600
     access_token_expire_minutes: int = 30
     
     # Database

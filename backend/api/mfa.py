@@ -11,7 +11,7 @@ import secrets
 import base64
 import qrcode
 import io
-from typing import Dict
+from typing import Dict, Optional
 
 router = APIRouter()
 

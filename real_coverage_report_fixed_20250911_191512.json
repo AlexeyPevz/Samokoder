@@ -1,0 +1,1900 @@
+{
+  "timestamp": "2025-09-11T19:15:12.379033",
+  "summary": {
+    "total_backend_files": 74,
+    "total_functions": 232,
+    "total_tests": 714,
+    "covered_functions": 84,
+    "overall_coverage_percent": 36.206896551724135
+  },
+  "critical_files": {
+    "backend/api/api_keys.py": {
+      "functions": [
+        {
+          "name": "create_api_key",
+          "line": 27,
+          "async": true,
+          "file": "backend/api/api_keys.py"
+        },
+        {
+          "name": "get_api_keys",
+          "line": 111,
+          "async": true,
+          "file": "backend/api/api_keys.py"
+        },
+        {
+          "name": "get_api_key",
+          "line": 167,
+          "async": true,
+          "file": "backend/api/api_keys.py"
+        },
+        {
+          "name": "toggle_api_key",
+          "line": 229,
+          "async": true,
+          "file": "backend/api/api_keys.py"
+        },
+        {
+          "name": "delete_api_key",
+          "line": 297,
+          "async": true,
+          "file": "backend/api/api_keys.py"
+        }
+      ],
+      "coverage": {
+        "total_functions": 5,
+        "covered_functions": 5,
+        "uncovered_functions": [],
+        "coverage_percent": 100.0
+      },
+      "critical_functions": [
+        {
+          "name": "create_api_key",
+          "line": 27,
+          "async": true,
+          "file": "backend/api/api_keys.py"
+        },
+        {
+          "name": "get_api_keys",
+          "line": 111,
+          "async": true,
+          "file": "backend/api/api_keys.py"
+        },
+        {
+          "name": "get_api_key",
+          "line": 167,
+          "async": true,
+          "file": "backend/api/api_keys.py"
+        },
+        {
+          "name": "toggle_api_key",
+          "line": 229,
+          "async": true,
+          "file": "backend/api/api_keys.py"
+        },
+        {
+          "name": "delete_api_key",
+          "line": 297,
+          "async": true,
+          "file": "backend/api/api_keys.py"
+        }
+      ],
+      "uncovered_critical": []
+    },
+    "backend/api/mfa.py": {
+      "functions": [
+        {
+          "name": "store_mfa_secret",
+          "line": 24,
+          "async": false,
+          "file": "backend/api/mfa.py"
+        },
+        {
+          "name": "get_mfa_secret",
+          "line": 33,
+          "async": false,
+          "file": "backend/api/mfa.py"
+        },
+        {
+          "name": "delete_mfa_secret",
+          "line": 42,
+          "async": false,
+          "file": "backend/api/mfa.py"
+        },
+        {
+          "name": "setup_mfa",
+          "line": 55,
+          "async": true,
+          "file": "backend/api/mfa.py"
+        },
+        {
+          "name": "verify_mfa",
+          "line": 97,
+          "async": true,
+          "file": "backend/api/mfa.py"
+        },
+        {
+          "name": "disable_mfa",
+          "line": 156,
+          "async": true,
+          "file": "backend/api/mfa.py"
+        }
+      ],
+      "coverage": {
+        "total_functions": 6,
+        "covered_functions": 6,
+        "uncovered_functions": [],
+        "coverage_percent": 100.0
+      },
+      "critical_functions": [
+        {
+          "name": "store_mfa_secret",
+          "line": 24,
+          "async": false,
+          "file": "backend/api/mfa.py"
+        },
+        {
+          "name": "get_mfa_secret",
+          "line": 33,
+          "async": false,
+          "file": "backend/api/mfa.py"
+        },
+        {
+          "name": "delete_mfa_secret",
+          "line": 42,
+          "async": false,
+          "file": "backend/api/mfa.py"
+        },
+        {
+          "name": "setup_mfa",
+          "line": 55,
+          "async": true,
+          "file": "backend/api/mfa.py"
+        },
+        {
+          "name": "verify_mfa",
+          "line": 97,
+          "async": true,
+          "file": "backend/api/mfa.py"
+        },
+        {
+          "name": "disable_mfa",
+          "line": 156,
+          "async": true,
+          "file": "backend/api/mfa.py"
+        }
+      ],
+      "uncovered_critical": []
+    },
+    "backend/auth/dependencies.py": {
+      "functions": [
+        {
+          "name": "is_test_mode",
+          "line": 27,
+          "async": false,
+          "file": "backend/auth/dependencies.py"
+        },
+        {
+          "name": "validate_jwt_token",
+          "line": 31,
+          "async": false,
+          "file": "backend/auth/dependencies.py"
+        },
+        {
+          "name": "get_current_user",
+          "line": 73,
+          "async": true,
+          "file": "backend/auth/dependencies.py"
+        },
+        {
+          "name": "get_current_user_optional",
+          "line": 170,
+          "async": true,
+          "file": "backend/auth/dependencies.py"
+        },
+        {
+          "name": "secure_password_validation",
+          "line": 182,
+          "async": false,
+          "file": "backend/auth/dependencies.py"
+        },
+        {
+          "name": "hash_password",
+          "line": 195,
+          "async": false,
+          "file": "backend/auth/dependencies.py"
+        },
+        {
+          "name": "verify_password",
+          "line": 202,
+          "async": false,
+          "file": "backend/auth/dependencies.py"
+        }
+      ],
+      "coverage": {
+        "total_functions": 7,
+        "covered_functions": 5,
+        "uncovered_functions": [
+          {
+            "name": "is_test_mode",
+            "line": 27,
+            "async": false,
+            "file": "backend/auth/dependencies.py"
+          },
+          {
+            "name": "get_current_user_optional",
+            "line": 170,
+            "async": true,
+            "file": "backend/auth/dependencies.py"
+          }
+        ],
+        "coverage_percent": 71.42857142857143
+      },
+      "critical_functions": [
+        {
+          "name": "validate_jwt_token",
+          "line": 31,
+          "async": false,
+          "file": "backend/auth/dependencies.py"
+        },
+        {
+          "name": "secure_password_validation",
+          "line": 182,
+          "async": false,
+          "file": "backend/auth/dependencies.py"
+        },
+        {
+          "name": "hash_password",
+          "line": 195,
+          "async": false,
+          "file": "backend/auth/dependencies.py"
+        },
+        {
+          "name": "verify_password",
+          "line": 202,
+          "async": false,
+          "file": "backend/auth/dependencies.py"
+        }
+      ],
+      "uncovered_critical": []
+    },
+    "backend/main.py": {
+      "functions": [
+        {
+          "name": "global_exception_handler",
+          "line": 44,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "security_headers_middleware",
+          "line": 81,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "validate_csrf_token",
+          "line": 116,
+          "async": false,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "csrf_middleware",
+          "line": 157,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "initialize_managers",
+          "line": 180,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "log_request_info",
+          "line": 201,
+          "async": false,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "health_check",
+          "line": 226,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "metrics",
+          "line": 243,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "login",
+          "line": 259,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "register",
+          "line": 323,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "logout",
+          "line": 376,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "get_current_user_info",
+          "line": 390,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "startup_event",
+          "line": 433,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "shutdown_event",
+          "line": 444,
+          "async": true,
+          "file": "backend/main.py"
+        }
+      ],
+      "coverage": {
+        "total_functions": 14,
+        "covered_functions": 6,
+        "uncovered_functions": [
+          {
+            "name": "global_exception_handler",
+            "line": 44,
+            "async": true,
+            "file": "backend/main.py"
+          },
+          {
+            "name": "security_headers_middleware",
+            "line": 81,
+            "async": true,
+            "file": "backend/main.py"
+          },
+          {
+            "name": "csrf_middleware",
+            "line": 157,
+            "async": true,
+            "file": "backend/main.py"
+          },
+          {
+            "name": "initialize_managers",
+            "line": 180,
+            "async": true,
+            "file": "backend/main.py"
+          },
+          {
+            "name": "log_request_info",
+            "line": 201,
+            "async": false,
+            "file": "backend/main.py"
+          },
+          {
+            "name": "get_current_user_info",
+            "line": 390,
+            "async": true,
+            "file": "backend/main.py"
+          },
+          {
+            "name": "startup_event",
+            "line": 433,
+            "async": true,
+            "file": "backend/main.py"
+          },
+          {
+            "name": "shutdown_event",
+            "line": 444,
+            "async": true,
+            "file": "backend/main.py"
+          }
+        ],
+        "coverage_percent": 42.857142857142854
+      },
+      "critical_functions": [
+        {
+          "name": "validate_csrf_token",
+          "line": 116,
+          "async": false,
+          "file": "backend/main.py"
+        }
+      ],
+      "uncovered_critical": []
+    },
+    "backend/services/encryption_service.py": {
+      "functions": [
+        {
+          "name": "get_encryption_service",
+          "line": 166,
+          "async": false,
+          "file": "backend/services/encryption_service.py"
+        }
+      ],
+      "coverage": {
+        "total_functions": 1,
+        "covered_functions": 1,
+        "uncovered_functions": [],
+        "coverage_percent": 100.0
+      },
+      "critical_functions": [
+        {
+          "name": "get_encryption_service",
+          "line": 166,
+          "async": false,
+          "file": "backend/services/encryption_service.py"
+        }
+      ],
+      "uncovered_critical": []
+    },
+    "backend/services/connection_manager.py": {
+      "functions": [
+        {
+          "name": "get_redis_connection",
+          "line": 172,
+          "async": true,
+          "file": "backend/services/connection_manager.py"
+        },
+        {
+          "name": "get_database_connection",
+          "line": 177,
+          "async": true,
+          "file": "backend/services/connection_manager.py"
+        },
+        {
+          "name": "get_http_client",
+          "line": 182,
+          "async": true,
+          "file": "backend/services/connection_manager.py"
+        }
+      ],
+      "coverage": {
+        "total_functions": 3,
+        "covered_functions": 2,
+        "uncovered_functions": [
+          {
+            "name": "get_http_client",
+            "line": 182,
+            "async": true,
+            "file": "backend/services/connection_manager.py"
+          }
+        ],
+        "coverage_percent": 66.66666666666666
+      },
+      "critical_functions": [
+        {
+          "name": "get_redis_connection",
+          "line": 172,
+          "async": true,
+          "file": "backend/services/connection_manager.py"
+        },
+        {
+          "name": "get_database_connection",
+          "line": 177,
+          "async": true,
+          "file": "backend/services/connection_manager.py"
+        }
+      ],
+      "uncovered_critical": []
+    },
+    "backend/services/supabase_manager.py": {
+      "functions": [
+        {
+          "name": "get_supabase_client",
+          "line": 197,
+          "async": true,
+          "file": "backend/services/supabase_manager.py"
+        },
+        {
+          "name": "execute_supabase_operation",
+          "line": 201,
+          "async": true,
+          "file": "backend/services/supabase_manager.py"
+        },
+        {
+          "name": "supabase_connection",
+          "line": 206,
+          "async": true,
+          "file": "backend/services/supabase_manager.py"
+        }
+      ],
+      "coverage": {
+        "total_functions": 3,
+        "covered_functions": 3,
+        "uncovered_functions": [],
+        "coverage_percent": 100.0
+      },
+      "critical_functions": [
+        {
+          "name": "supabase_connection",
+          "line": 206,
+          "async": true,
+          "file": "backend/services/supabase_manager.py"
+        }
+      ],
+      "uncovered_critical": []
+    }
+  },
+  "detailed_coverage": {
+    "backend/monitoring.py": {
+      "total_functions": 10,
+      "covered_functions": 2,
+      "uncovered_functions": [
+        {
+          "name": "get_monitoring",
+          "line": 309,
+          "async": false,
+          "file": "backend/monitoring.py"
+        },
+        {
+          "name": "get_metrics",
+          "line": 348,
+          "async": false,
+          "file": "backend/monitoring.py"
+        },
+        {
+          "name": "get_metrics_response",
+          "line": 352,
+          "async": false,
+          "file": "backend/monitoring.py"
+        },
+        {
+          "name": "check_database_health",
+          "line": 360,
+          "async": true,
+          "file": "backend/monitoring.py"
+        },
+        {
+          "name": "check_ai_providers_health",
+          "line": 378,
+          "async": true,
+          "file": "backend/monitoring.py"
+        },
+        {
+          "name": "check_external_services_health",
+          "line": 390,
+          "async": true,
+          "file": "backend/monitoring.py"
+        },
+        {
+          "name": "log_user_action",
+          "line": 399,
+          "async": false,
+          "file": "backend/monitoring.py"
+        },
+        {
+          "name": "log_performance_metric",
+          "line": 419,
+          "async": false,
+          "file": "backend/monitoring.py"
+        }
+      ],
+      "coverage_percent": 20.0
+    },
+    "backend/main.py": {
+      "total_functions": 14,
+      "covered_functions": 6,
+      "uncovered_functions": [
+        {
+          "name": "global_exception_handler",
+          "line": 44,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "security_headers_middleware",
+          "line": 81,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "csrf_middleware",
+          "line": 157,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "initialize_managers",
+          "line": 180,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "log_request_info",
+          "line": 201,
+          "async": false,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "get_current_user_info",
+          "line": 390,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "startup_event",
+          "line": 433,
+          "async": true,
+          "file": "backend/main.py"
+        },
+        {
+          "name": "shutdown_event",
+          "line": 444,
+          "async": true,
+          "file": "backend/main.py"
+        }
+      ],
+      "coverage_percent": 42.857142857142854
+    },
+    "backend/monitoring/enhanced_monitoring.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/monitoring/advanced_monitoring.py": {
+      "total_functions": 6,
+      "covered_functions": 1,
+      "uncovered_functions": [
+        {
+          "name": "record_http_request",
+          "line": 669,
+          "async": false,
+          "file": "backend/monitoring/advanced_monitoring.py"
+        },
+        {
+          "name": "record_ai_request",
+          "line": 673,
+          "async": false,
+          "file": "backend/monitoring/advanced_monitoring.py"
+        },
+        {
+          "name": "record_error",
+          "line": 677,
+          "async": false,
+          "file": "backend/monitoring/advanced_monitoring.py"
+        },
+        {
+          "name": "record_security_event",
+          "line": 681,
+          "async": false,
+          "file": "backend/monitoring/advanced_monitoring.py"
+        },
+        {
+          "name": "get_current_metrics",
+          "line": 689,
+          "async": false,
+          "file": "backend/monitoring/advanced_monitoring.py"
+        }
+      ],
+      "coverage_percent": 16.666666666666664
+    },
+    "backend/models/responses.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/models/database.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/models/requests.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/auth/dependencies.py": {
+      "total_functions": 7,
+      "covered_functions": 5,
+      "uncovered_functions": [
+        {
+          "name": "is_test_mode",
+          "line": 27,
+          "async": false,
+          "file": "backend/auth/dependencies.py"
+        },
+        {
+          "name": "get_current_user_optional",
+          "line": 170,
+          "async": true,
+          "file": "backend/auth/dependencies.py"
+        }
+      ],
+      "coverage_percent": 71.42857142857143
+    },
+    "backend/patterns/circuit_breaker.py": {
+      "total_functions": 1,
+      "covered_functions": 1,
+      "uncovered_functions": [],
+      "coverage_percent": 100.0
+    },
+    "backend/api/projects.py": {
+      "total_functions": 10,
+      "covered_functions": 4,
+      "uncovered_functions": [
+        {
+          "name": "list_projects",
+          "line": 106,
+          "async": true,
+          "file": "backend/api/projects.py"
+        },
+        {
+          "name": "update_project",
+          "line": 197,
+          "async": true,
+          "file": "backend/api/projects.py"
+        },
+        {
+          "name": "delete_project",
+          "line": 253,
+          "async": true,
+          "file": "backend/api/projects.py"
+        },
+        {
+          "name": "chat_with_project",
+          "line": 388,
+          "async": true,
+          "file": "backend/api/projects.py"
+        },
+        {
+          "name": "generate_project_code",
+          "line": 429,
+          "async": true,
+          "file": "backend/api/projects.py"
+        },
+        {
+          "name": "export_project",
+          "line": 476,
+          "async": true,
+          "file": "backend/api/projects.py"
+        }
+      ],
+      "coverage_percent": 40.0
+    },
+    "backend/api/ai.py": {
+      "total_functions": 5,
+      "covered_functions": 0,
+      "uncovered_functions": [
+        {
+          "name": "chat_with_ai",
+          "line": 21,
+          "async": true,
+          "file": "backend/api/ai.py"
+        },
+        {
+          "name": "chat_with_ai_stream",
+          "line": 92,
+          "async": true,
+          "file": "backend/api/ai.py"
+        },
+        {
+          "name": "get_ai_usage",
+          "line": 138,
+          "async": true,
+          "file": "backend/api/ai.py"
+        },
+        {
+          "name": "get_ai_providers",
+          "line": 188,
+          "async": true,
+          "file": "backend/api/ai.py"
+        },
+        {
+          "name": "validate_ai_keys",
+          "line": 223,
+          "async": true,
+          "file": "backend/api/ai.py"
+        }
+      ],
+      "coverage_percent": 0.0
+    },
+    "backend/api/health.py": {
+      "total_functions": 8,
+      "covered_functions": 0,
+      "uncovered_functions": [
+        {
+          "name": "basic_health_check",
+          "line": 26,
+          "async": true,
+          "file": "backend/api/health.py"
+        },
+        {
+          "name": "detailed_health_check",
+          "line": 59,
+          "async": true,
+          "file": "backend/api/health.py"
+        },
+        {
+          "name": "database_health_check",
+          "line": 107,
+          "async": true,
+          "file": "backend/api/health.py"
+        },
+        {
+          "name": "ai_health_check",
+          "line": 151,
+          "async": true,
+          "file": "backend/api/health.py"
+        },
+        {
+          "name": "system_health_check",
+          "line": 193,
+          "async": true,
+          "file": "backend/api/health.py"
+        },
+        {
+          "name": "check_external_services_health",
+          "line": 241,
+          "async": true,
+          "file": "backend/api/health.py"
+        },
+        {
+          "name": "get_memory_usage",
+          "line": 281,
+          "async": false,
+          "file": "backend/api/health.py"
+        },
+        {
+          "name": "get_disk_usage",
+          "line": 308,
+          "async": false,
+          "file": "backend/api/health.py"
+        }
+      ],
+      "coverage_percent": 0.0
+    },
+    "backend/api/file_upload.py": {
+      "total_functions": 4,
+      "covered_functions": 0,
+      "uncovered_functions": [
+        {
+          "name": "upload_file",
+          "line": 22,
+          "async": true,
+          "file": "backend/api/file_upload.py"
+        },
+        {
+          "name": "upload_multiple_files",
+          "line": 97,
+          "async": true,
+          "file": "backend/api/file_upload.py"
+        },
+        {
+          "name": "get_file_information",
+          "line": 199,
+          "async": true,
+          "file": "backend/api/file_upload.py"
+        },
+        {
+          "name": "delete_uploaded_file",
+          "line": 235,
+          "async": true,
+          "file": "backend/api/file_upload.py"
+        }
+      ],
+      "coverage_percent": 0.0
+    },
+    "backend/api/rbac.py": {
+      "total_functions": 7,
+      "covered_functions": 4,
+      "uncovered_functions": [
+        {
+          "name": "init_default_roles",
+          "line": 56,
+          "async": false,
+          "file": "backend/api/rbac.py"
+        },
+        {
+          "name": "get_roles",
+          "line": 76,
+          "async": true,
+          "file": "backend/api/rbac.py"
+        },
+        {
+          "name": "get_permissions",
+          "line": 95,
+          "async": true,
+          "file": "backend/api/rbac.py"
+        }
+      ],
+      "coverage_percent": 57.14285714285714
+    },
+    "backend/api/auth.py": {
+      "total_functions": 5,
+      "covered_functions": 4,
+      "uncovered_functions": [
+        {
+          "name": "get_current_user_info",
+          "line": 217,
+          "async": true,
+          "file": "backend/api/auth.py"
+        }
+      ],
+      "coverage_percent": 80.0
+    },
+    "backend/api/api_keys.py": {
+      "total_functions": 5,
+      "covered_functions": 5,
+      "uncovered_functions": [],
+      "coverage_percent": 100.0
+    },
+    "backend/api/mfa.py": {
+      "total_functions": 6,
+      "covered_functions": 6,
+      "uncovered_functions": [],
+      "coverage_percent": 100.0
+    },
+    "backend/repositories/project_repository.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/repositories/user_repository.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/repositories/chat_repository.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/validators/input_validator.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/validators/secure_input_validator.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/core/setup.py": {
+      "total_functions": 4,
+      "covered_functions": 1,
+      "uncovered_functions": [
+        {
+          "name": "setup_di_container",
+          "line": 15,
+          "async": false,
+          "file": "backend/core/setup.py"
+        },
+        {
+          "name": "get_database_service",
+          "line": 47,
+          "async": false,
+          "file": "backend/core/setup.py"
+        },
+        {
+          "name": "get_supabase_service",
+          "line": 51,
+          "async": false,
+          "file": "backend/core/setup.py"
+        }
+      ],
+      "coverage_percent": 25.0
+    },
+    "backend/core/database_config.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/core/exceptions.py": {
+      "total_functions": 1,
+      "covered_functions": 0,
+      "uncovered_functions": [
+        {
+          "name": "convert_to_http_exception",
+          "line": 89,
+          "async": false,
+          "file": "backend/core/exceptions.py"
+        }
+      ],
+      "coverage_percent": 0.0
+    },
+    "backend/core/container.py": {
+      "total_functions": 5,
+      "covered_functions": 2,
+      "uncovered_functions": [
+        {
+          "name": "get_optional_service",
+          "line": 155,
+          "async": true,
+          "file": "backend/core/container.py"
+        },
+        {
+          "name": "get_optional_service_sync",
+          "line": 159,
+          "async": false,
+          "file": "backend/core/container.py"
+        },
+        {
+          "name": "cached_get_service_sync",
+          "line": 164,
+          "async": false,
+          "file": "backend/core/container.py"
+        }
+      ],
+      "coverage_percent": 40.0
+    },
+    "backend/core/common_imports.py": {
+      "total_functions": 13,
+      "covered_functions": 0,
+      "uncovered_functions": [
+        {
+          "name": "get_logger",
+          "line": 15,
+          "async": false,
+          "file": "backend/core/common_imports.py"
+        },
+        {
+          "name": "utc_now",
+          "line": 26,
+          "async": false,
+          "file": "backend/core/common_imports.py"
+        },
+        {
+          "name": "add_days",
+          "line": 30,
+          "async": false,
+          "file": "backend/core/common_imports.py"
+        },
+        {
+          "name": "add_hours",
+          "line": 34,
+          "async": false,
+          "file": "backend/core/common_imports.py"
+        },
+        {
+          "name": "generate_uuid",
+          "line": 39,
+          "async": false,
+          "file": "backend/core/common_imports.py"
+        },
+        {
+          "name": "is_valid_uuid",
+          "line": 43,
+          "async": false,
+          "file": "backend/core/common_imports.py"
+        },
+        {
+          "name": "get_env_var",
+          "line": 52,
+          "async": false,
+          "file": "backend/core/common_imports.py"
+        },
+        {
+          "name": "get_env_bool",
+          "line": 56,
+          "async": false,
+          "file": "backend/core/common_imports.py"
+        },
+        {
+          "name": "get_env_int",
+          "line": 61,
+          "async": false,
+          "file": "backend/core/common_imports.py"
+        },
+        {
+          "name": "safe_json_loads",
+          "line": 69,
+          "async": false,
+          "file": "backend/core/common_imports.py"
+        },
+        {
+          "name": "safe_json_dumps",
+          "line": 76,
+          "async": false,
+          "file": "backend/core/common_imports.py"
+        },
+        {
+          "name": "is_valid_email",
+          "line": 84,
+          "async": false,
+          "file": "backend/core/common_imports.py"
+        },
+        {
+          "name": "is_valid_password",
+          "line": 90,
+          "async": false,
+          "file": "backend/core/common_imports.py"
+        }
+      ],
+      "coverage_percent": 0.0
+    },
+    "backend/contracts/supabase_service.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/contracts/file_service.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/contracts/database.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/contracts/ai_service.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/contracts/auth.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/security/secrets_manager.py": {
+      "total_functions": 1,
+      "covered_functions": 0,
+      "uncovered_functions": [
+        {
+          "name": "get_secrets_provider",
+          "line": 247,
+          "async": false,
+          "file": "backend/security/secrets_manager.py"
+        }
+      ],
+      "coverage_percent": 0.0
+    },
+    "backend/security/secure_error_handler.py": {
+      "total_functions": 8,
+      "covered_functions": 1,
+      "uncovered_functions": [
+        {
+          "name": "handle_validation_error",
+          "line": 360,
+          "async": false,
+          "file": "backend/security/secure_error_handler.py"
+        },
+        {
+          "name": "handle_authentication_error",
+          "line": 364,
+          "async": false,
+          "file": "backend/security/secure_error_handler.py"
+        },
+        {
+          "name": "handle_authorization_error",
+          "line": 368,
+          "async": false,
+          "file": "backend/security/secure_error_handler.py"
+        },
+        {
+          "name": "handle_database_error",
+          "line": 372,
+          "async": false,
+          "file": "backend/security/secure_error_handler.py"
+        },
+        {
+          "name": "handle_encryption_error",
+          "line": 376,
+          "async": false,
+          "file": "backend/security/secure_error_handler.py"
+        },
+        {
+          "name": "handle_rate_limit_error",
+          "line": 380,
+          "async": false,
+          "file": "backend/security/secure_error_handler.py"
+        },
+        {
+          "name": "handle_generic_error",
+          "line": 384,
+          "async": false,
+          "file": "backend/security/secure_error_handler.py"
+        }
+      ],
+      "coverage_percent": 12.5
+    },
+    "backend/security/session_manager.py": {
+      "total_functions": 6,
+      "covered_functions": 4,
+      "uncovered_functions": [
+        {
+          "name": "refresh_session",
+          "line": 307,
+          "async": false,
+          "file": "backend/security/session_manager.py"
+        },
+        {
+          "name": "revoke_user_sessions",
+          "line": 315,
+          "async": false,
+          "file": "backend/security/session_manager.py"
+        }
+      ],
+      "coverage_percent": 66.66666666666666
+    },
+    "backend/security/input_validator.py": {
+      "total_functions": 9,
+      "covered_functions": 7,
+      "uncovered_functions": [
+        {
+          "name": "sanitize_json",
+          "line": 327,
+          "async": false,
+          "file": "backend/security/input_validator.py"
+        },
+        {
+          "name": "validate_project_name",
+          "line": 343,
+          "async": false,
+          "file": "backend/security/input_validator.py"
+        }
+      ],
+      "coverage_percent": 77.77777777777779
+    },
+    "backend/security/simple_input_validator.py": {
+      "total_functions": 7,
+      "covered_functions": 6,
+      "uncovered_functions": [
+        {
+          "name": "validate_project_name",
+          "line": 213,
+          "async": false,
+          "file": "backend/security/simple_input_validator.py"
+        }
+      ],
+      "coverage_percent": 85.71428571428571
+    },
+    "backend/security/simple_file_upload.py": {
+      "total_functions": 5,
+      "covered_functions": 1,
+      "uncovered_functions": [
+        {
+          "name": "save_file",
+          "line": 348,
+          "async": false,
+          "file": "backend/security/simple_file_upload.py"
+        },
+        {
+          "name": "scan_file_for_malware",
+          "line": 352,
+          "async": false,
+          "file": "backend/security/simple_file_upload.py"
+        },
+        {
+          "name": "get_file_info",
+          "line": 356,
+          "async": false,
+          "file": "backend/security/simple_file_upload.py"
+        },
+        {
+          "name": "delete_file",
+          "line": 360,
+          "async": false,
+          "file": "backend/security/simple_file_upload.py"
+        }
+      ],
+      "coverage_percent": 20.0
+    },
+    "backend/security/key_rotation.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/security/secure_rbac.py": {
+      "total_functions": 5,
+      "covered_functions": 2,
+      "uncovered_functions": [
+        {
+          "name": "revoke_role",
+          "line": 344,
+          "async": true,
+          "file": "backend/security/secure_rbac.py"
+        },
+        {
+          "name": "has_permission",
+          "line": 348,
+          "async": true,
+          "file": "backend/security/secure_rbac.py"
+        },
+        {
+          "name": "get_user_permissions",
+          "line": 352,
+          "async": true,
+          "file": "backend/security/secure_rbac.py"
+        }
+      ],
+      "coverage_percent": 40.0
+    },
+    "backend/security/file_upload_security.py": {
+      "total_functions": 5,
+      "covered_functions": 1,
+      "uncovered_functions": [
+        {
+          "name": "save_file",
+          "line": 389,
+          "async": true,
+          "file": "backend/security/file_upload_security.py"
+        },
+        {
+          "name": "scan_file_for_malware",
+          "line": 393,
+          "async": true,
+          "file": "backend/security/file_upload_security.py"
+        },
+        {
+          "name": "get_file_info",
+          "line": 397,
+          "async": false,
+          "file": "backend/security/file_upload_security.py"
+        },
+        {
+          "name": "delete_file",
+          "line": 401,
+          "async": true,
+          "file": "backend/security/file_upload_security.py"
+        }
+      ],
+      "coverage_percent": 20.0
+    },
+    "backend/security/secure_cors.py": {
+      "total_functions": 4,
+      "covered_functions": 1,
+      "uncovered_functions": [
+        {
+          "name": "setup_secure_cors",
+          "line": 10,
+          "async": false,
+          "file": "backend/security/secure_cors.py"
+        },
+        {
+          "name": "setup_security_headers",
+          "line": 43,
+          "async": false,
+          "file": "backend/security/secure_cors.py"
+        },
+        {
+          "name": "setup_csrf_protection",
+          "line": 80,
+          "async": false,
+          "file": "backend/security/secure_cors.py"
+        }
+      ],
+      "coverage_percent": 25.0
+    },
+    "backend/services/pagination.py": {
+      "total_functions": 2,
+      "covered_functions": 0,
+      "uncovered_functions": [
+        {
+          "name": "paginate_list",
+          "line": 300,
+          "async": false,
+          "file": "backend/services/pagination.py"
+        },
+        {
+          "name": "create_pagination_links",
+          "line": 315,
+          "async": false,
+          "file": "backend/services/pagination.py"
+        }
+      ],
+      "coverage_percent": 0.0
+    },
+    "backend/services/encryption_service.py": {
+      "total_functions": 1,
+      "covered_functions": 1,
+      "uncovered_functions": [],
+      "coverage_percent": 100.0
+    },
+    "backend/services/gpt_pilot_adapter.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/services/transaction_manager.py": {
+      "total_functions": 3,
+      "covered_functions": 2,
+      "uncovered_functions": [
+        {
+          "name": "execute_operation",
+          "line": 219,
+          "async": true,
+          "file": "backend/services/transaction_manager.py"
+        }
+      ],
+      "coverage_percent": 66.66666666666666
+    },
+    "backend/services/migration_manager.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/services/enhanced_rate_limiter.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/services/connection_manager.py": {
+      "total_functions": 3,
+      "covered_functions": 2,
+      "uncovered_functions": [
+        {
+          "name": "get_http_client",
+          "line": 182,
+          "async": true,
+          "file": "backend/services/connection_manager.py"
+        }
+      ],
+      "coverage_percent": 66.66666666666666
+    },
+    "backend/services/gpt_pilot_real_adapter.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/services/project_state_manager.py": {
+      "total_functions": 5,
+      "covered_functions": 1,
+      "uncovered_functions": [
+        {
+          "name": "add_active_project",
+          "line": 272,
+          "async": true,
+          "file": "backend/services/project_state_manager.py"
+        },
+        {
+          "name": "remove_active_project",
+          "line": 276,
+          "async": true,
+          "file": "backend/services/project_state_manager.py"
+        },
+        {
+          "name": "is_project_active",
+          "line": 280,
+          "async": true,
+          "file": "backend/services/project_state_manager.py"
+        },
+        {
+          "name": "project_context",
+          "line": 285,
+          "async": true,
+          "file": "backend/services/project_state_manager.py"
+        }
+      ],
+      "coverage_percent": 20.0
+    },
+    "backend/services/connection_pool.py": {
+      "total_functions": 5,
+      "covered_functions": 2,
+      "uncovered_functions": [
+        {
+          "name": "get_database_pool",
+          "line": 455,
+          "async": true,
+          "file": "backend/services/connection_pool.py"
+        },
+        {
+          "name": "get_redis_pool",
+          "line": 461,
+          "async": true,
+          "file": "backend/services/connection_pool.py"
+        },
+        {
+          "name": "get_http_pool",
+          "line": 467,
+          "async": true,
+          "file": "backend/services/connection_pool.py"
+        }
+      ],
+      "coverage_percent": 40.0
+    },
+    "backend/services/cache_service.py": {
+      "total_functions": 2,
+      "covered_functions": 0,
+      "uncovered_functions": [
+        {
+          "name": "get_cache_manager",
+          "line": 306,
+          "async": false,
+          "file": "backend/services/cache_service.py"
+        },
+        {
+          "name": "cache_result",
+          "line": 311,
+          "async": false,
+          "file": "backend/services/cache_service.py"
+        }
+      ],
+      "coverage_percent": 0.0
+    },
+    "backend/services/gpt_pilot_simple_adapter.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/services/gpt_pilot_wrapper_v2.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/services/gpt_pilot_integration.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/services/health_checker.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/services/rate_limiter.py": {
+      "total_functions": 1,
+      "covered_functions": 0,
+      "uncovered_functions": [
+        {
+          "name": "cleanup_rate_limits",
+          "line": 383,
+          "async": true,
+          "file": "backend/services/rate_limiter.py"
+        }
+      ],
+      "coverage_percent": 0.0
+    },
+    "backend/services/environment_manager.py": {
+      "total_functions": 4,
+      "covered_functions": 2,
+      "uncovered_functions": [
+        {
+          "name": "get_global_env_var",
+          "line": 112,
+          "async": false,
+          "file": "backend/services/environment_manager.py"
+        },
+        {
+          "name": "isolated_environment",
+          "line": 117,
+          "async": false,
+          "file": "backend/services/environment_manager.py"
+        }
+      ],
+      "coverage_percent": 50.0
+    },
+    "backend/services/supabase_manager.py": {
+      "total_functions": 3,
+      "covered_functions": 3,
+      "uncovered_functions": [],
+      "coverage_percent": 100.0
+    },
+    "backend/services/ai_service.py": {
+      "total_functions": 1,
+      "covered_functions": 1,
+      "uncovered_functions": [],
+      "coverage_percent": 100.0
+    },
+    "backend/services/encryption.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/middleware/secure_error_handler.py": {
+      "total_functions": 7,
+      "covered_functions": 1,
+      "uncovered_functions": [
+        {
+          "name": "create_secure_error_response",
+          "line": 89,
+          "async": false,
+          "file": "backend/middleware/secure_error_handler.py"
+        },
+        {
+          "name": "secure_validation_exception_handler",
+          "line": 162,
+          "async": true,
+          "file": "backend/middleware/secure_error_handler.py"
+        },
+        {
+          "name": "secure_http_exception_handler",
+          "line": 180,
+          "async": true,
+          "file": "backend/middleware/secure_error_handler.py"
+        },
+        {
+          "name": "secure_general_exception_handler",
+          "line": 193,
+          "async": true,
+          "file": "backend/middleware/secure_error_handler.py"
+        },
+        {
+          "name": "setup_secure_error_handlers",
+          "line": 220,
+          "async": false,
+          "file": "backend/middleware/secure_error_handler.py"
+        },
+        {
+          "name": "secure_request_logging",
+          "line": 231,
+          "async": true,
+          "file": "backend/middleware/secure_error_handler.py"
+        }
+      ],
+      "coverage_percent": 14.285714285714285
+    },
+    "backend/middleware/validation_middleware.py": {
+      "total_functions": 4,
+      "covered_functions": 0,
+      "uncovered_functions": [
+        {
+          "name": "validation_middleware",
+          "line": 52,
+          "async": true,
+          "file": "backend/middleware/validation_middleware.py"
+        },
+        {
+          "name": "_get_cached_body",
+          "line": 173,
+          "async": false,
+          "file": "backend/middleware/validation_middleware.py"
+        },
+        {
+          "name": "_check_forbidden_patterns",
+          "line": 183,
+          "async": true,
+          "file": "backend/middleware/validation_middleware.py"
+        },
+        {
+          "name": "_check_suspicious_headers",
+          "line": 212,
+          "async": true,
+          "file": "backend/middleware/validation_middleware.py"
+        }
+      ],
+      "coverage_percent": 0.0
+    },
+    "backend/middleware/error_handler.py": {
+      "total_functions": 4,
+      "covered_functions": 0,
+      "uncovered_functions": [
+        {
+          "name": "validation_exception_handler",
+          "line": 184,
+          "async": true,
+          "file": "backend/middleware/error_handler.py"
+        },
+        {
+          "name": "http_exception_handler",
+          "line": 188,
+          "async": true,
+          "file": "backend/middleware/error_handler.py"
+        },
+        {
+          "name": "general_exception_handler",
+          "line": 192,
+          "async": true,
+          "file": "backend/middleware/error_handler.py"
+        },
+        {
+          "name": "safe_execute",
+          "line": 197,
+          "async": false,
+          "file": "backend/middleware/error_handler.py"
+        }
+      ],
+      "coverage_percent": 0.0
+    },
+    "backend/middleware/rate_limit_middleware.py": {
+      "total_functions": 1,
+      "covered_functions": 0,
+      "uncovered_functions": [
+        {
+          "name": "rate_limit_middleware",
+          "line": 26,
+          "async": true,
+          "file": "backend/middleware/rate_limit_middleware.py"
+        }
+      ],
+      "coverage_percent": 0.0
+    },
+    "backend/middleware/specific_error_handler.py": {
+      "total_functions": 1,
+      "covered_functions": 0,
+      "uncovered_functions": [
+        {
+          "name": "setup_specific_error_handlers",
+          "line": 453,
+          "async": false,
+          "file": "backend/middleware/specific_error_handler.py"
+        }
+      ],
+      "coverage_percent": 0.0
+    },
+    "backend/middleware/secure_rate_limiter.py": {
+      "total_functions": 7,
+      "covered_functions": 0,
+      "uncovered_functions": [
+        {
+          "name": "secure_rate_limit",
+          "line": 119,
+          "async": false,
+          "file": "backend/middleware/secure_rate_limiter.py"
+        },
+        {
+          "name": "auth_rate_limit",
+          "line": 160,
+          "async": false,
+          "file": "backend/middleware/secure_rate_limiter.py"
+        },
+        {
+          "name": "register_rate_limit",
+          "line": 164,
+          "async": false,
+          "file": "backend/middleware/secure_rate_limiter.py"
+        },
+        {
+          "name": "ai_chat_rate_limit",
+          "line": 168,
+          "async": false,
+          "file": "backend/middleware/secure_rate_limiter.py"
+        },
+        {
+          "name": "file_upload_rate_limit",
+          "line": 172,
+          "async": false,
+          "file": "backend/middleware/secure_rate_limiter.py"
+        },
+        {
+          "name": "api_rate_limit",
+          "line": 176,
+          "async": false,
+          "file": "backend/middleware/secure_rate_limiter.py"
+        },
+        {
+          "name": "ai_rate_limit",
+          "line": 180,
+          "async": false,
+          "file": "backend/middleware/secure_rate_limiter.py"
+        }
+      ],
+      "coverage_percent": 0.0
+    },
+    "backend/middleware/enhanced_error_handler.py": {
+      "total_functions": 5,
+      "covered_functions": 1,
+      "uncovered_functions": [
+        {
+          "name": "validation_exception_handler",
+          "line": 125,
+          "async": true,
+          "file": "backend/middleware/enhanced_error_handler.py"
+        },
+        {
+          "name": "http_exception_handler",
+          "line": 143,
+          "async": true,
+          "file": "backend/middleware/enhanced_error_handler.py"
+        },
+        {
+          "name": "general_exception_handler",
+          "line": 153,
+          "async": true,
+          "file": "backend/middleware/enhanced_error_handler.py"
+        },
+        {
+          "name": "setup_error_handlers",
+          "line": 176,
+          "async": false,
+          "file": "backend/middleware/enhanced_error_handler.py"
+        }
+      ],
+      "coverage_percent": 20.0
+    },
+    "backend/utils/uuid_manager.py": {
+      "total_functions": 5,
+      "covered_functions": 2,
+      "uncovered_functions": [
+        {
+          "name": "register_uuid",
+          "line": 102,
+          "async": false,
+          "file": "backend/utils/uuid_manager.py"
+        },
+        {
+          "name": "release_uuid",
+          "line": 106,
+          "async": false,
+          "file": "backend/utils/uuid_manager.py"
+        },
+        {
+          "name": "get_uuid_stats",
+          "line": 110,
+          "async": false,
+          "file": "backend/utils/uuid_manager.py"
+        }
+      ],
+      "coverage_percent": 40.0
+    },
+    "backend/utils/secure_logging.py": {
+      "total_functions": 7,
+      "covered_functions": 2,
+      "uncovered_functions": [
+        {
+          "name": "get_secure_logger",
+          "line": 125,
+          "async": false,
+          "file": "backend/utils/secure_logging.py"
+        },
+        {
+          "name": "secure_debug",
+          "line": 147,
+          "async": false,
+          "file": "backend/utils/secure_logging.py"
+        },
+        {
+          "name": "secure_info",
+          "line": 152,
+          "async": false,
+          "file": "backend/utils/secure_logging.py"
+        },
+        {
+          "name": "secure_warning",
+          "line": 157,
+          "async": false,
+          "file": "backend/utils/secure_logging.py"
+        },
+        {
+          "name": "secure_critical",
+          "line": 167,
+          "async": false,
+          "file": "backend/utils/secure_logging.py"
+        }
+      ],
+      "coverage_percent": 28.57142857142857
+    },
+    "backend/services/implementations/database_service_impl.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/services/implementations/ai_service_impl.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    },
+    "backend/services/implementations/supabase_service_impl.py": {
+      "total_functions": 0,
+      "covered_functions": 0,
+      "uncovered_functions": [],
+      "coverage_percent": 0
+    }
+  }
+}
