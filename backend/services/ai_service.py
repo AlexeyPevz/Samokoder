@@ -18,6 +18,11 @@ from openai import AsyncOpenAI
 from anthropic import AsyncAnthropic
 
 from config.settings import settings
+from backend.patterns.circuit_breaker import circuit_breaker, CircuitBreakerConfig
+from backend.core.exceptions import (
+    AIServiceError, NetworkError, TimeoutError, 
+    ValidationError, ConfigurationError
+)
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +102,30 @@ class OpenRouterClient(AIProviderClient):
                 model=request.model,
                 response_time=response_time
             )
+        except httpx.TimeoutException as e:
+            logger.error(f"OpenRouter timeout: {e}")
+            return AIResponse(
+                content="",
+                tokens_used=0,
+                cost_usd=0.0,
+                provider=self.provider,
+                model=request.model,
+                response_time=(datetime.now() - start_time).total_seconds(),
+                success=False,
+                error=f"Timeout: {e}"
+            )
+        except httpx.HTTPError as e:
+            logger.error(f"OpenRouter HTTP error: {e}")
+            return AIResponse(
+                content="",
+                tokens_used=0,
+                cost_usd=0.0,
+                provider=self.provider,
+                model=request.model,
+                response_time=(datetime.now() - start_time).total_seconds(),
+                success=False,
+                error=f"HTTP error: {e}"
+            )
         except Exception as e:
             logger.error(f"OpenRouter error: {e}")
             return AIResponse(
@@ -155,6 +184,30 @@ class OpenAIClient(AIProviderClient):
                 provider=self.provider,
                 model=request.model,
                 response_time=response_time
+            )
+        except httpx.TimeoutException as e:
+            logger.error(f"OpenAI timeout: {e}")
+            return AIResponse(
+                content="",
+                tokens_used=0,
+                cost_usd=0.0,
+                provider=self.provider,
+                model=request.model,
+                response_time=(datetime.now() - start_time).total_seconds(),
+                success=False,
+                error=f"Timeout: {e}"
+            )
+        except httpx.HTTPError as e:
+            logger.error(f"OpenAI HTTP error: {e}")
+            return AIResponse(
+                content="",
+                tokens_used=0,
+                cost_usd=0.0,
+                provider=self.provider,
+                model=request.model,
+                response_time=(datetime.now() - start_time).total_seconds(),
+                success=False,
+                error=f"HTTP error: {e}"
             )
         except Exception as e:
             logger.error(f"OpenAI error: {e}")
@@ -223,6 +276,30 @@ class AnthropicClient(AIProviderClient):
                 provider=self.provider,
                 model=request.model,
                 response_time=response_time
+            )
+        except httpx.TimeoutException as e:
+            logger.error(f"Anthropic timeout: {e}")
+            return AIResponse(
+                content="",
+                tokens_used=0,
+                cost_usd=0.0,
+                provider=self.provider,
+                model=request.model,
+                response_time=(datetime.now() - start_time).total_seconds(),
+                success=False,
+                error=f"Timeout: {e}"
+            )
+        except httpx.HTTPError as e:
+            logger.error(f"Anthropic HTTP error: {e}")
+            return AIResponse(
+                content="",
+                tokens_used=0,
+                cost_usd=0.0,
+                provider=self.provider,
+                model=request.model,
+                response_time=(datetime.now() - start_time).total_seconds(),
+                success=False,
+                error=f"HTTP error: {e}"
             )
         except Exception as e:
             logger.error(f"Anthropic error: {e}")
@@ -296,6 +373,30 @@ class GroqClient(AIProviderClient):
                 provider=self.provider,
                 model=request.model,
                 response_time=response_time
+            )
+        except httpx.TimeoutException as e:
+            logger.error(f"Groq timeout: {e}")
+            return AIResponse(
+                content="",
+                tokens_used=0,
+                cost_usd=0.0,
+                provider=self.provider,
+                model=request.model,
+                response_time=(datetime.now() - start_time).total_seconds(),
+                success=False,
+                error=f"Timeout: {e}"
+            )
+        except httpx.HTTPError as e:
+            logger.error(f"Groq HTTP error: {e}")
+            return AIResponse(
+                content="",
+                tokens_used=0,
+                cost_usd=0.0,
+                provider=self.provider,
+                model=request.model,
+                response_time=(datetime.now() - start_time).total_seconds(),
+                success=False,
+                error=f"HTTP error: {e}"
             )
         except Exception as e:
             logger.error(f"Groq error: {e}")
@@ -376,6 +477,12 @@ class AIService:
                 )
             # Если нет системных ключей, оставляем clients пустым
     
+    @circuit_breaker("ai_service", CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=30,
+        success_threshold=2,
+        timeout=60
+    ))
     async def route_request(self, 
                           messages: List[Dict[str, str]], 
                           model: str = None, 
@@ -484,6 +591,12 @@ class AIService:
                     return response
                 else:
                     logger.warning(f"Fallback to {provider.value} failed: {response.error}")
+            except httpx.TimeoutException as e:
+                logger.warning(f"Fallback to {provider.value} failed with timeout: {e}")
+                continue
+            except httpx.HTTPError as e:
+                logger.warning(f"Fallback to {provider.value} failed with HTTP error: {e}")
+                continue
             except Exception as e:
                 logger.warning(f"Fallback to {provider.value} failed with exception: {e}")
                 continue
@@ -634,6 +747,12 @@ class AIService:
             try:
                 is_valid = await client.validate_api_key()
                 results[provider.value] = is_valid
+            except httpx.TimeoutException as e:
+                logger.error(f"Timeout validating {provider.value}: {e}")
+                results[provider.value] = False
+            except httpx.HTTPError as e:
+                logger.error(f"HTTP error validating {provider.value}: {e}")
+                results[provider.value] = False
             except Exception as e:
                 logger.error(f"Error validating {provider.value}: {e}")
                 results[provider.value] = False

@@ -103,7 +103,7 @@ def main():
     try:
         print("\n🚀 Запуск сервера...")
         uvicorn.run(
-            "backend.main_fixed:app",
+            "backend.main:app",
             host=settings.host,
             port=settings.port,
             reload=settings.debug,

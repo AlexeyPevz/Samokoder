@@ -1,24 +1,15 @@
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from supabase import create_client, Client
 from typing import Dict, Optional
 from datetime import datetime
 import logging
 import os
 
 from config.settings import settings
+from backend.services.connection_manager import connection_manager
+from backend.services.supabase_manager import execute_supabase_operation
 
 logger = logging.getLogger(__name__)
-
-# Supabase клиент для проверки токенов (с проверкой URL)
-try:
-    supabase: Client = create_client(
-        settings.supabase_url, 
-        settings.supabase_service_role_key  # Используем service role для проверки токенов
-    )
-except Exception as e:
-    logger.warning(f"Supabase client creation failed: {e}")
-    supabase = None
 
 security = HTTPBearer(auto_error=False)
 
@@ -70,6 +61,7 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
                 headers={"WWW-Authenticate": "Bearer"},
             )
         
+        supabase = connection_manager.get_pool('supabase')
         response = supabase.auth.get_user(token)
         
         if not response.user:
@@ -139,7 +131,10 @@ def require_subscription_tier(required_tier: str):
                     detail="Supabase service unavailable"
                 )
             
-            response = supabase.table("profiles").select("subscription_tier").eq("id", current_user["id"]).single().execute()
+            response = await execute_supabase_operation(
+                lambda client: client.table("profiles").select("subscription_tier").eq("id", current_user["id"]).single().execute(),
+                "anon"
+            )
             
             if not response.data:
                 raise HTTPException(
@@ -187,7 +182,10 @@ def require_api_credits(min_credits: float = 0.01):
                     detail="Supabase service unavailable"
                 )
             
-            response = supabase.table("profiles").select("api_credits_balance").eq("id", current_user["id"]).single().execute()
+            response = await execute_supabase_operation(
+                lambda client: client.table("profiles").select("api_credits_balance").eq("id", current_user["id"]).single().execute(),
+                "anon"
+            )
             
             if not response.data:
                 raise HTTPException(
@@ -226,7 +224,10 @@ def validate_user_permissions(required_permissions: list):
                     detail="Supabase service unavailable"
                 )
             
-            response = supabase.table("profiles").select("subscription_tier").eq("id", current_user["id"]).single().execute()
+            response = await execute_supabase_operation(
+                lambda client: client.table("profiles").select("subscription_tier").eq("id", current_user["id"]).single().execute(),
+                "anon"
+            )
             
             if not response.data:
                 raise HTTPException(

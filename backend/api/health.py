@@ -6,6 +6,11 @@
 from fastapi import APIRouter, HTTPException, status
 from backend.monitoring import monitoring
 from backend.models.responses import HealthCheckResponse, DetailedHealthResponse
+from backend.core.exceptions import (
+    DatabaseError, RedisError, NetworkError, 
+    ConfigurationError, MonitoringError
+)
+from backend.services.supabase_manager import execute_supabase_operation
 from typing import Dict, Any
 import asyncio
 import logging
@@ -31,6 +36,18 @@ async def basic_health_check():
             services=health_status.get("services", {})
         )
         
+    except MonitoringError as e:
+        logger.error(f"Monitoring error in health check: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Monitoring service unavailable"
+        )
+    except ConfigurationError as e:
+        logger.error(f"Configuration error in health check: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Configuration error"
+        )
     except Exception as e:
         logger.error(f"Health check error: {e}")
         raise HTTPException(
@@ -67,6 +84,18 @@ async def detailed_health_check():
             disk_usage=disk_usage
         )
         
+    except MonitoringError as e:
+        logger.error(f"Monitoring error in detailed health check: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Monitoring service unavailable"
+        )
+    except ConfigurationError as e:
+        logger.error(f"Configuration error in detailed health check: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Configuration error"
+        )
     except Exception as e:
         logger.error(f"Detailed health check error: {e}")
         raise HTTPException(
@@ -78,25 +107,22 @@ async def detailed_health_check():
 async def database_health_check():
     """Проверка состояния базы данных"""
     try:
-        from config.settings import settings
-        from supabase import create_client, Client
+        from backend.services.connection_manager import connection_manager
         
-        if not settings.supabase_url or settings.supabase_url.endswith("example.supabase.co"):
+        try:
+            supabase = connection_manager.get_pool('supabase')
+        except Exception:
             return {
                 "status": "mock",
                 "message": "Database in mock mode",
                 "timestamp": datetime.now().isoformat()
             }
         
-        # Создаем клиент для проверки
-        supabase: Client = create_client(
-            settings.supabase_url,
-            settings.supabase_service_role_key
-        )
-        
         # Проверяем подключение
         start_time = datetime.now()
-        response = supabase.table("profiles").select("id").limit(1).execute()
+        response = await execute_supabase_operation(
+            supabase.table("profiles").select("id").limit(1)
+        )
         response_time = (datetime.now() - start_time).total_seconds()
         
         return {
@@ -106,6 +132,13 @@ async def database_health_check():
             "timestamp": datetime.now().isoformat()
         }
         
+    except DatabaseError as e:
+        logger.error(f"Database error in health check: {e}")
+        return {
+            "status": "unhealthy",
+            "message": f"Database error: {str(e)}",
+            "timestamp": datetime.now().isoformat()
+        }
     except Exception as e:
         logger.error(f"Database health check error: {e}")
         return {
@@ -141,6 +174,13 @@ async def ai_health_check():
             "timestamp": datetime.now().isoformat()
         }
         
+    except NetworkError as e:
+        logger.error(f"Network error in AI health check: {e}")
+        return {
+            "status": "unhealthy",
+            "message": f"Network error: {str(e)}",
+            "timestamp": datetime.now().isoformat()
+        }
     except Exception as e:
         logger.error(f"AI health check error: {e}")
         return {
@@ -183,6 +223,13 @@ async def system_health_check():
             "timestamp": datetime.now().isoformat()
         }
         
+    except MonitoringError as e:
+        logger.error(f"Monitoring error in system health check: {e}")
+        return {
+            "status": "unhealthy",
+            "message": f"Monitoring error: {str(e)}",
+            "timestamp": datetime.now().isoformat()
+        }
     except Exception as e:
         logger.error(f"System health check error: {e}")
         return {
@@ -200,9 +247,11 @@ async def check_external_services_health() -> Dict[str, str]:
         from config.settings import settings
         if settings.supabase_url and not settings.supabase_url.endswith("example.supabase.co"):
             try:
-                from supabase import create_client
-                supabase = create_client(settings.supabase_url, settings.supabase_service_role_key)
-                supabase.table("profiles").select("id").limit(1).execute()
+                from backend.services.connection_manager import connection_manager
+                supabase = connection_manager.get_pool('supabase')
+                await execute_supabase_operation(
+                    supabase.table("profiles").select("id").limit(1)
+                )
                 external_services["supabase"] = "healthy"
             except Exception as e:
                 external_services["supabase"] = f"unhealthy: {str(e)}"
@@ -217,6 +266,12 @@ async def check_external_services_health() -> Dict[str, str]:
         except Exception as e:
             external_services["redis"] = f"unhealthy: {str(e)}"
         
+    except DatabaseError as e:
+        logger.error(f"Database error in external services check: {e}")
+        external_services["database_error"] = str(e)
+    except RedisError as e:
+        logger.error(f"Redis error in external services check: {e}")
+        external_services["redis_error"] = str(e)
     except Exception as e:
         logger.error(f"External services check error: {e}")
         external_services["error"] = str(e)
@@ -232,6 +287,14 @@ def get_memory_usage() -> Dict[str, Any]:
             "available_bytes": memory.available,
             "used_bytes": memory.used,
             "used_percent": memory.percent
+        }
+    except MonitoringError as e:
+        logger.error(f"Monitoring error in memory usage check: {e}")
+        return {
+            "total_bytes": 0,
+            "available_bytes": 0,
+            "used_bytes": 0,
+            "used_percent": 0
         }
     except Exception as e:
         logger.error(f"Memory usage check error: {e}")
@@ -251,6 +314,14 @@ def get_disk_usage() -> Dict[str, Any]:
             "free_bytes": disk.free,
             "used_bytes": disk.used,
             "used_percent": round((disk.used / disk.total) * 100, 2)
+        }
+    except MonitoringError as e:
+        logger.error(f"Monitoring error in disk usage check: {e}")
+        return {
+            "total_bytes": 0,
+            "free_bytes": 0,
+            "used_bytes": 0,
+            "used_percent": 0
         }
     except Exception as e:
         logger.error(f"Disk usage check error: {e}")

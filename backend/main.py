@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from supabase import create_client, Client
 import json
 import uuid
 import os
@@ -14,6 +13,15 @@ from backend.services.ai_service import get_ai_service
 from backend.auth.dependencies import get_current_user
 from backend.monitoring import monitoring, monitoring_middleware, get_metrics_response
 from backend.models.requests import LoginRequest
+from backend.services.connection_manager import connection_manager
+from backend.services.supabase_manager import supabase_manager, execute_supabase_operation
+from backend.services.project_state_manager import project_state_manager, get_active_project, add_active_project, remove_active_project, is_project_active
+from backend.core.exceptions import (
+    SamokoderException, AuthenticationError, AuthorizationError, ValidationError,
+    NotFoundError, ConflictError, RateLimitError, AIServiceError, DatabaseError,
+    ExternalServiceError, ConfigurationError, ConnectionError, TimeoutError,
+    EncryptionError, ProjectError, FileSystemError, NetworkError, CacheError
+)
 
 # Настройка структурированного логирования
 import structlog
@@ -48,6 +56,7 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -68,32 +77,29 @@ app.middleware("http")(rate_limit_middleware)
 from backend.middleware.validation_middleware import validation_middleware
 app.middleware("http")(validation_middleware)
 
-# Supabase клиент (с проверкой URL)
-supabase = None
-try:
-    # В тестовом режиме используем mock Supabase
-    if os.getenv("ENVIRONMENT") == "test" or os.getenv("PYTEST_CURRENT_TEST"):
-        logger.info("supabase_mock_mode", reason="test_environment")
-        supabase = None  # Будем использовать mock режим в endpoints
-    elif (settings.supabase_url and 
-          settings.supabase_anon_key and 
-          not settings.supabase_url.endswith("example.supabase.co") and
-          not settings.supabase_anon_key.endswith("example") and
-          "auhzhdndqyflfdfszapm" not in settings.supabase_url):  # Избегаем тестового URL
-        supabase = create_client(
-            settings.supabase_url, 
-            settings.supabase_anon_key
-        )
-        logger.info("supabase_client_initialized", status="success")
-    else:
-        logger.warning("supabase_not_configured", reason="invalid_config")
-        supabase = None
-except Exception as e:
-    logger.warning("supabase_client_failed", error=str(e), error_type=type(e).__name__)
-    supabase = None
+# Error handlers
+from backend.middleware.specific_error_handler import setup_specific_error_handlers
+setup_specific_error_handlers(app)
 
-# Хранилище активных проектов (в продакшне использовать Redis)
-active_projects: Dict[str, SamokoderGPTPilot] = {}
+# Supabase клиент теперь управляется через connection_manager
+
+# Инициализация Project State Manager при запуске
+@app.on_event("startup")
+async def startup_event():
+    """Инициализация при запуске приложения"""
+    try:
+        await connection_manager.initialize()
+        await project_state_manager.initialize()
+        logger.info("All managers initialized")
+    except ConfigurationError as e:
+        logger.error(f"Configuration error during initialization: {e}")
+        raise
+    except ConnectionError as e:
+        logger.error(f"Connection error during initialization: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error during initialization: {e}")
+        raise ConfigurationError(f"Failed to initialize managers: {e}")
 
 # === БАЗОВЫЕ ЭНДПОИНТЫ ===
 
@@ -145,9 +151,12 @@ async def health_check():
     """
     try:
         return monitoring.get_health_status()
+    except MonitoringError as e:
+        logger.error("monitoring_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=503, detail="Monitoring service unavailable")
     except Exception as e:
         logger.error("health_check_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Health check failed")
 
 @app.get("/metrics")
 async def metrics():
@@ -162,15 +171,15 @@ async def metrics():
 @app.get("/health/detailed")
 async def detailed_health_check():
     """Детальная проверка здоровья всех компонентов"""
-    from backend.monitoring import check_external_services_health
+    from backend.services.health_checker import health_checker
     
     health_status = monitoring.get_health_status()
-    external_services = await check_external_services_health()
+    external_services = await health_checker.check_all_services()
     
     return {
         **health_status,
         "external_services": external_services,
-        "active_projects": len(active_projects),
+        "active_projects": await project_state_manager.get_stats()["total_projects"],
         "memory_usage": {"used": 0, "total": 0, "percentage": 0},  # TODO: Получить реальное использование памяти
         "disk_usage": {"used": 0, "total": 0, "percentage": 0}  # TODO: Получить реальное использование диска
     }
@@ -216,9 +225,17 @@ async def login(credentials: LoginRequest):
         else:
             raise HTTPException(status_code=401, detail="Неверные учетные данные")
             
+    except HTTPException:
+        raise
+    except AuthenticationError as e:
+        logger.error("authentication_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=401, detail="Authentication failed")
+    except DatabaseError as e:
+        logger.error("database_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=503, detail="Database unavailable")
     except Exception as e:
         logger.error("login_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(status_code=401, detail=f"Ошибка входа: {str(e)}")
+        raise HTTPException(status_code=401, detail="Login failed")
 
 @app.post("/api/auth/register")
 async def register(user_data: dict):
@@ -321,7 +338,10 @@ async def get_projects(current_user: dict = Depends(get_current_user)):
                 "total_count": 0
             }
         
-        response = supabase.table("projects").select("*").eq("user_id", current_user["id"]).order("created_at", desc=True).execute()
+        response = await execute_supabase_operation(
+            lambda client: client.table("projects").select("*").eq("user_id", current_user["id"]).order("created_at", desc=True).execute(),
+            "anon"
+        )
         
         if not response.data:
             return {
@@ -332,16 +352,22 @@ async def get_projects(current_user: dict = Depends(get_current_user)):
         # Добавляем информацию о том, активен ли проект в памяти
         projects_with_status = []
         for project in response.data:
-            project["is_active"] = project["id"] in active_projects
+            project["is_active"] = await is_project_active(project["id"], current_user["id"])
             projects_with_status.append(project)
         
         return {
             "projects": projects_with_status,
             "total_count": len(projects_with_status)
         }
+    except DatabaseError as e:
+        logger.error("database_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    except ProjectError as e:
+        logger.error("project_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail="Project service error")
     except Exception as e:
         logger.error("get_projects_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(status_code=500, detail=f"Ошибка получения проектов: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get projects")
 
 @app.post("/api/projects")
 async def create_project(
@@ -368,7 +394,10 @@ async def create_project(
             from backend.services.encryption_service import get_encryption_service
             encryption_service = get_encryption_service()
             
-            user_keys_response = supabase.table("user_api_keys").select("*").eq("user_id", user_id).eq("is_active", True).execute()
+            user_keys_response = await execute_supabase_operation(
+                lambda client: client.table("user_api_keys").select("*").eq("user_id", user_id).eq("is_active", True).execute(),
+                "anon"
+            )
             if user_keys_response.data:
                 # Расшифровываем API ключи
                 for row in user_keys_response.data:
@@ -411,7 +440,10 @@ async def create_project(
                 "updated_at": datetime.now().isoformat()
             }
             
-            response = supabase.table("projects").insert(project_record).execute()
+            response = await execute_supabase_operation(
+                lambda client: client.table("projects").insert(project_record).execute(),
+                "anon"
+            )
             
             if not response.data:
                 raise HTTPException(status_code=500, detail="Ошибка сохранения проекта в базу данных")
@@ -420,7 +452,7 @@ async def create_project(
             logger.warning("supabase_unavailable", fallback="memory_only")
         
         # Сохраняем активный проект
-        active_projects[project_id] = pilot_wrapper
+        await add_active_project(project_id, user_id, pilot_wrapper)
         
         logger.info("project_created", project_id=project_id, user_id=user_id)
         
@@ -431,12 +463,18 @@ async def create_project(
             "workspace": init_result.get("workspace", f"workspaces/{user_id}/{project_id}")
         }
         
+    except ProjectError as e:
+        logger.error("project_error", error=str(e), error_type=type(e).__name__)
+        await remove_active_project(project_id, user_id)
+        raise HTTPException(status_code=500, detail="Project creation failed")
+    except DatabaseError as e:
+        logger.error("database_error", error=str(e), error_type=type(e).__name__)
+        await remove_active_project(project_id, user_id)
+        raise HTTPException(status_code=503, detail="Database unavailable")
     except Exception as e:
         logger.error("create_project_error", error=str(e), error_type=type(e).__name__)
-        # Очищаем активные проекты в случае ошибки
-        if project_id in active_projects:
-            del active_projects[project_id]
-        raise HTTPException(status_code=500, detail=f"Ошибка создания проекта: {str(e)}")
+        await remove_active_project(project_id, user_id)
+        raise HTTPException(status_code=500, detail="Project creation failed")
 
 @app.get("/api/projects/{project_id}")
 async def get_project(
@@ -447,23 +485,25 @@ async def get_project(
     
     try:
         if supabase:
-            response = supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"]).single().execute()
+            response = await execute_supabase_operation(
+                lambda client: client.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"]).single().execute(),
+                "anon"
+            )
             
             if not response.data:
                 raise HTTPException(status_code=404, detail="Проект не найден")
             
             project_data = response.data
-            project_data["is_active"] = project_id in active_projects
+            project_data["is_active"] = await is_project_active(project_id, current_user["id"])
             
             return {
                 "project": project_data
             }
         else:
             # Mock режим - проверяем только активные проекты
-            if project_id not in active_projects:
+            pilot_wrapper = await get_active_project(project_id, current_user["id"])
+            if not pilot_wrapper:
                 raise HTTPException(status_code=404, detail="Проект не найден")
-            
-            pilot_wrapper = active_projects[project_id]
             return {
                 "project": {
                     "id": project_id,
@@ -492,27 +532,30 @@ async def delete_project(
     try:
         if supabase:
             # Проверяем, что проект принадлежит пользователю
-            project_response = supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"]).single().execute()
+            project_response = await execute_supabase_operation(
+                lambda client: client.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"]).single().execute(),
+                "anon"
+            )
             
             if not project_response.data:
                 raise HTTPException(status_code=404, detail="Проект не найден")
             
             # Удаляем из активных проектов
-            if project_id in active_projects:
-                del active_projects[project_id]
+            await remove_active_project(project_id, current_user["id"])
             
             # Удаляем из базы данных
-            supabase.table("projects").delete().eq("id", project_id).execute()
+            await execute_supabase_operation(
+                lambda client: client.table("projects").delete().eq("id", project_id).execute(),
+                "anon"
+            )
             
             logger.info("project_deleted", project_id=project_id)
             
             return {"message": "Проект успешно удален"}
         else:
             # Mock режим - удаляем только из памяти
-            if project_id not in active_projects:
+            if not await remove_active_project(project_id, current_user["id"]):
                 raise HTTPException(status_code=404, detail="Проект не найден")
-            
-            del active_projects[project_id]
             logger.info("project_deleted_mock", project_id=project_id)
             
             return {"message": "Проект успешно удален (mock режим)"}
@@ -537,14 +580,14 @@ async def chat_with_project(
     if not chat_data.get("message"):
         raise HTTPException(status_code=400, detail="Сообщение обязательно")
     
-    if project_id not in active_projects:
+    pilot_wrapper = await get_active_project(project_id, current_user["id"])
+    if not pilot_wrapper:
         # Загружаем проект из базы если не в памяти
         await load_project_to_memory(project_id, current_user["id"])
+        pilot_wrapper = await get_active_project(project_id, current_user["id"])
     
-    if project_id not in active_projects:
+    if not pilot_wrapper:
         raise HTTPException(status_code=404, detail="Проект не найден или не активен")
-    
-    pilot_wrapper = active_projects[project_id]
     
     async def stream_response():
         try:
@@ -576,20 +619,23 @@ async def generate_project(
 ):
     """Запуск полной генерации проекта"""
     
-    if project_id not in active_projects:
+    pilot_wrapper = await get_active_project(project_id, current_user["id"])
+    if not pilot_wrapper:
         await load_project_to_memory(project_id, current_user["id"])
+        pilot_wrapper = await get_active_project(project_id, current_user["id"])
     
-    if project_id not in active_projects:
+    if not pilot_wrapper:
         raise HTTPException(status_code=404, detail="Проект не найден или не активен")
-    
-    pilot_wrapper = active_projects[project_id]
     
     # Обновляем статус в базе
     try:
-        supabase.table("projects").update({
-            "status": "generating",
-            "updated_at": datetime.now().isoformat()
-        }).eq("id", project_id).execute()
+        await execute_supabase_operation(
+            lambda client: client.table("projects").update({
+                "status": "generating",
+                "updated_at": datetime.now().isoformat()
+            }).eq("id", project_id).execute(),
+            "anon"
+        )
     except Exception as e:
         logger.error("update_project_status_error", error=str(e), error_type=type(e).__name__)
     
@@ -599,19 +645,25 @@ async def generate_project(
                 yield f"data: {json.dumps(update)}\n\n"
                 
             # Финальное обновление статуса
-            supabase.table("projects").update({
-                "status": "completed",
-                "updated_at": datetime.now().isoformat()
-            }).eq("id", project_id).execute()
+            await execute_supabase_operation(
+                lambda client: client.table("projects").update({
+                    "status": "completed",
+                    "updated_at": datetime.now().isoformat()
+                }).eq("id", project_id).execute(),
+                "anon"
+            )
             
         except Exception as e:
             logger.error("generation_stream_error", error=str(e), error_type=type(e).__name__)
             # Обновляем статус при ошибке
             try:
-                supabase.table("projects").update({
-                    "status": "error",
-                    "updated_at": datetime.now().isoformat()
-                }).eq("id", project_id).execute()
+                await execute_supabase_operation(
+                    lambda client: client.table("projects").update({
+                        "status": "error",
+                        "updated_at": datetime.now().isoformat()
+                    }).eq("id", project_id).execute(),
+                    "anon"
+                )
             except Exception as update_error:
                 logger.error("update_project_status_on_error", error=str(update_error), error_type=type(update_error).__name__)
             
@@ -638,13 +690,13 @@ async def get_project_files(
 ):
     """Получение структуры файлов проекта"""
     
-    if project_id not in active_projects:
+    pilot_wrapper = await get_active_project(project_id, current_user["id"])
+    if not pilot_wrapper:
         await load_project_to_memory(project_id, current_user["id"])
+        pilot_wrapper = await get_active_project(project_id, current_user["id"])
     
-    if project_id not in active_projects:
+    if not pilot_wrapper:
         raise HTTPException(status_code=404, detail="Проект не найден или не активен")
-    
-    pilot_wrapper = active_projects[project_id]
     
     try:
         file_tree = await pilot_wrapper.get_project_files()
@@ -666,13 +718,13 @@ async def get_file_content(
 ):
     """Получение содержимого файла"""
     
-    if project_id not in active_projects:
+    pilot_wrapper = await get_active_project(project_id, current_user["id"])
+    if not pilot_wrapper:
         await load_project_to_memory(project_id, current_user["id"])
+        pilot_wrapper = await get_active_project(project_id, current_user["id"])
     
-    if project_id not in active_projects:
+    if not pilot_wrapper:
         raise HTTPException(status_code=404, detail="Проект не найден или не активен")
-    
-    pilot_wrapper = active_projects[project_id]
     
     try:
         content = pilot_wrapper.get_file_content(file_path)
@@ -682,10 +734,16 @@ async def get_file_content(
             "size": len(content)
         }
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Файл не найден")
+        raise HTTPException(status_code=404, detail="File not found")
+    except FileSystemError as e:
+        logger.error("filesystem_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail="File system error")
+    except ProjectError as e:
+        logger.error("project_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail="Project access error")
     except Exception as e:
         logger.error("get_file_content_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(status_code=500, detail=f"Ошибка получения файла: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get file content")
 
 # === ЭКСПОРТ ===
 
@@ -696,13 +754,13 @@ async def export_project(
 ):
     """Экспорт проекта в ZIP"""
     
-    if project_id not in active_projects:
+    pilot_wrapper = await get_active_project(project_id, current_user["id"])
+    if not pilot_wrapper:
         await load_project_to_memory(project_id, current_user["id"])
+        pilot_wrapper = await get_active_project(project_id, current_user["id"])
     
-    if project_id not in active_projects:
+    if not pilot_wrapper:
         raise HTTPException(status_code=404, detail="Проект не найден или не активен")
-    
-    pilot_wrapper = active_projects[project_id]
     
     try:
         zip_path = pilot_wrapper.create_zip_export()
@@ -714,9 +772,15 @@ async def export_project(
             media_type="application/zip",
             filename=f"samokoder_project_{project_id}.zip"
         )
+    except FileSystemError as e:
+        logger.error("filesystem_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail="File system error during export")
+    except ProjectError as e:
+        logger.error("project_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail="Project export error")
     except Exception as e:
         logger.error("export_project_error", error=str(e), error_type=type(e).__name__)
-        raise HTTPException(status_code=500, detail=f"Ошибка экспорта: {str(e)}")
+        raise HTTPException(status_code=500, detail="Export failed")
 
 # === MFA ===
 
@@ -757,7 +821,10 @@ async def ai_chat(
             from backend.services.encryption_service import get_encryption_service
             encryption_service = get_encryption_service()
             
-            user_keys_response = supabase.table("user_api_keys").select("*").eq("user_id", current_user["id"]).eq("is_active", True).execute()
+            user_keys_response = await execute_supabase_operation(
+                lambda client: client.table("user_api_keys").select("*").eq("user_id", current_user["id"]).eq("is_active", True).execute(),
+                "anon"
+            )
             if user_keys_response.data:
                 # Расшифровываем API ключи
                 for row in user_keys_response.data:
@@ -819,10 +886,17 @@ async def ai_chat(
             "response_time": response.response_time
         }
         
+    except AIServiceError as e:
+        logger.error("ai_service_error", error=str(e), error_type=type(e).__name__)
+        monitoring.log_error(e, {"user_id": current_user["id"], "action": "ai_chat"})
+        raise HTTPException(status_code=502, detail="AI service unavailable")
+    except RateLimitError as e:
+        logger.error("rate_limit_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
     except Exception as e:
         logger.error("ai_chat_error", error=str(e), error_type=type(e).__name__)
         monitoring.log_error(e, {"user_id": current_user["id"], "action": "ai_chat"})
-        raise HTTPException(status_code=500, detail=f"Ошибка AI чата: {str(e)}")
+        raise HTTPException(status_code=500, detail="AI chat failed")
 
 @app.get("/api/ai/usage")
 async def get_ai_usage(current_user: dict = Depends(get_current_user)):
@@ -830,7 +904,10 @@ async def get_ai_usage(current_user: dict = Depends(get_current_user)):
     
     try:
         # Получаем API ключи пользователя
-        user_keys_response = supabase.table("user_api_keys").select("*").eq("user_id", current_user["id"]).eq("is_active", True).execute()
+        user_keys_response = await execute_supabase_operation(
+            lambda client: client.table("user_api_keys").select("*").eq("user_id", current_user["id"]).eq("is_active", True).execute(),
+            "anon"
+        )
         user_api_keys = {
             row['provider']: row['api_key_decrypted'] 
             for row in user_keys_response.data
@@ -926,12 +1003,15 @@ async def load_project_to_memory(project_id: str, user_id: str):
                 "openai": "mock_openai_key"
             }
             pilot_wrapper = SamokoderGPTPilot(project_id, user_id, user_api_keys)
-            active_projects[project_id] = pilot_wrapper
+            await add_active_project(project_id, user_id, pilot_wrapper)
             logger.info("project_loaded_to_memory_mock", project_id=project_id)
             return
         
         # Получаем данные проекта
-        project_response = supabase.table("projects").select("*").eq("id", project_id).eq("user_id", user_id).single().execute()
+        project_response = await execute_supabase_operation(
+            lambda client: client.table("projects").select("*").eq("id", project_id).eq("user_id", user_id).single().execute(),
+            "anon"
+        )
         
         if not project_response.data:
             raise HTTPException(status_code=404, detail="Проект не найден")
@@ -940,7 +1020,10 @@ async def load_project_to_memory(project_id: str, user_id: str):
         
         # Получаем API ключи пользователя
         user_api_keys = {}
-        user_keys_response = supabase.table("user_api_keys").select("*").eq("user_id", user_id).eq("is_active", True).execute()
+        user_keys_response = await execute_supabase_operation(
+            lambda client: client.table("user_api_keys").select("*").eq("user_id", user_id).eq("is_active", True).execute(),
+            "anon"
+        )
         if user_keys_response.data:
             # Здесь должна быть расшифровка ключей
             for row in user_keys_response.data:
@@ -954,7 +1037,7 @@ async def load_project_to_memory(project_id: str, user_id: str):
         if project_data['status'] != 'draft':
             await pilot_wrapper.restore_from_workspace()
         
-        active_projects[project_id] = pilot_wrapper
+        await add_active_project(project_id, user_id, pilot_wrapper)
         
         logger.info("project_loaded_to_memory", project_id=project_id)
         
@@ -983,10 +1066,23 @@ async def log_requests(request: Request, call_next):
     
     return response
 
+# Graceful shutdown
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Обработка graceful shutdown"""
+    try:
+        from backend.services.health_checker import health_checker
+        await health_checker.close()
+        await project_state_manager.close()
+        await connection_manager.close()
+        logger.info("Application shutdown completed")
+    except Exception as e:
+        logger.error(f"Error during shutdown: {e}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        "backend.main_fixed:app",
+        "backend.main:app",
         host=settings.host,
         port=settings.port,
         reload=settings.debug
