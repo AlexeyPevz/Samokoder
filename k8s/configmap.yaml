@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: samokoder-config
+  namespace: samokoder
+data:
+  ENVIRONMENT: "production"
+  DEBUG: "false"
+  LOG_LEVEL: "INFO"
+  HOST: "0.0.0.0"
+  PORT: "8000"
+  CORS_ORIGINS: "https://samokoder.com,https://app.samokoder.com"
+  MAX_FILE_SIZE_MB: "50"
+  RATE_LIMIT_PER_MINUTE: "60"
+  RATE_LIMIT_PER_HOUR: "1000"
+  DATABASE_POOL_SIZE: "10"
+  DATABASE_MAX_OVERFLOW: "20"
+  ENABLE_METRICS: "true"
+  METRICS_PORT: "9090"
+  MAX_PROJECTS_PER_USER: "10"
+  MAX_FILE_SIZE_BYTES: "52428800"
+  ENABLE_BACKUPS: "true"
+  BACKUP_INTERVAL_HOURS: "24"
+  DEFAULT_MODEL: "deepseek/deepseek-v3"
+  DEFAULT_PROVIDER: "openrouter"
+  GPT_PILOT_PATH: "/app/samokoder-core"
+  GPT_PILOT_TIMEOUT: "300"

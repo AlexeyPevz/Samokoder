@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cost-monitoring
+  namespace: monitoring
+  labels:
+    app: cost-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cost-monitoring
+  template:
+    metadata:
+      labels:
+        app: cost-monitoring
+    spec:
+      serviceAccountName: cost-monitoring
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: cost-monitoring
+        image: kubecost/cost-model:1.108.0
+        ports:
+        - containerPort: 9003
+          name: http
+        env:
+        - name: CLUSTER_ID
+          value: "samokoder-cluster"
+        - name: PROMETHEUS_SERVER_ENDPOINT
+          value: "http://prometheus.monitoring.svc.cluster.local:9090"
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: secret-access-key
+        - name: AWS_REGION
+          value: "us-west-2"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 9003
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 9003
+          initialDelaySeconds: 5
+          periodSeconds: 5

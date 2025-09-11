@@ -1,0 +1,152 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chaos-monkey-config
+  namespace: chaos-engineering
+data:
+  config.yaml: |
+    chaos:
+      enabled: true
+      schedule: "0 2 * * *"  # Daily at 2 AM
+      experiments:
+        - name: "pod-failure"
+          type: "pod-delete"
+          target: "samokoder-backend"
+          probability: 0.1
+          duration: "5m"
+        - name: "network-latency"
+          type: "network-delay"
+          target: "samokoder-backend"
+          probability: 0.05
+          duration: "10m"
+          parameters:
+            delay: "100ms"
+        - name: "cpu-stress"
+          type: "cpu-stress"
+          target: "samokoder-backend"
+          probability: 0.05
+          duration: "5m"
+          parameters:
+            cpu-percent: 80
+        - name: "memory-stress"
+          type: "memory-stress"
+          target: "samokoder-backend"
+          probability: 0.05
+          duration: "5m"
+          parameters:
+            memory-percent: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chaos-monkey
+  namespace: chaos-engineering
+  labels:
+    app: chaos-monkey
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chaos-monkey
+  template:
+    metadata:
+      labels:
+        app: chaos-monkey
+    spec:
+      serviceAccountName: chaos-monkey
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: chaos-monkey
+        image: chaosmonkey/chaos-monkey:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: CONFIG_FILE
+          value: "/etc/chaos-monkey/config.yaml"
+        - name: KUBECONFIG
+          value: "/etc/kubernetes/kubeconfig"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/chaos-monkey
+        - name: kubeconfig
+          mountPath: /etc/kubernetes
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: chaos-monkey-config
+      - name: kubeconfig
+        secret:
+          secretName: chaos-monkey-kubeconfig
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chaos-monkey
+  namespace: chaos-engineering
+  labels:
+    app: chaos-monkey
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  selector:
+    app: chaos-monkey
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: chaos-monkey
+  namespace: chaos-engineering
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: chaos-monkey
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch", "delete"]
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: chaos-monkey
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: chaos-monkey
+subjects:
+- kind: ServiceAccount
+  name: chaos-monkey
+  namespace: chaos-engineering

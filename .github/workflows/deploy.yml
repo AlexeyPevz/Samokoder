@@ -1,0 +1,333 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+      version:
+        description: 'Version to deploy'
+        required: false
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Security and quality checks
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+        
+    - name: Run Bandit security linter
+      run: |
+        pip install bandit
+        bandit -r . -f json -o bandit-report.json || true
+        
+    - name: Run Safety check
+      run: |
+        pip install safety
+        safety check --json --output safety-report.json || true
+
+  # Build and test
+  build-and-test:
+    runs-on: ubuntu-latest
+    needs: security-scan
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov pytest-xdist
+        
+    - name: Run tests
+      run: |
+        pytest tests/ -v --cov=backend --cov-report=xml --cov-report=html --junitxml=pytest-report.xml
+        
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-${{ matrix.python-version }}
+        path: pytest-report.xml
+
+  # Build Docker image
+  build-image:
+    runs-on: ubuntu-latest
+    needs: [security-scan, build-and-test]
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=raw,value=latest,enable={{is_default_branch}}
+          
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+          VCS_REF=${{ github.sha }}
+          VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+
+  # Deploy to staging
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [build-image]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+        
+    - name: Update kubeconfig
+      run: |
+        aws eks update-kubeconfig --region us-west-2 --name samokoder-eks
+        
+    - name: Deploy to staging
+      run: |
+        # Update image tag in deployment
+        sed -i "s|image: samokoder/backend:.*|image: ${{ needs.build-image.outputs.image-tag }}|g" k8s/deployment.yaml
+        
+        # Apply Kubernetes manifests
+        kubectl apply -f k8s/namespace.yaml
+        kubectl apply -f k8s/configmap.yaml
+        kubectl apply -f k8s/secrets.yaml
+        kubectl apply -f k8s/serviceaccount.yaml
+        kubectl apply -f k8s/pvc.yaml
+        kubectl apply -f k8s/deployment.yaml
+        kubectl apply -f k8s/service.yaml
+        kubectl apply -f k8s/ingress.yaml
+        kubectl apply -f k8s/hpa.yaml
+        kubectl apply -f k8s/pdb.yaml
+        
+        # Wait for deployment to be ready
+        kubectl wait --for=condition=available --timeout=300s deployment/samokoder-backend -n samokoder
+        
+    - name: Run smoke tests
+      run: |
+        # Get service endpoint
+        SERVICE_IP=$(kubectl get service samokoder-backend-service -n samokoder -o jsonpath='{.spec.clusterIP}')
+        SERVICE_PORT=$(kubectl get service samokoder-backend-service -n samokoder -o jsonpath='{.spec.ports[0].port}')
+        
+        # Test health endpoint
+        kubectl run test-pod --image=curlimages/curl:latest --rm -i --restart=Never -- curl -f "http://$SERVICE_IP:$SERVICE_PORT/health"
+        
+        # Test API endpoint
+        kubectl run test-pod --image=curlimages/curl:latest --rm -i --restart=Never -- curl -f "http://$SERVICE_IP:$SERVICE_PORT/api/health"
+        
+    - name: Notify deployment
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        text: "Staging deployment successful: ${{ needs.build-image.outputs.image-tag }}"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Deploy to production
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: [build-image, deploy-staging]
+    if: startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch')
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+        
+    - name: Update kubeconfig
+      run: |
+        aws eks update-kubeconfig --region us-west-2 --name samokoder-eks
+        
+    - name: Create backup before deployment
+      run: |
+        # Backup current deployment
+        kubectl get deployment samokoder-backend -n samokoder -o yaml > backup-deployment-$(date +%Y%m%d-%H%M%S).yaml
+        
+        # Backup current configmap
+        kubectl get configmap samokoder-config -n samokoder -o yaml > backup-configmap-$(date +%Y%m%d-%H%M%S).yaml
+        
+    - name: Deploy to production
+      run: |
+        # Update image tag in deployment
+        sed -i "s|image: samokoder/backend:.*|image: ${{ needs.build-image.outputs.image-tag }}|g" k8s/deployment.yaml
+        
+        # Apply Kubernetes manifests
+        kubectl apply -f k8s/namespace.yaml
+        kubectl apply -f k8s/configmap.yaml
+        kubectl apply -f k8s/secrets.yaml
+        kubectl apply -f k8s/serviceaccount.yaml
+        kubectl apply -f k8s/pvc.yaml
+        kubectl apply -f k8s/deployment.yaml
+        kubectl apply -f k8s/service.yaml
+        kubectl apply -f k8s/ingress.yaml
+        kubectl apply -f k8s/hpa.yaml
+        kubectl apply -f k8s/pdb.yaml
+        
+        # Wait for deployment to be ready
+        kubectl wait --for=condition=available --timeout=600s deployment/samokoder-backend -n samokoder
+        
+    - name: Run production tests
+      run: |
+        # Get service endpoint
+        SERVICE_IP=$(kubectl get service samokoder-backend-service -n samokoder -o jsonpath='{.spec.clusterIP}')
+        SERVICE_PORT=$(kubectl get service samokoder-backend-service -n samokoder -o jsonpath='{.spec.ports[0].port}')
+        
+        # Test health endpoint
+        kubectl run test-pod --image=curlimages/curl:latest --rm -i --restart=Never -- curl -f "http://$SERVICE_IP:$SERVICE_PORT/health"
+        
+        # Test API endpoint
+        kubectl run test-pod --image=curlimages/curl:latest --rm -i --restart=Never -- curl -f "http://$SERVICE_IP:$SERVICE_PORT/api/health"
+        
+        # Test metrics endpoint
+        kubectl run test-pod --image=curlimages/curl:latest --rm -i --restart=Never -- curl -f "http://$SERVICE_IP:$SERVICE_PORT/metrics"
+        
+    - name: Verify deployment
+      run: |
+        # Check pod status
+        kubectl get pods -n samokoder -l app=samokoder-backend
+        
+        # Check service endpoints
+        kubectl get endpoints -n samokoder samokoder-backend-service
+        
+        # Check HPA status
+        kubectl get hpa -n samokoder
+        
+    - name: Notify deployment
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        text: "Production deployment successful: ${{ needs.build-image.outputs.image-tag }}"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Rollback job (manual trigger)
+  rollback:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'rollback'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+        
+    - name: Update kubeconfig
+      run: |
+        aws eks update-kubeconfig --region us-west-2 --name samokoder-eks
+        
+    - name: Execute rollback
+      run: |
+        ./scripts/rollback.sh ${{ github.event.inputs.version }} production
+        
+    - name: Notify rollback
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        text: "Rollback completed to version: ${{ github.event.inputs.version }}"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

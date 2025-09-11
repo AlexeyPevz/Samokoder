@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: feature-flags
+  namespace: samokoder
+  labels:
+    app: feature-flags
+spec:
+  type: ClusterIP
+  ports:
+  - port: 4242
+    targetPort: 4242
+    name: http
+  selector:
+    app: feature-flags

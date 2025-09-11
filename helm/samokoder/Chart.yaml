@@ -1,0 +1,38 @@
+apiVersion: v2
+name: samokoder
+description: A Helm chart for Samokoder application
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+home: https://samokoder.com
+sources:
+  - https://github.com/samokoder/samokoder
+maintainers:
+  - name: Samokoder Team
+    email: devops@samokoder.com
+keywords:
+  - ai
+  - code-generation
+  - fullstack
+  - development
+dependencies:
+  - name: postgresql
+    version: 12.1.2
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: 17.3.7
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  - name: prometheus
+    version: 25.8.2
+    repository: https://prometheus-community.github.io/helm-charts
+    condition: monitoring.prometheus.enabled
+  - name: grafana
+    version: 6.50.7
+    repository: https://grafana.github.io/helm-charts
+    condition: monitoring.grafana.enabled
+  - name: nginx-ingress
+    version: 4.8.3
+    repository: https://kubernetes.github.io/ingress-nginx
+    condition: ingress.nginx.enabled
