@@ -1,0 +1,1557 @@
+openapi: 3.1.0
+info:
+  title: Samokoder Backend API
+  description: |
+    AI-платформа для создания full-stack приложений
+    
+    ## Безопасность
+    - Все эндпоинты требуют аутентификации (кроме health checks)
+    - CSRF защита для всех не-GET запросов
+    - Rate limiting для всех эндпоинтов
+    - Валидация входных данных
+    - Безопасное логирование
+    
+    ## Версионирование
+    - Текущая версия: 1.0.0
+    - Breaking changes не допускаются
+    - Новые поля добавляются как optional
+    
+  version: 1.0.0
+  contact:
+    name: Samokoder Team
+    email: support@samokoder.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.samokoder.com
+    description: Production server
+  - url: https://staging-api.samokoder.com
+    description: Staging server
+  - url: http://localhost:8000
+    description: Development server
+
+security:
+  - BearerAuth: []
+  - CSRF: []
+
+paths:
+  # === HEALTH CHECKS ===
+  /health:
+    get:
+      tags: [Health]
+      summary: Basic health check
+      description: Проверка здоровья сервиса
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /metrics:
+    get:
+      tags: [Health]
+      summary: Prometheus metrics
+      description: Prometheus метрики
+      security: []
+      responses:
+        '200':
+          description: Metrics in Prometheus format
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: Metrics unavailable
+
+  /api/health/:
+    get:
+      tags: [Health]
+      summary: Basic health check (API)
+      description: Базовая проверка здоровья системы
+      security: []
+      responses:
+        '200':
+          description: Health check successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/health/detailed:
+    get:
+      tags: [Health]
+      summary: Detailed health check
+      description: Детальная проверка здоровья системы
+      security: []
+      responses:
+        '200':
+          description: Detailed health check successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedHealthResponse'
+        '500':
+          description: Health check failed
+
+  /api/health/database:
+    get:
+      tags: [Health]
+      summary: Database health check
+      description: Проверка состояния базы данных
+      security: []
+      responses:
+        '200':
+          description: Database health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseHealthResponse'
+
+  /api/health/ai:
+    get:
+      tags: [Health]
+      summary: AI services health check
+      description: Проверка состояния AI сервисов
+      security: []
+      responses:
+        '200':
+          description: AI services health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIHealthResponse'
+
+  /api/health/system:
+    get:
+      tags: [Health]
+      summary: System resources health check
+      description: Проверка системных ресурсов
+      security: []
+      responses:
+        '200':
+          description: System resources status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemHealthResponse'
+
+  # === АУТЕНТИФИКАЦИЯ ===
+  /api/auth/login:
+    post:
+      tags: [Authentication]
+      summary: User login
+      description: Вход через Supabase Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Authentication service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/register:
+    post:
+      tags: [Authentication]
+      summary: User registration
+      description: Регистрация нового пользователя
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          description: Registration failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Authentication service unavailable
+
+  /api/auth/logout:
+    post:
+      tags: [Authentication]
+      summary: User logout
+      description: Выход из системы
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResponse'
+        '500':
+          description: Logout failed
+
+  /api/auth/user:
+    get:
+      tags: [Authentication]
+      summary: Get current user info
+      description: Получить информацию о текущем пользователе
+      responses:
+        '200':
+          description: User info retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfoResponse'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Failed to get user info
+
+  # === MFA ===
+  /api/auth/mfa/setup:
+    post:
+      tags: [MFA]
+      summary: Setup MFA
+      description: Настройка MFA для пользователя
+      responses:
+        '200':
+          description: MFA setup successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MFASetupResponse'
+        '500':
+          description: MFA setup failed
+
+  /api/auth/mfa/verify:
+    post:
+      tags: [MFA]
+      summary: Verify MFA code
+      description: Проверка MFA кода
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MFAVerifyRequest'
+      responses:
+        '200':
+          description: MFA verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MFAVerifyResponse'
+        '400':
+          description: Invalid MFA code
+        '500':
+          description: MFA verification failed
+
+  /api/auth/mfa/disable:
+    delete:
+      tags: [MFA]
+      summary: Disable MFA
+      description: Отключение MFA для пользователя
+      responses:
+        '200':
+          description: MFA disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MFADisableResponse'
+        '500':
+          description: MFA disable failed
+
+  # === RBAC ===
+  /api/rbac/roles:
+    get:
+      tags: [RBAC]
+      summary: Get all roles
+      description: Получить список всех ролей
+      responses:
+        '200':
+          description: Roles retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleResponse'
+        '500':
+          description: Failed to get roles
+
+  /api/rbac/permissions:
+    get:
+      tags: [RBAC]
+      summary: Get all permissions
+      description: Получить список всех разрешений
+      responses:
+        '200':
+          description: Permissions retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PermissionResponse'
+        '500':
+          description: Failed to get permissions
+
+  /api/rbac/users/{user_id}/roles:
+    get:
+      tags: [RBAC]
+      summary: Get user roles
+      description: Получить роли пользователя
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID
+      responses:
+        '200':
+          description: User roles retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '403':
+          description: Insufficient permissions
+        '500':
+          description: Failed to get user roles
+
+    post:
+      tags: [RBAC]
+      summary: Assign role to user
+      description: Назначить роль пользователю
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID
+        - name: role_id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Role ID
+      responses:
+        '200':
+          description: Role assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignmentResponse'
+        '400':
+          description: Role not found
+        '403':
+          description: Insufficient permissions
+        '500':
+          description: Failed to assign role
+
+  /api/rbac/users/{user_id}/roles/{role_id}:
+    delete:
+      tags: [RBAC]
+      summary: Remove role from user
+      description: Удалить роль у пользователя
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID
+        - name: role_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Role ID
+      responses:
+        '200':
+          description: Role removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleRemovalResponse'
+        '404':
+          description: Role not found for user
+        '403':
+          description: Insufficient permissions
+        '500':
+          description: Failed to remove role
+
+  /api/rbac/check-permission:
+    get:
+      tags: [RBAC]
+      summary: Check user permission
+      description: Проверить разрешение у текущего пользователя
+      parameters:
+        - name: permission
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Permission to check
+      responses:
+        '200':
+          description: Permission check result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionCheckResponse'
+        '500':
+          description: Failed to check permission
+
+  # === API KEYS ===
+  /api/api-keys/:
+    post:
+      tags: [API Keys]
+      summary: Create API key
+      description: Создать новый API ключ
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/APIKeyCreateRequest'
+      responses:
+        '200':
+          description: API key created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyResponse'
+        '400':
+          description: Invalid request
+        '500':
+          description: Failed to create API key
+
+    get:
+      tags: [API Keys]
+      summary: Get user API keys
+      description: Получить список API ключей пользователя
+      responses:
+        '200':
+          description: API keys retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyListResponse'
+        '500':
+          description: Failed to get API keys
+
+  /api/api-keys/{key_id}:
+    get:
+      tags: [API Keys]
+      summary: Get specific API key
+      description: Получить конкретный API ключ
+      parameters:
+        - name: key_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: API Key ID
+      responses:
+        '200':
+          description: API key retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyResponse'
+        '404':
+          description: API key not found
+        '500':
+          description: Failed to get API key
+
+    delete:
+      tags: [API Keys]
+      summary: Delete API key
+      description: Удалить API ключ
+      parameters:
+        - name: key_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: API Key ID
+      responses:
+        '200':
+          description: API key deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyDeleteResponse'
+        '404':
+          description: API key not found
+        '500':
+          description: Failed to delete API key
+
+  /api/api-keys/{key_id}/toggle:
+    put:
+      tags: [API Keys]
+      summary: Toggle API key status
+      description: Включить/выключить API ключ
+      parameters:
+        - name: key_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: API Key ID
+      responses:
+        '200':
+          description: API key status toggled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyToggleResponse'
+        '404':
+          description: API key not found
+        '500':
+          description: Failed to toggle API key
+
+  # === PROJECTS ===
+  /api/projects/:
+    post:
+      tags: [Projects]
+      summary: Create project
+      description: Create a new project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreateRequest'
+      responses:
+        '201':
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectCreateResponse'
+        '400':
+          description: Invalid project data
+        '500':
+          description: Failed to create project
+
+    get:
+      tags: [Projects]
+      summary: Get user projects
+      description: Получить список проектов пользователя
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of projects to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of projects to skip
+      responses:
+        '200':
+          description: Projects retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectListResponse'
+        '500':
+          description: Failed to get projects
+
+  /api/projects/{project_id}:
+    get:
+      tags: [Projects]
+      summary: Get project details
+      description: Получить детали проекта
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Project ID
+      responses:
+        '200':
+          description: Project details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '404':
+          description: Project not found
+        '500':
+          description: Failed to get project
+
+    put:
+      tags: [Projects]
+      summary: Update project
+      description: Обновить проект
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Project ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectUpdateRequest'
+      responses:
+        '200':
+          description: Project updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '400':
+          description: Invalid project data
+        '404':
+          description: Project not found
+        '500':
+          description: Failed to update project
+
+    delete:
+      tags: [Projects]
+      summary: Delete project
+      description: Удалить проект
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Project ID
+      responses:
+        '200':
+          description: Project deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDeleteResponse'
+        '404':
+          description: Project not found
+        '500':
+          description: Failed to delete project
+
+  # === AI ===
+  /api/ai/chat:
+    post:
+      tags: [AI]
+      summary: Chat with AI
+      description: Chat with AI endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIResponse'
+        '400':
+          description: Invalid chat request
+        '500':
+          description: AI service error
+
+  /api/ai/usage:
+    get:
+      tags: [AI]
+      summary: Get AI usage stats
+      description: Получить статистику использования AI
+      responses:
+        '200':
+          description: Usage stats retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIUsageStatsResponse'
+        '500':
+          description: Failed to get usage stats
+
+  # === FILE UPLOAD ===
+  /api/files/upload:
+    post:
+      tags: [File Upload]
+      summary: Upload file
+      description: Безопасная загрузка файла
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File to upload
+                project_id:
+                  type: string
+                  description: Project ID
+              required: [file]
+      responses:
+        '200':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileUploadResponse'
+        '400':
+          description: Invalid file or validation failed
+        '500':
+          description: Upload failed
+
+  /api/files/upload-multiple:
+    post:
+      tags: [File Upload]
+      summary: Upload multiple files
+      description: Безопасная загрузка нескольких файлов
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Files to upload
+                project_id:
+                  type: string
+                  description: Project ID
+              required: [files]
+      responses:
+        '200':
+          description: Files upload result
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FileUploadResponse'
+        '400':
+          description: Too many files or validation failed
+        '500':
+          description: Upload failed
+
+  /api/files/info/{file_path}:
+    get:
+      tags: [File Upload]
+      summary: Get file information
+      description: Получает информацию о файле
+      parameters:
+        - name: file_path
+          in: path
+          required: true
+          schema:
+            type: string
+          description: File path
+      responses:
+        '200':
+          description: File information retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileInfoResponse'
+        '400':
+          description: Invalid file path
+        '404':
+          description: File not found
+        '500':
+          description: Failed to get file info
+
+  /api/files/delete/{file_path}:
+    delete:
+      tags: [File Upload]
+      summary: Delete uploaded file
+      description: Удаляет загруженный файл
+      parameters:
+        - name: file_path
+          in: path
+          required: true
+          schema:
+            type: string
+          description: File path
+      responses:
+        '200':
+          description: File deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileDeleteResponse'
+        '400':
+          description: Invalid file path
+        '404':
+          description: File not found
+        '500':
+          description: Failed to delete file
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication
+    CSRF:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: CSRF token for non-GET requests
+
+  schemas:
+    # === COMMON SCHEMAS ===
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error type
+        detail:
+          type: string
+          description: Error message
+        error_id:
+          type: string
+          description: Unique error identifier
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+      required: [error, detail, error_id, timestamp]
+
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy, degraded]
+        timestamp:
+          type: string
+          format: date-time
+        services:
+          type: object
+          additionalProperties:
+            type: string
+
+    # === AUTHENTICATION SCHEMAS ===
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email
+        password:
+          type: string
+          minLength: 8
+          description: User password
+      required: [email, password]
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+        access_token:
+          type: string
+          description: JWT access token
+        token_type:
+          type: string
+          enum: [bearer]
+        expires_in:
+          type: integer
+          description: Token expiration time in seconds
+      required: [success, message, user, access_token, token_type, expires_in]
+
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email
+        password:
+          type: string
+          minLength: 8
+          description: User password
+        full_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: User full name
+      required: [email, password, full_name]
+
+    RegisterResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        user_id:
+          type: string
+          description: Created user ID
+        email:
+          type: string
+          format: email
+      required: [success, message, user_id, email]
+
+    LogoutResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required: [message, timestamp]
+
+    UserInfoResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        timestamp:
+          type: string
+          format: date-time
+      required: [user, timestamp]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          description: User ID
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        subscription_tier:
+          type: string
+          enum: [free, pro, enterprise]
+        subscription_status:
+          type: string
+          enum: [active, inactive, suspended]
+        api_credits_balance:
+          type: number
+          format: float
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [id, email, full_name, subscription_tier, subscription_status, created_at, updated_at]
+
+    # === MFA SCHEMAS ===
+    MFASetupResponse:
+      type: object
+      properties:
+        secret:
+          type: string
+          description: MFA secret for manual setup
+        qr_code:
+          type: string
+          format: data-url
+          description: QR code for MFA setup
+        backup_codes:
+          type: array
+          items:
+            type: string
+          description: Backup codes for MFA
+      required: [secret, qr_code, backup_codes]
+
+    MFAVerifyRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: '^[0-9]{6}$'
+          description: 6-digit MFA code
+      required: [code]
+
+    MFAVerifyResponse:
+      type: object
+      properties:
+        verified:
+          type: boolean
+        message:
+          type: string
+      required: [verified, message]
+
+    MFADisableResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    # === RBAC SCHEMAS ===
+    RoleResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+      required: [id, name, description, permissions]
+
+    PermissionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+      required: [id, name, description]
+
+    RoleAssignmentResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    RoleRemovalResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    PermissionCheckResponse:
+      type: object
+      properties:
+        has_permission:
+          type: boolean
+        permission:
+          type: string
+        granted_by_role:
+          type: string
+        user_roles:
+          type: array
+          items:
+            type: string
+      required: [has_permission, permission, user_roles]
+
+    # === API KEYS SCHEMAS ===
+    APIKeyCreateRequest:
+      type: object
+      properties:
+        provider:
+          type: string
+          enum: [openai, anthropic, groq, openrouter]
+          description: AI provider
+        key_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: API key name
+        api_key:
+          type: string
+          minLength: 20
+          description: API key value
+      required: [provider, key_name, api_key]
+
+    APIKeyResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        provider:
+          type: string
+        key_name:
+          type: string
+        key_last_4:
+          type: string
+          description: Last 4 characters of the key
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+      required: [id, provider, key_name, key_last_4, is_active, created_at]
+
+    APIKeyListResponse:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/APIKeyResponse'
+        total_count:
+          type: integer
+      required: [keys, total_count]
+
+    APIKeyDeleteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    APIKeyToggleResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        is_active:
+          type: boolean
+      required: [message, is_active]
+
+    # === PROJECTS SCHEMAS ===
+    ProjectCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Project name
+        description:
+          type: string
+          maxLength: 1000
+          description: Project description
+        framework:
+          type: string
+          enum: [react, vue, angular, svelte, nextjs, nuxt]
+          description: Frontend framework
+        backend:
+          type: string
+          enum: [nodejs, python, java, csharp, go, rust]
+          description: Backend technology
+      required: [name, framework, backend]
+
+    ProjectCreateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        project:
+          $ref: '#/components/schemas/Project'
+      required: [success, message, project]
+
+    ProjectUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 1000
+        status:
+          type: string
+          enum: [active, archived, deleted]
+
+    ProjectResponse:
+      type: object
+      properties:
+        project:
+          $ref: '#/components/schemas/Project'
+      required: [project]
+
+    ProjectListResponse:
+      type: object
+      properties:
+        projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/Project'
+        total_count:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+      required: [projects, total_count, limit, offset]
+
+    ProjectDeleteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required: [success, message]
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        framework:
+          type: string
+        backend:
+          type: string
+        status:
+          type: string
+          enum: [active, archived, deleted]
+        workspace_path:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        user_id:
+          type: string
+      required: [id, name, framework, backend, status, workspace_path, created_at, updated_at, user_id]
+
+    # === AI SCHEMAS ===
+    ChatRequest:
+      type: object
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 10000
+          description: User message
+        model:
+          type: string
+          description: AI model to use
+        provider:
+          type: string
+          enum: [openai, anthropic, groq, openrouter]
+          description: AI provider
+        context:
+          type: object
+          description: Additional context
+        stream:
+          type: boolean
+          default: false
+          description: Enable streaming response
+      required: [message]
+
+    AIResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        response:
+          type: string
+          description: AI response text
+        model:
+          type: string
+        provider:
+          type: string
+        usage:
+          $ref: '#/components/schemas/AIUsageInfo'
+        timestamp:
+          type: string
+          format: date-time
+      required: [success, message, response, model, provider, timestamp]
+
+    AIUsageStatsResponse:
+      type: object
+      properties:
+        total_requests:
+          type: integer
+        total_tokens:
+          type: integer
+        total_cost:
+          type: number
+          format: float
+        usage_by_provider:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AIUsageInfo'
+        usage_by_model:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AIUsageInfo'
+      required: [total_requests, total_tokens, total_cost, usage_by_provider, usage_by_model]
+
+    AIUsageInfo:
+      type: object
+      properties:
+        requests:
+          type: integer
+        tokens:
+          type: integer
+        cost:
+          type: number
+          format: float
+      required: [requests, tokens, cost]
+
+    # === FILE UPLOAD SCHEMAS ===
+    FileUploadResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        file_path:
+          type: string
+        filename:
+          type: string
+        mime_type:
+          type: string
+        size:
+          type: integer
+        file_info:
+          $ref: '#/components/schemas/FileInfo'
+      required: [success, message, filename]
+
+    FileInfoResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        file_info:
+          $ref: '#/components/schemas/FileInfo'
+      required: [success, file_info]
+
+    FileDeleteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required: [success, message]
+
+    FileInfo:
+      type: object
+      properties:
+        filename:
+          type: string
+        size:
+          type: integer
+        mime_type:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        modified_at:
+          type: string
+          format: date-time
+        checksum:
+          type: string
+          description: File checksum
+      required: [filename, size, mime_type, created_at, modified_at]
+
+    # === HEALTH CHECK SCHEMAS ===
+    HealthCheckResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy, degraded]
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+        uptime:
+          type: integer
+          description: Uptime in seconds
+        services:
+          type: object
+          additionalProperties:
+            type: string
+      required: [status, timestamp, version, uptime, services]
+
+    DetailedHealthResponse:
+      allOf:
+        - $ref: '#/components/schemas/HealthCheckResponse'
+        - type: object
+          properties:
+            external_services:
+              type: object
+              additionalProperties:
+                type: string
+            active_projects:
+              type: integer
+            memory_usage:
+              $ref: '#/components/schemas/MemoryUsage'
+            disk_usage:
+              $ref: '#/components/schemas/DiskUsage'
+
+    DatabaseHealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy, mock]
+        message:
+          type: string
+        response_time_ms:
+          type: number
+          format: float
+        timestamp:
+          type: string
+          format: date-time
+      required: [status, message, timestamp]
+
+    AIHealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        message:
+          type: string
+        providers:
+          type: object
+          additionalProperties:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+      required: [status, message, providers, timestamp]
+
+    SystemHealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        message:
+          type: string
+        cpu_usage_percent:
+          type: number
+          format: float
+        memory:
+          $ref: '#/components/schemas/MemoryUsage'
+        disk:
+          $ref: '#/components/schemas/DiskUsage'
+        processes_count:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+      required: [status, message, cpu_usage_percent, memory, disk, processes_count, timestamp]
+
+    MemoryUsage:
+      type: object
+      properties:
+        total_gb:
+          type: number
+          format: float
+        available_gb:
+          type: number
+          format: float
+        used_percent:
+          type: number
+          format: float
+      required: [total_gb, available_gb, used_percent]
+
+    DiskUsage:
+      type: object
+      properties:
+        total_gb:
+          type: number
+          format: float
+        free_gb:
+          type: number
+          format: float
+        used_percent:
+          type: number
+          format: float
+      required: [total_gb, free_gb, used_percent]
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Authentication
+    description: User authentication endpoints
+  - name: MFA
+    description: Multi-factor authentication endpoints
+  - name: RBAC
+    description: Role-based access control endpoints
+  - name: API Keys
+    description: API key management endpoints
+  - name: Projects
+    description: Project management endpoints
+  - name: AI
+    description: AI service endpoints
+  - name: File Upload
+    description: File upload and management endpoints
