@@ -112,7 +112,7 @@ class HealthChecker:
     
     async def _check_openai(self, api_key: str) -> Dict[str, Any]:
         """Проверка OpenAI"""
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, verify=True) as client:
             response = await client.get(
                 "https://api.openai.com/v1/models",
                 headers={"Authorization": f"Bearer {api_key}"}
@@ -128,7 +128,7 @@ class HealthChecker:
     
     async def _check_anthropic(self, api_key: str) -> Dict[str, Any]:
         """Проверка Anthropic"""
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, verify=True) as client:
             response = await client.get(
                 "https://api.anthropic.com/v1/messages",
                 headers={"x-api-key": api_key}
@@ -146,7 +146,7 @@ class HealthChecker:
     
     async def _check_openrouter(self, api_key: str) -> Dict[str, Any]:
         """Проверка OpenRouter"""
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, verify=True) as client:
             response = await client.get(
                 "https://openrouter.ai/api/v1/models",
                 headers={"Authorization": f"Bearer {api_key}"}
@@ -162,7 +162,7 @@ class HealthChecker:
     
     async def _check_groq(self, api_key: str) -> Dict[str, Any]:
         """Проверка Groq"""
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, verify=True) as client:
             response = await client.get(
                 "https://api.groq.com/openai/v1/models",
                 headers={"Authorization": f"Bearer {api_key}"}

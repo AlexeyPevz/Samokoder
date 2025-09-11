@@ -52,17 +52,19 @@ class SecureSessionManager:
         self.csrf_token_timeout = 3600  # 1 час
         self.suspicious_threshold = 3
     
-    def create_session(self, user_id: str, ip_address: str, user_agent: str) -> str:
+    async def create_session(self, user_id: str, ip_address: str, user_agent: str) -> str:
         """Создает новую безопасную сессию"""
-        # Проверяем лимит сессий для пользователя
-        if user_id in self.user_sessions:
-            if len(self.user_sessions[user_id]) >= self.max_sessions_per_user:
-                # Удаляем самую старую сессию
-                oldest_session = min(
-                    self.user_sessions[user_id],
-                    key=lambda sid: self.sessions[sid].created_at
-                )
-                self.revoke_session(oldest_session)
+        # Атомарная проверка и создание сессии
+        async with self._lock:
+            # Проверяем лимит сессий для пользователя
+            if user_id in self.user_sessions:
+                if len(self.user_sessions[user_id]) >= self.max_sessions_per_user:
+                    # Удаляем самую старую сессию
+                    oldest_session = min(
+                        self.user_sessions[user_id],
+                        key=lambda sid: self.sessions[sid].created_at
+                    )
+                    self.revoke_session(oldest_session)
         
         # Генерируем уникальный session ID
         session_id = self._generate_session_id()

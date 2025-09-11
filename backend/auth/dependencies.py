@@ -195,14 +195,30 @@ def hash_password(password: str) -> str:
 
 def verify_password(password: str, stored_hash: str) -> bool:
     """Проверка пароля с защитой от timing attack"""
+    if not password or not stored_hash:
+        return False
+    
     password_bytes = password.encode('utf-8')
     stored_hash_bytes = stored_hash.encode('utf-8')
     
     try:
+        # Проверяем формат bcrypt хеша
+        if not stored_hash.startswith('$2b$') and not stored_hash.startswith('$2a$'):
+            # Невалидный формат - выполняем фиктивное сравнение для constant-time
+            dummy_hash = bcrypt.gensalt()
+            bcrypt.checkpw(password_bytes, dummy_hash)
+            return False
+        
         # bcrypt.checkpw использует constant-time сравнение
         return bcrypt.checkpw(password_bytes, stored_hash_bytes)
     except Exception as e:
         logger.error(f"Password verification error: {e}")
+        # Выполняем фиктивное сравнение для constant-time
+        try:
+            dummy_hash = bcrypt.gensalt()
+            bcrypt.checkpw(password_bytes, dummy_hash)
+        except:
+            pass
         return False
 
 # Остальные функции остаются без изменений...

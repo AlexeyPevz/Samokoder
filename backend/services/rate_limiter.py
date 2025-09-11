@@ -359,17 +359,20 @@ class RateLimiter:
         if self.redis_client:
             return  # Redis автоматически управляет памятью
         
-        # Если записей больше 10000, принудительно очищаем
-        if len(self.memory_store) > 10000:
-            logger.warning(f"Memory store size exceeded limit: {len(self.memory_store)} entries")
+        # Атомарная проверка и очистка
+        current_size = len(self.memory_store)
+        if current_size > 10000:
+            logger.warning(f"Memory store size exceeded limit: {current_size} entries")
             # Очищаем половину самых старых записей
             sorted_keys = sorted(self.memory_store.keys(), 
                                key=lambda k: min(self.memory_store[k]['minute']['window'], 
                                                self.memory_store[k]['hour']['window']))
             keys_to_remove = sorted_keys[:len(sorted_keys) // 2]
             
+            # Атомарное удаление
             for key in keys_to_remove:
-                del self.memory_store[key]
+                if key in self.memory_store:  # Проверяем, что ключ еще существует
+                    del self.memory_store[key]
             
             logger.info(f"Emergency cleanup: removed {len(keys_to_remove)} entries")
 

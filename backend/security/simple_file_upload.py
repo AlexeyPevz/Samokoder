@@ -209,9 +209,12 @@ class SimpleFileUploadSecurity:
     
     def _generate_safe_filename(self, filename: str) -> str:
         """Генерирует безопасное имя файла"""
-        # Убираем опасные символы
+        # Убираем опасные символы и пути
         safe_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_"
         safe_filename = ''.join(c for c in filename if c in safe_chars)
+        
+        # Убираем множественные точки и слеши
+        safe_filename = safe_filename.replace('..', '').replace('/', '').replace('\\', '')
         
         # Ограничиваем длину
         if len(safe_filename) > 100:
