@@ -188,12 +188,33 @@ export const preloadCriticalResources = () => {
   criticalCSS.as = 'style';
   document.head.appendChild(criticalCSS);
 
-  // Preload critical fonts
+  // Preload critical fonts with font-display: swap
   const fontPreload = document.createElement('link');
   fontPreload.rel = 'preload';
-  fontPreload.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
-  fontPreload.as = 'style';
+  fontPreload.href = 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2';
+  fontPreload.as = 'font';
+  fontPreload.type = 'font/woff2';
+  fontPreload.crossOrigin = 'anonymous';
   document.head.appendChild(fontPreload);
+
+  // Preload critical images
+  const criticalImages = [
+    'https://s3.us-east-1.amazonaws.com/assets.pythagora.ai/logos/favicon.ico'
+  ];
+  
+  criticalImages.forEach(src => {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.href = src;
+    link.as = 'image';
+    document.head.appendChild(link);
+  });
+
+  // Preload critical API endpoints
+  const apiPreload = document.createElement('link');
+  apiPreload.rel = 'prefetch';
+  apiPreload.href = '/api/user/profile';
+  document.head.appendChild(apiPreload);
 };
 
 export const optimizeImages = () => {

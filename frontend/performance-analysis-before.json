@@ -1,0 +1,192 @@
+{
+  "timestamp": "2025-09-11T09:41:12.014Z",
+  "buildAnalysis": {
+    "totalFiles": 14,
+    "totalSize": 770109,
+    "totalGzipSize": 231033,
+    "css": {
+      "files": [
+        {
+          "name": "index-3rv6LHk7.css",
+          "size": 81503,
+          "gzipSize": 24451
+        }
+      ],
+      "totalSize": 81503,
+      "totalGzipSize": 24451,
+      "largestFile": {
+        "name": "index-3rv6LHk7.css",
+        "size": 81503,
+        "gzipSize": 24451
+      }
+    },
+    "js": {
+      "files": [
+        {
+          "name": "BlankPage-BPIASK4U.js",
+          "size": 1113,
+          "gzipSize": 334
+        },
+        {
+          "name": "auth-BQqyQ1Bq.js",
+          "size": 16127,
+          "gzipSize": 4838
+        },
+        {
+          "name": "charts-vendor-B1kquTrK.js",
+          "size": 74919,
+          "gzipSize": 22476
+        },
+        {
+          "name": "dashboard-Cb7yLysT.js",
+          "size": 21087,
+          "gzipSize": 6326
+        },
+        {
+          "name": "date-vendor-CCSBsCN8.js",
+          "size": 22215,
+          "gzipSize": 6665
+        },
+        {
+          "name": "home-DNlHruBH.js",
+          "size": 15689,
+          "gzipSize": 4707
+        },
+        {
+          "name": "index-ke9B-Z9b.js",
+          "size": 38391,
+          "gzipSize": 11517
+        },
+        {
+          "name": "react-vendor-CVNGBWkg.js",
+          "size": 322799,
+          "gzipSize": 96840
+        },
+        {
+          "name": "settings-CbNt0UVm.js",
+          "size": 12664,
+          "gzipSize": 3799
+        },
+        {
+          "name": "ui-vendor-ByoYm48K.js",
+          "size": 199,
+          "gzipSize": 60
+        },
+        {
+          "name": "utils-vendor-CVgRdk0L.js",
+          "size": 55984,
+          "gzipSize": 16795
+        },
+        {
+          "name": "vendor-P2aLo9Oj.js",
+          "size": 90040,
+          "gzipSize": 27012
+        },
+        {
+          "name": "workspace-DTWqPGUE.js",
+          "size": 17379,
+          "gzipSize": 5214
+        }
+      ],
+      "totalSize": 688606,
+      "totalGzipSize": 206582,
+      "vendorChunks": [
+        {
+          "name": "charts-vendor-B1kquTrK.js",
+          "size": 74919,
+          "gzipSize": 22476
+        },
+        {
+          "name": "date-vendor-CCSBsCN8.js",
+          "size": 22215,
+          "gzipSize": 6665
+        },
+        {
+          "name": "react-vendor-CVNGBWkg.js",
+          "size": 322799,
+          "gzipSize": 96840
+        },
+        {
+          "name": "ui-vendor-ByoYm48K.js",
+          "size": 199,
+          "gzipSize": 60
+        },
+        {
+          "name": "utils-vendor-CVgRdk0L.js",
+          "size": 55984,
+          "gzipSize": 16795
+        },
+        {
+          "name": "vendor-P2aLo9Oj.js",
+          "size": 90040,
+          "gzipSize": 27012
+        }
+      ],
+      "appChunks": [
+        {
+          "name": "BlankPage-BPIASK4U.js",
+          "size": 1113,
+          "gzipSize": 334
+        },
+        {
+          "name": "auth-BQqyQ1Bq.js",
+          "size": 16127,
+          "gzipSize": 4838
+        },
+        {
+          "name": "dashboard-Cb7yLysT.js",
+          "size": 21087,
+          "gzipSize": 6326
+        },
+        {
+          "name": "home-DNlHruBH.js",
+          "size": 15689,
+          "gzipSize": 4707
+        },
+        {
+          "name": "index-ke9B-Z9b.js",
+          "size": 38391,
+          "gzipSize": 11517
+        },
+        {
+          "name": "settings-CbNt0UVm.js",
+          "size": 12664,
+          "gzipSize": 3799
+        },
+        {
+          "name": "workspace-DTWqPGUE.js",
+          "size": 17379,
+          "gzipSize": 5214
+        }
+      ],
+      "largestFile": {
+        "name": "react-vendor-CVNGBWkg.js",
+        "size": 322799,
+        "gzipSize": 96840
+      }
+    }
+  },
+  "optimizations": {
+    "criticalCss": {
+      "inline": true,
+      "size": 3609
+    },
+    "resourceHints": {
+      "preload": 2,
+      "preconnect": 3,
+      "dnsPrefetch": 3
+    },
+    "codeSplitting": {
+      "vendorChunks": 6,
+      "appChunks": 7,
+      "totalChunks": 13
+    }
+  },
+  "performanceEstimates": {
+    "estimatedLCP": 1054,
+    "estimatedFCP": 804,
+    "estimatedCLS": 0.05,
+    "estimatedINP": 134,
+    "estimatedTTFB": 100
+  }
+}
