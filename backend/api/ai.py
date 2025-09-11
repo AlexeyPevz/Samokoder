@@ -4,11 +4,11 @@ AI endpoints
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from backend.models.requests import ChatRequest, AIUsageRequest
-from backend.models.responses import AIResponse, AIUsageStatsResponse
+from backend.models.responses import AIResponse, AIUsageStatsResponse, AIUsageInfo
 from backend.auth.dependencies import get_current_user
-from backend.middleware.rate_limit_middleware import ai_rate_limit
+from backend.middleware.secure_rate_limiter import ai_rate_limit
 from backend.services.ai_service import get_ai_service
-from backend.services.connection_pool import connection_pool_manager
+# from backend.services.connection_pool import connection_pool_manager
 from backend.services.supabase_manager import execute_supabase_operation
 import logging
 import json
@@ -28,9 +28,10 @@ async def chat_with_ai(
         ai_service = get_ai_service()
         
         # Get user's AI configuration
-        supabase = connection_pool_manager.get_supabase_client()
+        # supabase = connection_pool_manager.get_supabase_client()
         settings_response = await execute_supabase_operation(
-            supabase.table("user_settings").select("*").eq("user_id", current_user["id"])
+            lambda client: client.table("user_settings").select("*").eq("user_id", current_user["id"]),
+            "anon"
         )
         
         user_settings = settings_response.data[0] if settings_response.data else {}
@@ -59,15 +60,25 @@ async def chat_with_ai(
             }
             
             await execute_supabase_operation(
-                supabase.table("ai_usage").insert(usage_data)
+                lambda client: client.table("ai_usage").insert(usage_data),
+                "anon"
             )
         
         return AIResponse(
-            response=response["content"],
+            content=response["content"],
             model=ai_request["model"],
             provider=ai_request["provider"],
-            usage=response.get("usage", {}),
-            metadata=response.get("metadata", {})
+            response_time=response.get("response_time", 0.0),
+            tokens_used=response.get("usage", {}).get("total_tokens"),
+            cost_usd=response.get("usage", {}).get("total_cost"),
+            usage=AIUsageInfo(
+                prompt_tokens=response.get("usage", {}).get("prompt_tokens"),
+                completion_tokens=response.get("usage", {}).get("completion_tokens"),
+                total_tokens=response.get("usage", {}).get("total_tokens"),
+                prompt_cost=response.get("usage", {}).get("prompt_cost"),
+                completion_cost=response.get("usage", {}).get("completion_cost"),
+                total_cost=response.get("usage", {}).get("total_cost")
+            )
         )
         
     except Exception as e:
@@ -88,9 +99,10 @@ async def chat_with_ai_stream(
         ai_service = get_ai_service()
         
         # Get user's AI configuration
-        supabase = connection_pool_manager.get_supabase_client()
+        # supabase = connection_pool_manager.get_supabase_client()
         settings_response = await execute_supabase_operation(
-            supabase.table("user_settings").select("*").eq("user_id", current_user["id"])
+            lambda client: client.table("user_settings").select("*").eq("user_id", current_user["id"]),
+            "anon"
         )
         
         user_settings = settings_response.data[0] if settings_response.data else {}
@@ -126,18 +138,19 @@ async def chat_with_ai_stream(
 async def get_ai_usage(
     current_user: dict = Depends(get_current_user),
     days: int = 30,
-    rate_limit: dict = Depends(api_rate_limit)
+    rate_limit: dict = Depends(ai_rate_limit)
 ):
     """Get AI usage statistics"""
     try:
-        supabase = connection_pool_manager.get_supabase_client()
+        # supabase = connection_pool_manager.get_supabase_client()
         
         # Get usage data for the specified period
         from datetime import datetime, timedelta
         start_date = datetime.now() - timedelta(days=days)
         
         response = await execute_supabase_operation(
-            supabase.table("ai_usage").select("*").eq("user_id", current_user["id"]).gte("created_at", start_date.isoformat())
+            lambda client: client.table("ai_usage").select("*").eq("user_id", current_user["id"]).gte("created_at", start_date.isoformat()),
+            "anon"
         )
         
         usage_data = response.data
@@ -174,14 +187,15 @@ async def get_ai_usage(
 @router.get("/providers")
 async def get_ai_providers(
     current_user: dict = Depends(get_current_user),
-    rate_limit: dict = Depends(api_rate_limit)
+    rate_limit: dict = Depends(ai_rate_limit)
 ):
     """Get available AI providers"""
     try:
-        supabase = connection_pool_manager.get_supabase_client()
+        # supabase = connection_pool_manager.get_supabase_client()
         
         response = await execute_supabase_operation(
-            supabase.table("ai_providers").select("*").eq("is_active", True)
+            lambda client: client.table("ai_providers").select("*").eq("is_active", True),
+            "anon"
         )
         
         providers = []
@@ -203,4 +217,36 @@ async def get_ai_providers(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get AI providers"
+        )
+
+@router.post("/validate-keys")
+async def validate_ai_keys(
+    keys_data: dict,
+    current_user: dict = Depends(get_current_user),
+    rate_limit: dict = Depends(ai_rate_limit)
+):
+    """Validate AI API keys"""
+    try:
+        # Mock validation - in real app would test each key
+        validated_keys = {}
+        errors = {}
+        
+        for provider, key in keys_data.items():
+            if not key or len(key) < 10:
+                errors[provider] = "Invalid key format"
+            else:
+                validated_keys[provider] = "valid"
+        
+        return {
+            "validated_keys": validated_keys,
+            "errors": errors,
+            "total_valid": len(validated_keys),
+            "total_invalid": len(errors)
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to validate AI keys: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to validate AI keys"
         )

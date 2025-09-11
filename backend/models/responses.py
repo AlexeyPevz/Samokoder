@@ -65,7 +65,7 @@ class UserResponse(BaseModel):
     avatar_url: Optional[str] = Field(None, description="URL аватара")
     subscription_tier: SubscriptionTier = Field(..., description="Тарифный план")
     subscription_status: str = Field(..., description="Статус подписки")
-    api_credits_balance: float = Field(..., description="Баланс API кредитов")
+    api_credits_balance: float = Field(..., description="Баланс API кредитов (DEPRECATED)")
     created_at: datetime = Field(..., description="Дата создания")
     updated_at: datetime = Field(..., description="Дата обновления")
 
@@ -77,6 +77,13 @@ class LoginResponse(BaseModel):
     access_token: str = Field(..., description="Токен доступа")
     token_type: str = Field("bearer", description="Тип токена")
     expires_in: int = Field(..., description="Время жизни токена в секундах")
+
+class RegisterResponse(BaseModel):
+    """Ответ на регистрацию"""
+    success: bool = Field(True, description="Статус регистрации")
+    message: str = Field(..., description="Сообщение")
+    user_id: str = Field(..., description="ID созданного пользователя")
+    email: str = Field(..., description="Email пользователя")
 
 # === ПРОЕКТЫ ===
 
@@ -115,14 +122,26 @@ class ProjectCreateResponse(BaseModel):
 
 # === AI И ЧАТ ===
 
+class AIUsageInfo(BaseModel):
+    """Информация об использовании AI"""
+    prompt_tokens: Optional[int] = Field(None, description="Количество токенов промпта")
+    completion_tokens: Optional[int] = Field(None, description="Количество токенов ответа")
+    total_tokens: Optional[int] = Field(None, description="Общее количество токенов")
+    prompt_cost: Optional[float] = Field(None, description="Стоимость промпта")
+    completion_cost: Optional[float] = Field(None, description="Стоимость ответа")
+    total_cost: Optional[float] = Field(None, description="Общая стоимость")
+
 class AIResponse(BaseModel):
     """Ответ от AI"""
     content: str = Field(..., description="Содержимое ответа")
     provider: AIProvider = Field(..., description="Провайдер AI")
     model: str = Field(..., description="Модель AI")
-    tokens_used: int = Field(..., description="Использовано токенов")
-    cost_usd: float = Field(..., description="Стоимость в USD")
     response_time: float = Field(..., description="Время ответа в секундах")
+    # DEPRECATED fields
+    tokens_used: Optional[int] = Field(None, description="Использовано токенов (DEPRECATED)")
+    cost_usd: Optional[float] = Field(None, description="Стоимость в USD (DEPRECATED)")
+    # New usage information
+    usage: Optional[AIUsageInfo] = Field(None, description="Детальная информация об использовании")
 
 class ChatStreamResponse(BaseModel):
     """Потоковый ответ чата"""

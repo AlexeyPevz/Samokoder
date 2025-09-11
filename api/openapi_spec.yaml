@@ -194,25 +194,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/auth/me:
-    get:
-      tags:
-        - Authentication
-      summary: Get current user
-      description: Get current authenticated user information
-      responses:
-        '200':
-          description: User information
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+  # /api/auth/me - removed (endpoint does not exist in implementation)
 
   /api/auth/user:
     get:
@@ -956,6 +938,557 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  # === MFA ENDPOINTS ===
+  /api/auth/mfa/setup:
+    post:
+      tags:
+        - Authentication
+      summary: Setup MFA
+      description: Настройка двухфакторной аутентификации
+      responses:
+        '200':
+          description: MFA setup successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MFASetupResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/mfa/verify:
+    post:
+      tags:
+        - Authentication
+      summary: Verify MFA code
+      description: Проверка MFA кода
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MFAVerifyRequest'
+      responses:
+        '200':
+          description: MFA verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MFAVerifyResponse'
+        '400':
+          description: Invalid MFA code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/mfa/disable:
+    delete:
+      tags:
+        - Authentication
+      summary: Disable MFA
+      description: Отключение MFA
+      responses:
+        '200':
+          description: MFA disabled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # === RBAC ENDPOINTS ===
+  /api/rbac/roles:
+    get:
+      tags:
+        - RBAC
+      summary: Get all roles
+      description: Получить список всех ролей
+      responses:
+        '200':
+          description: List of roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/rbac/permissions:
+    get:
+      tags:
+        - RBAC
+      summary: Get all permissions
+      description: Получить список всех разрешений
+      responses:
+        '200':
+          description: List of permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PermissionResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/rbac/users/{user_id}/roles:
+    get:
+      tags:
+        - RBAC
+      summary: Get user roles
+      description: Получить роли пользователя
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - RBAC
+      summary: Assign role to user
+      description: Назначить роль пользователю
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role_id
+              properties:
+                role_id:
+                  type: string
+                  description: Role ID to assign
+      responses:
+        '200':
+          description: Role assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+        '400':
+          description: Invalid role ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/rbac/users/{user_id}/roles/{role_id}:
+    delete:
+      tags:
+        - RBAC
+      summary: Remove role from user
+      description: Удалить роль у пользователя
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+        - name: role_id
+          in: path
+          required: true
+          description: Role ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Role removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Role not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/rbac/check-permission:
+    get:
+      tags:
+        - RBAC
+      summary: Check user permission
+      description: Проверить разрешение у текущего пользователя
+      parameters:
+        - name: permission
+          in: query
+          required: true
+          description: Permission to check
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Permission check result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  has_permission:
+                    type: boolean
+                    description: Whether user has permission
+                  permission:
+                    type: string
+                    description: Permission checked
+                  granted_by_role:
+                    type: string
+                    description: Role that granted permission
+                  user_roles:
+                    type: array
+                    items:
+                      type: string
+                    description: User roles
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # === API KEYS ENDPOINTS ===
+  /api/api-keys/:
+    post:
+      tags:
+        - API Keys
+      summary: Create API key
+      description: Создать новый API ключ
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/APIKeyCreateRequest'
+      responses:
+        '201':
+          description: API key created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags:
+        - API Keys
+      summary: Get user API keys
+      description: Получить список API ключей пользователя
+      responses:
+        '200':
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/api-keys/{key_id}:
+    get:
+      tags:
+        - API Keys
+      summary: Get API key
+      description: Получить конкретный API ключ
+      parameters:
+        - name: key_id
+          in: path
+          required: true
+          description: API key ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: API key information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: API key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - API Keys
+      summary: Toggle API key
+      description: Включить/выключить API ключ
+      parameters:
+        - name: key_id
+          in: path
+          required: true
+          description: API key ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: API key toggled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  is_active:
+                    type: boolean
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: API key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - API Keys
+      summary: Delete API key
+      description: Удалить API ключ
+      parameters:
+        - name: key_id
+          in: path
+          required: true
+          description: API key ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: API key deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: API key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # === ADDITIONAL HEALTH ENDPOINTS ===
+  /api/health/database:
+    get:
+      tags:
+        - Health
+      summary: Database health check
+      description: Проверка состояния базы данных
+      security: []
+      responses:
+        '200':
+          description: Database health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, unhealthy, mock]
+                  message:
+                    type: string
+                  response_time_ms:
+                    type: number
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/health/ai:
+    get:
+      tags:
+        - Health
+      summary: AI services health check
+      description: Проверка состояния AI сервисов
+      security: []
+      responses:
+        '200':
+          description: AI services health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, unhealthy]
+                  message:
+                    type: string
+                  providers:
+                    type: object
+                    additionalProperties:
+                      type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/health/system:
+    get:
+      tags:
+        - Health
+      summary: System resources health check
+      description: Проверка системных ресурсов
+      security: []
+      responses:
+        '200':
+          description: System resources health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, unhealthy]
+                  message:
+                    type: string
+                  cpu_usage_percent:
+                    type: number
+                  memory:
+                    type: object
+                    properties:
+                      total_gb:
+                        type: number
+                      available_gb:
+                        type: number
+                      used_percent:
+                        type: number
+                  disk:
+                    type: object
+                    properties:
+                      total_gb:
+                        type: number
+                      free_gb:
+                        type: number
+                      used_percent:
+                        type: number
+                  processes_count:
+                    type: integer
+                  timestamp:
+                    type: string
+                    format: date-time
 
   # === METRICS ENDPOINT ===
   /metrics:
@@ -1799,6 +2332,193 @@ components:
         max_tokens: 2048
         temperature: 0.7
 
+    # === MFA SCHEMAS ===
+    MFASetupRequest:
+      type: object
+      description: MFA setup request (empty body)
+      additionalProperties: false
+
+    MFASetupResponse:
+      type: object
+      required:
+        - secret
+        - qr_code
+        - backup_codes
+      properties:
+        secret:
+          type: string
+          description: MFA secret key
+          example: "JBSWY3DPEHPK3PXP"
+        qr_code:
+          type: string
+          format: uri
+          description: Base64 encoded QR code image
+          example: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+        backup_codes:
+          type: array
+          items:
+            type: string
+          description: Backup codes for MFA
+          example: ["123456", "234567", "345678", "456789", "567890"]
+      additionalProperties: false
+
+    MFAVerifyRequest:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          minLength: 6
+          maxLength: 6
+          description: 6-digit MFA code
+          example: "123456"
+      additionalProperties: false
+
+    MFAVerifyResponse:
+      type: object
+      required:
+        - verified
+        - message
+      properties:
+        verified:
+          type: boolean
+          description: Whether MFA code is valid
+          example: true
+        message:
+          type: string
+          description: Verification message
+          example: "MFA код подтвержден"
+      additionalProperties: false
+
+    # === RBAC SCHEMAS ===
+    RoleResponse:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - permissions
+      properties:
+        id:
+          type: string
+          description: Role ID
+          example: "admin"
+        name:
+          type: string
+          description: Role name
+          example: "Administrator"
+        description:
+          type: string
+          description: Role description
+          example: "Полный доступ ко всем функциям"
+        permissions:
+          type: array
+          items:
+            type: string
+          description: List of permissions
+          example: ["*"]
+      additionalProperties: false
+
+    PermissionResponse:
+      type: object
+      required:
+        - id
+        - name
+        - description
+      properties:
+        id:
+          type: string
+          description: Permission ID
+          example: "basic_chat"
+        name:
+          type: string
+          description: Permission name
+          example: "Basic Chat"
+        description:
+          type: string
+          description: Permission description
+          example: "Базовый чат с AI"
+      additionalProperties: false
+
+    # === API KEYS SCHEMAS ===
+    APIKeyCreateRequest:
+      type: object
+      required:
+        - provider
+        - key_name
+        - api_key
+      properties:
+        provider:
+          $ref: '#/components/schemas/AIProvider'
+        key_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Human-readable name for the API key
+          example: "My OpenRouter Key"
+        api_key:
+          type: string
+          minLength: 10
+          description: The actual API key
+          example: "sk-or-1234567890abcdef"
+      additionalProperties: false
+
+    APIKeyResponse:
+      type: object
+      required:
+        - id
+        - provider
+        - key_name
+        - key_last_4
+        - is_active
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: API key ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        provider:
+          $ref: '#/components/schemas/AIProvider'
+        key_name:
+          type: string
+          description: Human-readable name
+          example: "My OpenRouter Key"
+        key_last_4:
+          type: string
+          minLength: 4
+          maxLength: 4
+          description: Last 4 characters of the API key
+          example: "cdef"
+        is_active:
+          type: boolean
+          description: Whether the key is active
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2024-12-19T15:30:00Z"
+      additionalProperties: false
+
+    APIKeyListResponse:
+      type: object
+      required:
+        - keys
+        - total_count
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/APIKeyResponse'
+          description: List of API keys
+        total_count:
+          type: integer
+          description: Total number of API keys
+          example: 5
+      additionalProperties: false
+
 tags:
   - name: Health
     description: Health check endpoints
@@ -1810,3 +2530,9 @@ tags:
     description: AI-powered code generation and chat
   - name: Monitoring
     description: System monitoring and metrics
+  - name: MFA
+    description: Multi-Factor Authentication
+  - name: RBAC
+    description: Role-Based Access Control
+  - name: API Keys
+    description: API Keys management
