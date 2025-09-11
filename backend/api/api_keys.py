@@ -13,6 +13,10 @@ import uuid
 import logging
 from backend.services.connection_manager import connection_manager
 from backend.services.supabase_manager import execute_supabase_operation
+from backend.core.exceptions import (
+    DatabaseError, ValidationError, NotFoundError, 
+    EncryptionError, ConfigurationError
+)
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +77,24 @@ async def create_api_key(
         
     except HTTPException:
         raise
+    except DatabaseError as e:
+        logger.error(f"Database error creating API key: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service unavailable"
+        )
+    except EncryptionError as e:
+        logger.error(f"Encryption error creating API key: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Encryption service error"
+        )
+    except ValidationError as e:
+        logger.error(f"Validation error creating API key: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except Exception as e:
         logger.error(f"Ошибка создания API ключа: {e}")
         raise HTTPException(
@@ -113,6 +135,18 @@ async def get_api_keys(
         
         return APIKeyListResponse(keys=keys, total_count=len(keys))
         
+    except DatabaseError as e:
+        logger.error(f"Database error getting API keys: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service unavailable"
+        )
+    except EncryptionError as e:
+        logger.error(f"Encryption error getting API keys: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Encryption service error"
+        )
     except Exception as e:
         logger.error(f"Ошибка получения API ключей: {e}")
         raise HTTPException(
@@ -159,6 +193,18 @@ async def get_api_key(
         
     except HTTPException:
         raise
+    except DatabaseError as e:
+        logger.error(f"Database error getting API key: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service unavailable"
+        )
+    except EncryptionError as e:
+        logger.error(f"Encryption error getting API key: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Encryption service error"
+        )
     except Exception as e:
         logger.error(f"Ошибка получения API ключа: {e}")
         raise HTTPException(
@@ -211,6 +257,18 @@ async def toggle_api_key(
         
     except HTTPException:
         raise
+    except DatabaseError as e:
+        logger.error(f"Database error toggling API key: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service unavailable"
+        )
+    except ValidationError as e:
+        logger.error(f"Validation error toggling API key: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except Exception as e:
         logger.error(f"Ошибка переключения API ключа: {e}")
         raise HTTPException(
@@ -257,6 +315,18 @@ async def delete_api_key(
         
     except HTTPException:
         raise
+    except DatabaseError as e:
+        logger.error(f"Database error deleting API key: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service unavailable"
+        )
+    except ValidationError as e:
+        logger.error(f"Validation error deleting API key: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except Exception as e:
         logger.error(f"Ошибка удаления API ключа: {e}")
         raise HTTPException(

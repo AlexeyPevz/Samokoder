@@ -7,6 +7,7 @@ from uuid import UUID
 from backend.contracts.database import UserRepositoryProtocol
 from backend.services.connection_pool import connection_pool_manager
 from backend.core.database_config import db_config
+from backend.services.supabase_manager import execute_supabase_operation
 from backend.core.exceptions import (
     DatabaseError, NotFoundError, ValidationError, 
     ConnectionError, TimeoutError
@@ -30,7 +31,9 @@ class UserRepository(UserRepositoryProtocol):
         """Find user by ID"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["profiles"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["id"], str(user_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["profiles"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["id"], str(user_id))
+            )
             return response.data[0] if response.data else None
         except ConnectionError as e:
             logger.error(f"Connection error finding user by ID {user_id}: {e}")
@@ -46,7 +49,9 @@ class UserRepository(UserRepositoryProtocol):
         """Find user by email"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["profiles"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["email"], email).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["profiles"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["email"], email)
+            )
             return response.data[0] if response.data else None
         except ConnectionError as e:
             logger.error(f"Connection error finding user by email {email}: {e}")
@@ -62,7 +67,9 @@ class UserRepository(UserRepositoryProtocol):
         """Save user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["profiles"]).insert(user_data).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["profiles"]).insert(user_data)
+            )
             return response.data[0] if response.data else {}
         except ValidationError as e:
             logger.error(f"Validation error saving user: {e}")
@@ -81,7 +88,9 @@ class UserRepository(UserRepositoryProtocol):
         """Update user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["profiles"]).update(user_data).eq(db_config.COLUMNS["id"], str(user_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["profiles"]).update(user_data).eq(db_config.COLUMNS["id"], str(user_id))
+            )
             return response.data[0] if response.data else {}
         except ValidationError as e:
             logger.error(f"Validation error updating user {user_id}: {e}")
@@ -100,7 +109,9 @@ class UserRepository(UserRepositoryProtocol):
         """Delete user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["profiles"]).delete().eq(db_config.COLUMNS["id"], str(user_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["profiles"]).delete().eq(db_config.COLUMNS["id"], str(user_id))
+            )
             return len(response.data) > 0
         except ConnectionError as e:
             logger.error(f"Connection error deleting user {user_id}: {e}")
@@ -116,7 +127,9 @@ class UserRepository(UserRepositoryProtocol):
         """Find users by subscription tier"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["profiles"]).select(db_config.QUERIES["select_all"]).eq("subscription_tier", tier).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["profiles"]).select(db_config.QUERIES["select_all"]).eq("subscription_tier", tier)
+            )
             return response.data or []
         except ConnectionError as e:
             logger.error(f"Connection error finding users by subscription tier {tier}: {e}")
@@ -132,7 +145,9 @@ class UserRepository(UserRepositoryProtocol):
         """Find active users"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["profiles"]).select(db_config.QUERIES["select_all"]).eq("subscription_status", db_config.STATUS["active"]).range(offset, offset + limit - 1).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["profiles"]).select(db_config.QUERIES["select_all"]).eq("subscription_status", db_config.STATUS["active"]).range(offset, offset + limit - 1)
+            )
             return response.data or []
         except ConnectionError as e:
             logger.error(f"Connection error finding active users: {e}")
@@ -148,10 +163,12 @@ class UserRepository(UserRepositoryProtocol):
         """Update user subscription"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["profiles"]).update({
-                "subscription_tier": tier,
-                "subscription_status": status
-            }).eq(db_config.COLUMNS["id"], str(user_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["profiles"]).update({
+                    "subscription_tier": tier,
+                    "subscription_status": status
+                }).eq(db_config.COLUMNS["id"], str(user_id))
+            )
             return len(response.data) > 0
         except ValidationError as e:
             logger.error(f"Validation error updating subscription for user {user_id}: {e}")

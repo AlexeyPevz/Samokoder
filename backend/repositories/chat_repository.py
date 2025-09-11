@@ -7,6 +7,7 @@ from uuid import UUID
 from backend.contracts.database import ChatRepositoryProtocol
 from backend.services.connection_pool import connection_pool_manager
 from backend.core.database_config import db_config
+from backend.services.supabase_manager import execute_supabase_operation
 from backend.core.exceptions import (
     DatabaseError, NotFoundError, ValidationError, 
     ConnectionError, TimeoutError
@@ -30,7 +31,9 @@ class ChatRepository(ChatRepositoryProtocol):
         """Find chat session by ID"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["chat_sessions"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["id"], str(session_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["chat_sessions"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["id"], str(session_id))
+            )
             return response.data[0] if response.data else None
         except ConnectionError as e:
             logger.error(f"Connection error finding chat session by ID {session_id}: {e}")
@@ -46,7 +49,9 @@ class ChatRepository(ChatRepositoryProtocol):
         """Find chat sessions by project ID"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["chat_sessions"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["project_id"], str(project_id)).eq(db_config.COLUMNS["is_active"], True).range(offset, offset + limit - 1).order(db_config.QUERIES["order_created_desc"], desc=True).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["chat_sessions"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["project_id"], str(project_id)).eq(db_config.COLUMNS["is_active"], True).range(offset, offset + limit - 1).order(db_config.QUERIES["order_created_desc"], desc=True)
+            )
             return response.data or []
         except ConnectionError as e:
             logger.error(f"Connection error finding chat sessions by project ID {project_id}: {e}")
@@ -62,7 +67,9 @@ class ChatRepository(ChatRepositoryProtocol):
         """Save chat session"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["chat_sessions"]).insert(session_data).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["chat_sessions"]).insert(session_data)
+            )
             return response.data[0] if response.data else {}
         except ValidationError as e:
             logger.error(f"Validation error saving chat session: {e}")
@@ -81,7 +88,9 @@ class ChatRepository(ChatRepositoryProtocol):
         """Find messages by session ID"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["chat_messages"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["session_id"], str(session_id)).range(offset, offset + limit - 1).order(db_config.QUERIES["order_created_desc"], desc=False).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["chat_messages"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["session_id"], str(session_id)).range(offset, offset + limit - 1).order(db_config.QUERIES["order_created_desc"], desc=False)
+            )
             return response.data or []
         except ConnectionError as e:
             logger.error(f"Connection error finding messages by session ID {session_id}: {e}")
@@ -97,7 +106,9 @@ class ChatRepository(ChatRepositoryProtocol):
         """Save chat message"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["chat_messages"]).insert(message_data).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["chat_messages"]).insert(message_data)
+            )
             return response.data[0] if response.data else {}
         except ValidationError as e:
             logger.error(f"Validation error saving chat message: {e}")
@@ -116,7 +127,9 @@ class ChatRepository(ChatRepositoryProtocol):
         """Find chat sessions by user ID"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["chat_sessions"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["user_id"], str(user_id)).eq(db_config.COLUMNS["is_active"], True).range(offset, offset + limit - 1).order(db_config.QUERIES["order_updated_desc"], desc=True).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["chat_sessions"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["user_id"], str(user_id)).eq(db_config.COLUMNS["is_active"], True).range(offset, offset + limit - 1).order(db_config.QUERIES["order_updated_desc"], desc=True)
+            )
             return response.data or []
         except ConnectionError as e:
             logger.error(f"Connection error finding chat sessions by user ID {user_id}: {e}")
@@ -132,7 +145,9 @@ class ChatRepository(ChatRepositoryProtocol):
         """Find recent chat sessions for user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["chat_sessions"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["user_id"], str(user_id)).eq(db_config.COLUMNS["is_active"], True).order(db_config.QUERIES["order_updated_desc"], desc=True).limit(limit).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["chat_sessions"]).select(db_config.QUERIES["select_all"]).eq(db_config.COLUMNS["user_id"], str(user_id)).eq(db_config.COLUMNS["is_active"], True).order(db_config.QUERIES["order_updated_desc"], desc=True).limit(limit)
+            )
             return response.data or []
         except ConnectionError as e:
             logger.error(f"Connection error finding recent chat sessions for user {user_id}: {e}")
@@ -148,7 +163,9 @@ class ChatRepository(ChatRepositoryProtocol):
         """Update chat session"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["chat_sessions"]).update(session_data).eq(db_config.COLUMNS["id"], str(session_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["chat_sessions"]).update(session_data).eq(db_config.COLUMNS["id"], str(session_id))
+            )
             return response.data[0] if response.data else {}
         except ValidationError as e:
             logger.error(f"Validation error updating chat session {session_id}: {e}")
@@ -167,7 +184,9 @@ class ChatRepository(ChatRepositoryProtocol):
         """Delete chat session (soft delete)"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["chat_sessions"]).update({db_config.COLUMNS["is_active"]: False}).eq(db_config.COLUMNS["id"], str(session_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["chat_sessions"]).update({db_config.COLUMNS["is_active"]: False}).eq(db_config.COLUMNS["id"], str(session_id))
+            )
             return len(response.data) > 0
         except ConnectionError as e:
             logger.error(f"Connection error deleting chat session {session_id}: {e}")
@@ -183,7 +202,9 @@ class ChatRepository(ChatRepositoryProtocol):
         """Count messages in session"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table(db_config.TABLES["chat_messages"]).select(db_config.QUERIES["count_exact"], count="exact").eq(db_config.COLUMNS["session_id"], str(session_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table(db_config.TABLES["chat_messages"]).select(db_config.QUERIES["count_exact"], count="exact").eq(db_config.COLUMNS["session_id"], str(session_id))
+            )
             return response.count or 0
         except ConnectionError as e:
             logger.error(f"Connection error counting messages for session {session_id}: {e}")

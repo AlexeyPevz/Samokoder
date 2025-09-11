@@ -14,6 +14,10 @@ import httpx
 from dataclasses import dataclass
 
 from config.settings import settings
+from backend.core.exceptions import (
+    DatabaseError, RedisError, NetworkError, 
+    ConnectionError, TimeoutError, ConfigurationError
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +59,18 @@ class DatabaseConnectionPool:
             )
             self._initialized = True
             logger.info(f"Database connection pool initialized: {self.config.min_connections}-{self.config.max_connections} connections")
+        except asyncpg.PostgresError as e:
+            logger.error(f"PostgreSQL error initializing connection pool: {e}")
+            raise DatabaseError(f"Database connection pool initialization failed: {e}")
+        except ConnectionError as e:
+            logger.error(f"Connection error initializing database pool: {e}")
+            raise DatabaseError(f"Database connection pool initialization failed: {e}")
+        except TimeoutError as e:
+            logger.error(f"Timeout error initializing database pool: {e}")
+            raise DatabaseError(f"Database connection pool initialization failed: {e}")
         except Exception as e:
             logger.error(f"Failed to initialize database connection pool: {e}")
-            raise
+            raise DatabaseError(f"Database connection pool initialization failed: {e}")
     
     async def close(self):
         """Закрывает пул соединений"""
@@ -145,9 +158,18 @@ class RedisConnectionPool:
             
             self._initialized = True
             logger.info(f"Redis connection pool initialized: max {self.config.max_connections} connections")
+        except aioredis.ConnectionError as e:
+            logger.error(f"Redis connection error initializing pool: {e}")
+            raise RedisError(f"Redis connection pool initialization failed: {e}")
+        except aioredis.TimeoutError as e:
+            logger.error(f"Redis timeout error initializing pool: {e}")
+            raise RedisError(f"Redis connection pool initialization failed: {e}")
+        except ConnectionError as e:
+            logger.error(f"Connection error initializing Redis pool: {e}")
+            raise RedisError(f"Redis connection pool initialization failed: {e}")
         except Exception as e:
             logger.error(f"Failed to initialize Redis connection pool: {e}")
-            raise
+            raise RedisError(f"Redis connection pool initialization failed: {e}")
     
     async def close(self):
         """Закрывает пул соединений"""
@@ -230,9 +252,18 @@ class HTTPConnectionPool:
             
             self._initialized = True
             logger.info(f"HTTP connection pool initialized: max {self.config.max_connections} connections")
+        except httpx.ConnectError as e:
+            logger.error(f"HTTP connection error initializing pool: {e}")
+            raise NetworkError(f"HTTP connection pool initialization failed: {e}")
+        except httpx.TimeoutException as e:
+            logger.error(f"HTTP timeout error initializing pool: {e}")
+            raise NetworkError(f"HTTP connection pool initialization failed: {e}")
+        except ConnectionError as e:
+            logger.error(f"Connection error initializing HTTP pool: {e}")
+            raise NetworkError(f"HTTP connection pool initialization failed: {e}")
         except Exception as e:
             logger.error(f"Failed to initialize HTTP connection pool: {e}")
-            raise
+            raise NetworkError(f"HTTP connection pool initialization failed: {e}")
     
     async def close(self):
         """Закрывает HTTP клиент"""
@@ -318,6 +349,18 @@ class ConnectionPoolManager:
             self._initialized = True
             logger.info("All connection pools initialized successfully")
             
+        except DatabaseError as e:
+            logger.error(f"Database error initializing connection pools: {e}")
+            await self.close_all()
+            raise
+        except RedisError as e:
+            logger.error(f"Redis error initializing connection pools: {e}")
+            await self.close_all()
+            raise
+        except NetworkError as e:
+            logger.error(f"Network error initializing connection pools: {e}")
+            await self.close_all()
+            raise
         except Exception as e:
             logger.error(f"Failed to initialize connection pools: {e}")
             await self.close_all()
@@ -360,6 +403,12 @@ class ConnectionPoolManager:
                 health_status["pools"]["database"] = "healthy"
             else:
                 health_status["pools"]["database"] = "not_initialized"
+        except asyncpg.PostgresError as e:
+            health_status["pools"]["database"] = f"unhealthy: PostgreSQL error: {str(e)}"
+            health_status["overall"] = "unhealthy"
+        except ConnectionError as e:
+            health_status["pools"]["database"] = f"unhealthy: Connection error: {str(e)}"
+            health_status["overall"] = "unhealthy"
         except Exception as e:
             health_status["pools"]["database"] = f"unhealthy: {str(e)}"
             health_status["overall"] = "unhealthy"
@@ -371,6 +420,12 @@ class ConnectionPoolManager:
                 health_status["pools"]["redis"] = "healthy"
             else:
                 health_status["pools"]["redis"] = "not_initialized"
+        except aioredis.ConnectionError as e:
+            health_status["pools"]["redis"] = f"unhealthy: Redis connection error: {str(e)}"
+            health_status["overall"] = "unhealthy"
+        except aioredis.TimeoutError as e:
+            health_status["pools"]["redis"] = f"unhealthy: Redis timeout: {str(e)}"
+            health_status["overall"] = "unhealthy"
         except Exception as e:
             health_status["pools"]["redis"] = f"unhealthy: {str(e)}"
             health_status["overall"] = "unhealthy"
@@ -381,6 +436,12 @@ class ConnectionPoolManager:
                 health_status["pools"]["http"] = "healthy"
             else:
                 health_status["pools"]["http"] = "not_initialized"
+        except httpx.ConnectError as e:
+            health_status["pools"]["http"] = f"unhealthy: HTTP connection error: {str(e)}"
+            health_status["overall"] = "unhealthy"
+        except httpx.TimeoutException as e:
+            health_status["pools"]["http"] = f"unhealthy: HTTP timeout: {str(e)}"
+            health_status["overall"] = "unhealthy"
         except Exception as e:
             health_status["pools"]["http"] = f"unhealthy: {str(e)}"
             health_status["overall"] = "unhealthy"

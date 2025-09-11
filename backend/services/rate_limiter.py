@@ -18,6 +18,10 @@ except ImportError:
     REDIS_AVAILABLE = False
 
 from config.settings import settings
+from backend.core.exceptions import (
+    RedisError, NetworkError, TimeoutError, 
+    ConfigurationError, CacheError
+)
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +62,12 @@ class RateLimiter:
                 retry_on_timeout=True
             )
             logger.info("Redis rate limiter initialized")
+        except redis.ConnectionError as e:
+            logger.warning(f"Redis connection failed: {e}, using in-memory rate limiting")
+            self.redis_client = None
+        except redis.TimeoutError as e:
+            logger.warning(f"Redis timeout: {e}, using in-memory rate limiting")
+            self.redis_client = None
         except Exception as e:
             logger.warning(f"Redis connection failed: {e}, using in-memory rate limiting")
             self.redis_client = None
@@ -85,6 +95,12 @@ class RateLimiter:
             # Тестируем подключение
             await self.redis_client.ping()
             logger.info("Redis rate limiter initialized")
+        except redis.ConnectionError as e:
+            logger.warning(f"Redis connection failed: {e}, using in-memory rate limiting")
+            self.redis_client = None
+        except redis.TimeoutError as e:
+            logger.warning(f"Redis timeout: {e}, using in-memory rate limiting")
+            self.redis_client = None
         except Exception as e:
             logger.warning(f"Redis connection failed: {e}, using in-memory rate limiting")
             self.redis_client = None
@@ -168,6 +184,18 @@ class RateLimiter:
             
             return allowed, rate_info
             
+        except redis.ConnectionError as e:
+            logger.error(f"Redis connection error in rate limit: {e}")
+            # Fallback на memory режим
+            return await self._check_memory_rate_limit(
+                "fallback", "fallback", limit_per_minute, limit_per_hour, current_time
+            )
+        except redis.TimeoutError as e:
+            logger.error(f"Redis timeout in rate limit: {e}")
+            # Fallback на memory режим
+            return await self._check_memory_rate_limit(
+                "fallback", "fallback", limit_per_minute, limit_per_hour, current_time
+            )
         except Exception as e:
             logger.error(f"Redis rate limit error: {e}")
             # Fallback на memory режим
@@ -254,6 +282,12 @@ class RateLimiter:
                     reset_time_minute=current_time + 60,
                     reset_time_hour=current_time + 3600
                 )
+            except redis.ConnectionError as e:
+                logger.error(f"Redis connection error getting rate limit info: {e}")
+                return None
+            except redis.TimeoutError as e:
+                logger.error(f"Redis timeout getting rate limit info: {e}")
+                return None
             except Exception as e:
                 logger.error(f"Redis get rate limit info error: {e}")
                 return None
@@ -284,6 +318,10 @@ class RateLimiter:
             try:
                 await self.redis_client.delete(minute_key, hour_key)
                 logger.info(f"Rate limit reset for {user_id}:{endpoint}")
+            except redis.ConnectionError as e:
+                logger.error(f"Redis connection error resetting rate limit: {e}")
+            except redis.TimeoutError as e:
+                logger.error(f"Redis timeout resetting rate limit: {e}")
             except Exception as e:
                 logger.error(f"Redis reset rate limit error: {e}")
         else:
