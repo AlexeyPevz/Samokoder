@@ -29,7 +29,7 @@ class TestEncryptionServiceSimple:
         assert hasattr(service, 'encrypt_api_key')
         assert hasattr(service, 'decrypt_api_key')
         assert hasattr(service, 'get_key_last_4')
-        assert hasattr(service, 'generate_encryption_key')
+        assert hasattr(service, '_generate_master_key')
     
     def test_encrypt_api_key_function(self):
         """Тест функции encrypt_api_key"""
@@ -37,9 +37,10 @@ class TestEncryptionServiceSimple:
         
         service = EncryptionService()
         
-        # Тестируем функцию
+        # Тестируем функцию (требует user_id)
         api_key = "sk-test1234567890abcdef"
-        encrypted = service.encrypt_api_key(api_key)
+        user_id = "test_user_123"
+        encrypted = service.encrypt_api_key(api_key, user_id)
         
         # Проверяем результат
         assert encrypted != api_key
@@ -52,10 +53,11 @@ class TestEncryptionServiceSimple:
         
         service = EncryptionService()
         
-        # Тестируем функцию
+        # Тестируем функцию (требует user_id)
         api_key = "sk-test1234567890abcdef"
-        encrypted = service.encrypt_api_key(api_key)
-        decrypted = service.decrypt_api_key(encrypted)
+        user_id = "test_user_123"
+        encrypted = service.encrypt_api_key(api_key, user_id)
+        decrypted = service.decrypt_api_key(encrypted, user_id)
         
         # Проверяем результат
         assert decrypted == api_key
@@ -84,9 +86,9 @@ class TestEncryptionServiceSimple:
         api_key = "abc"
         last_4 = service.get_key_last_4(api_key)
         
-        # Проверяем результат
-        assert last_4 == "abc"
-        assert len(last_4) <= 4
+        # Проверяем результат (должен вернуть "****" для коротких ключей)
+        assert last_4 == "****"
+        assert len(last_4) == 4
     
     def test_get_key_last_4_empty_key(self):
         """Тест функции get_key_last_4 с пустым ключом"""
@@ -98,20 +100,20 @@ class TestEncryptionServiceSimple:
         api_key = ""
         last_4 = service.get_key_last_4(api_key)
         
-        # Проверяем результат
-        assert last_4 == ""
+        # Проверяем результат (должен вернуть "****" для пустых ключей)
+        assert last_4 == "****"
     
-    def test_generate_encryption_key_function(self):
-        """Тест функции generate_encryption_key"""
+    def test_generate_master_key_function(self):
+        """Тест функции _generate_master_key"""
         from backend.services.encryption_service import EncryptionService
         
         service = EncryptionService()
         
         # Тестируем функцию
-        key = service.generate_encryption_key()
+        key = service._generate_master_key()
         
         # Проверяем результат
-        assert isinstance(key, bytes)
+        assert isinstance(key, str)
         assert len(key) > 0
     
     def test_encryption_roundtrip(self):
@@ -119,6 +121,7 @@ class TestEncryptionServiceSimple:
         from backend.services.encryption_service import EncryptionService
         
         service = EncryptionService()
+        user_id = "test_user_123"
         
         # Тестируем различные ключи
         test_keys = [
@@ -131,10 +134,10 @@ class TestEncryptionServiceSimple:
         
         for api_key in test_keys:
             # Шифруем
-            encrypted = service.encrypt_api_key(api_key)
+            encrypted = service.encrypt_api_key(api_key, user_id)
             
             # Дешифруем
-            decrypted = service.decrypt_api_key(encrypted)
+            decrypted = service.decrypt_api_key(encrypted, user_id)
             
             # Проверяем, что результат совпадает
             assert decrypted == api_key, f"Failed for key: {api_key}"
@@ -156,8 +159,10 @@ class TestEncryptionServiceSimple:
         service = EncryptionService()
         
         # Проверяем, что у сервиса есть необходимые атрибуты
-        assert hasattr(service, '_fernet')
-        assert service._fernet is not None
+        assert hasattr(service, 'cipher_suite')
+        assert service.cipher_suite is not None
+        assert hasattr(service, 'master_key')
+        assert service.master_key is not None
     
     def test_encryption_service_error_handling(self):
         """Тест обработки ошибок в Encryption Service"""

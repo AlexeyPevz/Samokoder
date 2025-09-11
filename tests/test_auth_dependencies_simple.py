@@ -88,7 +88,8 @@ class TestAuthDependenciesSimple:
         result = validate_jwt_token(None)
         assert result is False
     
-    def test_get_current_user_function(self):
+    @pytest.mark.asyncio
+    async def test_get_current_user_function(self):
         """Тест функции get_current_user"""
         from backend.auth.dependencies import get_current_user
         
@@ -96,15 +97,16 @@ class TestAuthDependenciesSimple:
         mock_request = MagicMock()
         mock_request.headers = {"Authorization": "Bearer invalid_token"}
         
-        # Тестируем функцию
-        result = get_current_user(mock_request)
+        # Тестируем функцию (async)
+        result = await get_current_user(mock_request)
         
         # Проверяем, что функция возвращает dict (mock user)
         assert isinstance(result, dict)
         assert "id" in result
         assert "email" in result
     
-    def test_get_current_user_optional_function(self):
+    @pytest.mark.asyncio
+    async def test_get_current_user_optional_function(self):
         """Тест функции get_current_user_optional"""
         from backend.auth.dependencies import get_current_user_optional
         
@@ -112,8 +114,8 @@ class TestAuthDependenciesSimple:
         mock_request = MagicMock()
         mock_request.headers = {"Authorization": "Bearer invalid_token"}
         
-        # Тестируем функцию
-        result = get_current_user_optional(mock_request)
+        # Тестируем функцию (async)
+        result = await get_current_user_optional(mock_request)
         
         # Проверяем, что функция возвращает dict или None
         assert result is None or isinstance(result, dict)

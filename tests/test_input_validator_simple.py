@@ -9,34 +9,34 @@ class TestInputValidatorSimple:
     """Простые тесты для Input Validator"""
     
     def test_input_validator_class_exists(self):
-        """Проверяем, что класс InputValidator существует"""
-        from backend.security.input_validator import InputValidator
+        """Проверяем, что класс SecureInputValidator существует"""
+        from backend.security.input_validator import SecureInputValidator
         
         # Проверяем, что класс существует
-        assert InputValidator is not None
+        assert SecureInputValidator is not None
         
         # Проверяем, что можно создать экземпляр
-        validator = InputValidator()
+        validator = SecureInputValidator()
         assert validator is not None
     
     def test_input_validator_methods_exist(self):
-        """Проверяем, что все методы InputValidator существуют"""
-        from backend.security.input_validator import InputValidator
+        """Проверяем, что все методы SecureInputValidator существуют"""
+        from backend.security.input_validator import SecureInputValidator
         
-        validator = InputValidator()
+        validator = SecureInputValidator()
         
         # Проверяем, что все методы существуют
         assert hasattr(validator, 'validate_password_strength')
         assert hasattr(validator, 'validate_api_key_format')
-        assert hasattr(validator, 'validate_sql_injection')
-        assert hasattr(validator, 'validate_xss')
+        assert hasattr(validator, 'validate_sql_input')
+        assert hasattr(validator, 'validate_xss_input')
         assert hasattr(validator, 'validate_path_traversal')
     
     def test_validate_password_strength_function(self):
         """Тест функции validate_password_strength"""
-        from backend.security.input_validator import InputValidator
+        from backend.security.input_validator import SecureInputValidator
         
-        validator = InputValidator()
+        validator = SecureInputValidator()
         
         # Тестируем с сильным паролем
         result = validator.validate_password_strength("StrongPassword123!")
@@ -48,9 +48,9 @@ class TestInputValidatorSimple:
     
     def test_validate_api_key_format_function(self):
         """Тест функции validate_api_key_format"""
-        from backend.security.input_validator import InputValidator
+        from backend.security.input_validator import SecureInputValidator
         
-        validator = InputValidator()
+        validator = SecureInputValidator()
         
         # Тестируем с валидным API ключом
         result = validator.validate_api_key_format("sk-test1234567890abcdef", "openai")
@@ -60,39 +60,39 @@ class TestInputValidatorSimple:
         result = validator.validate_api_key_format("invalid_key", "openai")
         assert result is False
     
-    def test_validate_sql_injection_function(self):
-        """Тест функции validate_sql_injection"""
-        from backend.security.input_validator import InputValidator
+    def test_validate_sql_input_function(self):
+        """Тест функции validate_sql_input"""
+        from backend.security.input_validator import SecureInputValidator
         
-        validator = InputValidator()
+        validator = SecureInputValidator()
         
         # Тестируем с безопасным вводом
-        result = validator.validate_sql_injection("safe_input")
+        result = validator.validate_sql_input("safe_input")
         assert result is True
         
         # Тестируем с SQL инъекцией
-        result = validator.validate_sql_injection("'; DROP TABLE users; --")
+        result = validator.validate_sql_input("'; DROP TABLE users; --")
         assert result is False
     
-    def test_validate_xss_function(self):
-        """Тест функции validate_xss"""
-        from backend.security.input_validator import InputValidator
+    def test_validate_xss_input_function(self):
+        """Тест функции validate_xss_input"""
+        from backend.security.input_validator import SecureInputValidator
         
-        validator = InputValidator()
+        validator = SecureInputValidator()
         
         # Тестируем с безопасным вводом
-        result = validator.validate_xss("safe_input")
+        result = validator.validate_xss_input("safe_input")
         assert result is True
         
         # Тестируем с XSS атакой
-        result = validator.validate_xss("<script>alert('xss')</script>")
+        result = validator.validate_xss_input("<script>alert('xss')</script>")
         assert result is False
     
     def test_validate_path_traversal_function(self):
         """Тест функции validate_path_traversal"""
-        from backend.security.input_validator import InputValidator
+        from backend.security.input_validator import SecureInputValidator
         
-        validator = InputValidator()
+        validator = SecureInputValidator()
         
         # Тестируем с безопасным путем
         result = validator.validate_path_traversal("safe_path.txt")
@@ -104,9 +104,9 @@ class TestInputValidatorSimple:
     
     def test_password_strength_validation_cases(self):
         """Тест валидации силы пароля - различные случаи"""
-        from backend.security.input_validator import InputValidator
+        from backend.security.input_validator import SecureInputValidator
         
-        validator = InputValidator()
+        validator = SecureInputValidator()
         
         # Тестируем различные пароли
         test_cases = [
@@ -128,9 +128,9 @@ class TestInputValidatorSimple:
     
     def test_api_key_format_validation_cases(self):
         """Тест валидации формата API ключа - различные случаи"""
-        from backend.security.input_validator import InputValidator
+        from backend.security.input_validator import SecureInputValidator
         
-        validator = InputValidator()
+        validator = SecureInputValidator()
         
         # Тестируем различные API ключи
         test_cases = [
@@ -146,9 +146,9 @@ class TestInputValidatorSimple:
     
     def test_sql_injection_detection_cases(self):
         """Тест обнаружения SQL инъекций - различные случаи"""
-        from backend.security.input_validator import InputValidator
+        from backend.security.input_validator import SecureInputValidator
         
-        validator = InputValidator()
+        validator = SecureInputValidator()
         
         # Тестируем различные SQL инъекции
         test_cases = [
@@ -161,14 +161,14 @@ class TestInputValidatorSimple:
         ]
         
         for input_text, expected in test_cases:
-            result = validator.validate_sql_injection(input_text)
+            result = validator.validate_sql_input(input_text)
             assert result == expected, f"Input '{input_text}' should be {expected}"
     
     def test_xss_detection_cases(self):
         """Тест обнаружения XSS - различные случаи"""
-        from backend.security.input_validator import InputValidator
+        from backend.security.input_validator import SecureInputValidator
         
-        validator = InputValidator()
+        validator = SecureInputValidator()
         
         # Тестируем различные XSS атаки
         test_cases = [
@@ -181,14 +181,14 @@ class TestInputValidatorSimple:
         ]
         
         for input_text, expected in test_cases:
-            result = validator.validate_xss(input_text)
+            result = validator.validate_xss_input(input_text)
             assert result == expected, f"Input '{input_text}' should be {expected}"
     
     def test_path_traversal_detection_cases(self):
         """Тест обнаружения path traversal - различные случаи"""
-        from backend.security.input_validator import InputValidator
+        from backend.security.input_validator import SecureInputValidator
         
-        validator = InputValidator()
+        validator = SecureInputValidator()
         
         # Тестируем различные path traversal атаки
         test_cases = [
@@ -208,7 +208,7 @@ class TestInputValidatorSimple:
         """Тест импортов Input Validator"""
         # Проверяем, что все необходимые модули импортируются
         try:
-            from backend.security.input_validator import InputValidator
+            from backend.security.input_validator import SecureInputValidator
             assert True  # Импорт успешен
         except ImportError as e:
             pytest.fail(f"Import failed: {e}")
