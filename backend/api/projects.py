@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from backend.models.requests import ProjectCreateRequest, ProjectUpdateRequest
 from backend.models.responses import ProjectResponse, ProjectListResponse, ProjectCreateResponse
 from backend.auth.dependencies import get_current_user
-from backend.middleware.rate_limit_middleware import api_rate_limit
+from backend.middleware.secure_rate_limiter import api_rate_limit
 from backend.services.connection_pool import connection_pool_manager
 from backend.services.supabase_manager import execute_supabase_operation
 import logging

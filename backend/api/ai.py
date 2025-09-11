@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse
 from backend.models.requests import ChatRequest, AIUsageRequest
 from backend.models.responses import AIResponse, AIUsageStatsResponse
 from backend.auth.dependencies import get_current_user
-from backend.middleware.rate_limit_middleware import ai_rate_limit
+from backend.middleware.secure_rate_limiter import ai_rate_limit
 from backend.services.ai_service import get_ai_service
 from backend.services.connection_pool import connection_pool_manager
 from backend.services.supabase_manager import execute_supabase_operation
@@ -126,7 +126,7 @@ async def chat_with_ai_stream(
 async def get_ai_usage(
     current_user: dict = Depends(get_current_user),
     days: int = 30,
-    rate_limit: dict = Depends(api_rate_limit)
+    rate_limit: dict = Depends(ai_rate_limit)
 ):
     """Get AI usage statistics"""
     try:
@@ -174,7 +174,7 @@ async def get_ai_usage(
 @router.get("/providers")
 async def get_ai_providers(
     current_user: dict = Depends(get_current_user),
-    rate_limit: dict = Depends(api_rate_limit)
+    rate_limit: dict = Depends(ai_rate_limit)
 ):
     """Get available AI providers"""
     try:

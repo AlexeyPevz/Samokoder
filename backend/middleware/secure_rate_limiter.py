@@ -172,3 +172,11 @@ def ai_chat_rate_limit():
 def file_upload_rate_limit():
     """Rate limiter для загрузки файлов"""
     return secure_rate_limit("file_upload")
+
+def api_rate_limit():
+    """Rate limiter для API эндпоинтов"""
+    return secure_rate_limit("api")
+
+def ai_rate_limit():
+    """Rate limiter для AI эндпоинтов"""
+    return secure_rate_limit("ai")
