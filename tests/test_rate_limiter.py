@@ -15,8 +15,19 @@ class TestRateLimiter:
         """Фикстура для создания rate limiter"""
         return RateLimiter()
     
+    @pytest.fixture
+    async def clean_redis(self):
+        """Фикстура для очистки Redis"""
+        try:
+            import redis.asyncio as redis
+            redis_client = redis.from_url("redis://localhost:6379")
+            await redis_client.flushall()
+            await redis_client.close()
+        except:
+            pass
+    
     @pytest.mark.asyncio
-    async def test_memory_rate_limit_allowed(self, rate_limiter):
+    async def test_memory_rate_limit_allowed(self, rate_limiter, clean_redis):
         """Тест разрешенного запроса в memory режиме"""
         user_id = "test_user"
         endpoint = "/api/test"
@@ -35,7 +46,7 @@ class TestRateLimiter:
         assert rate_info.hour_allowed is True
     
     @pytest.mark.asyncio
-    async def test_memory_rate_limit_exceeded_minute(self, rate_limiter):
+    async def test_memory_rate_limit_exceeded_minute(self, rate_limiter, clean_redis):
         """Тест превышения лимита в минуту"""
         user_id = "test_user"
         endpoint = "/api/test"
@@ -55,7 +66,7 @@ class TestRateLimiter:
         assert rate_info.hour_allowed is True
     
     @pytest.mark.asyncio
-    async def test_memory_rate_limit_exceeded_hour(self, rate_limiter):
+    async def test_memory_rate_limit_exceeded_hour(self, rate_limiter, clean_redis):
         """Тест превышения лимита в час"""
         user_id = "test_user"
         endpoint = "/api/test"
@@ -75,7 +86,7 @@ class TestRateLimiter:
         assert rate_info.hour_allowed is False
     
     @pytest.mark.asyncio
-    async def test_different_users_separate_limits(self, rate_limiter):
+    async def test_different_users_separate_limits(self, rate_limiter, clean_redis):
         """Тест раздельных лимитов для разных пользователей"""
         user1 = "user1"
         user2 = "user2"
@@ -120,7 +131,7 @@ class TestRateLimiter:
         assert rate_info2.minute_requests == 6
     
     @pytest.mark.asyncio
-    async def test_different_endpoints_separate_limits(self, rate_limiter):
+    async def test_different_endpoints_separate_limits(self, rate_limiter, clean_redis):
         """Тест раздельных лимитов для разных эндпоинтов"""
         user_id = "test_user"
         endpoint1 = "/api/endpoint1"
@@ -147,7 +158,7 @@ class TestRateLimiter:
         assert rate_info2.minute_requests == 1
     
     @pytest.mark.asyncio
-    async def test_reset_rate_limit(self, rate_limiter):
+    async def test_reset_rate_limit(self, rate_limiter, clean_redis):
         """Тест сброса rate limit"""
         user_id = "test_user"
         endpoint = "/api/test"
@@ -177,7 +188,7 @@ class TestRateLimiter:
         assert rate_info.hour_requests == 1
     
     @pytest.mark.asyncio
-    async def test_get_rate_limit_info(self, rate_limiter):
+    async def test_get_rate_limit_info(self, rate_limiter, clean_redis):
         """Тест получения информации о rate limit"""
         user_id = "test_user"
         endpoint = "/api/test"
@@ -199,7 +210,7 @@ class TestRateLimiter:
         assert rate_info.hour_requests == 3
     
     @pytest.mark.asyncio
-    async def test_get_rate_limit_info_nonexistent(self, rate_limiter):
+    async def test_get_rate_limit_info_nonexistent(self, rate_limiter, clean_redis):
         """Тест получения информации о несуществующем rate limit"""
         user_id = "nonexistent_user"
         endpoint = "/api/nonexistent"
@@ -209,7 +220,7 @@ class TestRateLimiter:
         assert rate_info is None
     
     @pytest.mark.asyncio
-    async def test_cleanup_expired_entries(self, rate_limiter):
+    async def test_cleanup_expired_entries(self, rate_limiter, clean_redis):
         """Тест очистки устаревших записей"""
         user_id = "test_user"
         endpoint = "/api/test"
