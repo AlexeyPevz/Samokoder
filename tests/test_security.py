@@ -132,7 +132,7 @@ class TestInputValidation:
         """Тест: защита от path traversal"""
         malicious_paths = [
             "../../../etc/passwd",
-            "..\..\..\windows\system32\config\sam",
+            "..\\..\\..\\windows\\system32\\config\\sam",
             "....//....//....//etc/passwd",
             "%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd"
         ]

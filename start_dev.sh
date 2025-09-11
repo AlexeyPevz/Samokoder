@@ -15,7 +15,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # Запускаем бэкенд
-echo "🔧 Запуск бэкенда на порту 3000..."
+echo "🔧 Запуск бэкенда на порту 8000..."
 cd /workspace
 python run_server.py &
 BACKEND_PID=$!
@@ -31,8 +31,8 @@ FRONTEND_PID=$!
 
 echo "✅ Серверы запущены!"
 echo "📱 Фронтенд: http://localhost:5173"
-echo "🔧 Бэкенд: http://localhost:3000"
-echo "📊 Логи: http://localhost:4444"
+echo "🔧 Бэкенд: http://localhost:8000"
+echo "📚 Документация API: http://localhost:8000/docs"
 echo ""
 echo "Нажмите Ctrl+C для остановки всех серверов"
 

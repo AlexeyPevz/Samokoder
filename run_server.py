@@ -22,7 +22,7 @@ import logging
 root_dir = Path(__file__).parent
 sys.path.insert(0, str(root_dir))
 
-from config.settings_fixed import settings
+from config.settings import settings
 
 # Настройка логирования
 logging.basicConfig(

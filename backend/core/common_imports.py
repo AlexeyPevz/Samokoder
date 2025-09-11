@@ -104,18 +104,6 @@ class CommonError(Exception):
     """Base error class"""
     pass
 
-class ValidationError(CommonError):
-    """Validation error"""
-    pass
-
-class NotFoundError(CommonError):
-    """Not found error"""
-    pass
-
-class ConflictError(CommonError):
-    """Conflict error"""
-    pass
-
 # Common constants
 class HTTPStatus:
     """HTTP status codes"""

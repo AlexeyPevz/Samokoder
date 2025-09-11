@@ -24,19 +24,19 @@ class DIContainer:
         """Register a service implementation"""
         self._services[interface] = implementation
         self._singletons[interface] = singleton
-        logger.debug(f"Registered {interface.__name__} -> {implementation.__name__} (singleton: {singleton})")
+        logger.debug("service_registered", interface=interface.__name__, implementation=implementation.__name__, singleton=singleton)
     
     def register_factory(self, interface: Type[T], factory: Callable[[], T], singleton: bool = True) -> None:
         """Register a factory function for a service"""
         self._factories[interface] = factory
         self._singletons[interface] = singleton
-        logger.debug(f"Registered factory for {interface.__name__} (singleton: {singleton})")
+        logger.debug("factory_registered", interface=interface.__name__, singleton=singleton)
     
     def register_instance(self, interface: Type[T], instance: T) -> None:
         """Register a service instance"""
         self._instances[interface] = instance
         self._singletons[interface] = True
-        logger.debug(f"Registered instance for {interface.__name__}")
+        logger.debug("instance_registered", interface=interface.__name__)
     
     async def get(self, interface: Type[T]) -> T:
         """Get a service instance with thread safety"""
