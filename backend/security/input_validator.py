@@ -214,16 +214,16 @@ class SecureInputValidator:
         
         return True
     
-    def validate_password_strength(self, password: str) -> Tuple[bool, List[str]]:
-        """Валидирует силу пароля"""
+    def _check_password_length(self, password: str) -> List[str]:
+        """Проверяет длину пароля"""
         errors = []
-        
-        if not isinstance(password, str):
-            errors.append("Password must be a string")
-            return False, errors
-        
         if len(password) < 12:
             errors.append("Password must be at least 12 characters long")
+        return errors
+    
+    def _check_password_characters(self, password: str) -> List[str]:
+        """Проверяет наличие различных типов символов"""
+        errors = []
         
         if not re.search(r'[A-Z]', password):
             errors.append("Password must contain at least one uppercase letter")
@@ -237,7 +237,11 @@ class SecureInputValidator:
         if not re.search(r'[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]', password):
             errors.append("Password must contain at least one special character")
         
-        # Проверка на общие пароли
+        return errors
+    
+    def _check_common_passwords(self, password: str) -> List[str]:
+        """Проверяет на общие пароли"""
+        errors = []
         common_passwords = [
             'password', '123456', 'qwerty', 'abc123', 'password123',
             'admin', 'letmein', 'welcome', 'monkey', '1234567890'
@@ -245,6 +249,21 @@ class SecureInputValidator:
         
         if password.lower() in common_passwords:
             errors.append("Password is too common")
+        
+        return errors
+    
+    def validate_password_strength(self, password: str) -> Tuple[bool, List[str]]:
+        """Валидирует силу пароля"""
+        errors = []
+        
+        if not isinstance(password, str):
+            errors.append("Password must be a string")
+            return False, errors
+        
+        # Проверяем все критерии
+        errors.extend(self._check_password_length(password))
+        errors.extend(self._check_password_characters(password))
+        errors.extend(self._check_common_passwords(password))
         
         return len(errors) == 0, errors
     

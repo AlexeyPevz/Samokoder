@@ -8,8 +8,14 @@ import urllib.parse
 import json
 
 # Настройки Supabase
-SUPABASE_URL = "https://auhzhdndqyflfdfszapm.supabase.co"
-SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aHpoZG5kcXlmbGZkZnN6YXBtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzQ0ODcxNywiZXhwIjoyMDczMDI0NzE3fQ.xIJO7zl1hD4IN08oUV5vUWIAP71PEdn2yu_qfF7seQk"
+import os
+from dotenv import load_dotenv
+
+# Загружаем переменные окружения
+load_dotenv()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://your-project.supabase.co")
+SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "your-service-role-key-here")
 
 def test_connection():
     """Тестируем подключение к Supabase"""

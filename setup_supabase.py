@@ -10,8 +10,13 @@ from supabase import create_client, Client
 from pathlib import Path
 
 # Настройки Supabase
-SUPABASE_URL = "https://auhzhdndqyflfdfszapm.supabase.co"
-SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aHpoZG5kcXlmbGZkZnN6YXBtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0NDg3MTcsImV4cCI6MjA3MzAyNDcxN30.q-YUEKQqhd-k1YJMUqyStleW96SXh9bINhtsF5Av4oU"
+from dotenv import load_dotenv
+
+# Загружаем переменные окружения
+load_dotenv()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://your-project.supabase.co")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "your-anon-key-here")
 
 def setup_supabase():
     """Настройка Supabase базы данных"""

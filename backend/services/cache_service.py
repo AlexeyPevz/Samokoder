@@ -4,8 +4,8 @@ Redis интеграция, кэширование AI запросов, кэши
 """
 
 import json
-import pickle
 import hashlib
+import base64
 from datetime import datetime, timedelta
 from typing import Any, Optional, Dict, List
 import asyncio
@@ -58,7 +58,8 @@ class CacheService:
         try:
             data = await self.redis_client.get(key)
             if data:
-                return pickle.loads(data)
+                # Безопасная десериализация JSON
+                return json.loads(data.decode('utf-8'))
         except Exception as e:
             logger.error(f"Cache get error for key {key}: {e}")
         
@@ -71,8 +72,9 @@ class CacheService:
             return False
         
         try:
-            data = pickle.dumps(value)
-            await self.redis_client.setex(key, ttl, data)
+            # Безопасная сериализация JSON
+            data = json.dumps(value, default=str, ensure_ascii=False)
+            await self.redis_client.setex(key, ttl, data.encode('utf-8'))
             return True
         except Exception as e:
             logger.error(f"Cache set error for key {key}: {e}")
