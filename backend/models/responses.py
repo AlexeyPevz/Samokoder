@@ -265,6 +265,22 @@ class PermissionResponse(BaseModel):
     name: str = Field(..., description="Название разрешения")
     description: str = Field(..., description="Описание разрешения")
 
+# === API КЛЮЧИ ===
+
+class APIKeyResponse(BaseModel):
+    """Ответ с информацией об API ключе"""
+    id: str = Field(..., description="ID ключа")
+    provider: str = Field(..., description="AI провайдер")
+    key_name: str = Field(..., description="Название ключа")
+    key_last_4: str = Field(..., description="Последние 4 символа ключа")
+    is_active: bool = Field(..., description="Активен ли ключ")
+    created_at: str = Field(..., description="Дата создания")
+
+class APIKeyListResponse(BaseModel):
+    """Ответ со списком API ключей"""
+    keys: List[APIKeyResponse] = Field(..., description="Список ключей")
+    total_count: int = Field(..., description="Общее количество ключей")
+
 # === МЕТРИКИ ===
 
 class MetricsResponse(BaseModel):

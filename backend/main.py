@@ -64,6 +64,10 @@ app.middleware("http")(monitoring_middleware)
 from backend.middleware.rate_limit_middleware import rate_limit_middleware
 app.middleware("http")(rate_limit_middleware)
 
+# Validation middleware
+from backend.middleware.validation_middleware import validation_middleware
+app.middleware("http")(validation_middleware)
+
 # Supabase клиент (с проверкой URL)
 supabase = None
 try:
@@ -361,13 +365,24 @@ async def create_project(
         # Получаем API ключи пользователя
         user_api_keys = {}
         if supabase:
+            from backend.services.encryption_service import get_encryption_service
+            encryption_service = get_encryption_service()
+            
             user_keys_response = supabase.table("user_api_keys").select("*").eq("user_id", user_id).eq("is_active", True).execute()
             if user_keys_response.data:
                 # Расшифровываем API ключи
                 for row in user_keys_response.data:
                     provider_name = row.get('provider_name', 'unknown')
-                    # Здесь должна быть расшифровка ключа
-                    user_api_keys[provider_name] = f"encrypted_key_{row['id']}"
+                    try:
+                        # Расшифровываем API ключ
+                        decrypted_key = encryption_service.decrypt_api_key(
+                            row['api_key_encrypted'], 
+                            user_id
+                        )
+                        user_api_keys[provider_name] = decrypted_key
+                    except Exception as e:
+                        logger.warning(f"Не удалось расшифровать API ключ для {provider_name}: {e}")
+                        continue
         
         # Создаем обертку GPT-Pilot
         pilot_wrapper = SamokoderGPTPilot(project_id, user_id, user_api_keys)
@@ -713,6 +728,16 @@ app.include_router(mfa_router, prefix="/api/auth/mfa", tags=["MFA"])
 from backend.api.rbac import router as rbac_router
 app.include_router(rbac_router, prefix="/api/rbac", tags=["RBAC"])
 
+# === API КЛЮЧИ ===
+
+from backend.api.api_keys import router as api_keys_router
+app.include_router(api_keys_router, prefix="/api/api-keys", tags=["API Keys"])
+
+# === HEALTH CHECKS ===
+
+from backend.api.health import router as health_router
+app.include_router(health_router, prefix="/api/health", tags=["Health"])
+
 # === AI СЕРВИС ===
 
 @app.post("/api/ai/chat")
@@ -729,12 +754,24 @@ async def ai_chat(
         # Получаем API ключи пользователя
         user_api_keys = {}
         if supabase:
+            from backend.services.encryption_service import get_encryption_service
+            encryption_service = get_encryption_service()
+            
             user_keys_response = supabase.table("user_api_keys").select("*").eq("user_id", current_user["id"]).eq("is_active", True).execute()
             if user_keys_response.data:
-                # Здесь должна быть расшифровка ключей
+                # Расшифровываем API ключи
                 for row in user_keys_response.data:
                     provider_name = row.get('provider_name', 'unknown')
-                    user_api_keys[provider_name] = f"encrypted_key_{row['id']}"
+                    try:
+                        # Расшифровываем API ключ
+                        decrypted_key = encryption_service.decrypt_api_key(
+                            row['api_key_encrypted'], 
+                            current_user["id"]
+                        )
+                        user_api_keys[provider_name] = decrypted_key
+                    except Exception as e:
+                        logger.warning(f"Не удалось расшифровать API ключ для {provider_name}: {e}")
+                        continue
         else:
             # Mock режим - используем тестовые ключи
             user_api_keys = {
