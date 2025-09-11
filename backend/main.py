@@ -76,29 +76,7 @@ app.middleware("http")(validation_middleware)
 from backend.middleware.specific_error_handler import setup_specific_error_handlers
 setup_specific_error_handlers(app)
 
-# Supabase клиент (с проверкой URL)
-supabase = None
-try:
-    # В тестовом режиме используем mock Supabase
-    if os.getenv("ENVIRONMENT") == "test" or os.getenv("PYTEST_CURRENT_TEST"):
-        logger.info("supabase_mock_mode", reason="test_environment")
-        supabase = None  # Будем использовать mock режим в endpoints
-    elif (settings.supabase_url and 
-          settings.supabase_anon_key and 
-          not settings.supabase_url.endswith("example.supabase.co") and
-          not settings.supabase_anon_key.endswith("example") and
-          "auhzhdndqyflfdfszapm" not in settings.supabase_url):  # Избегаем тестового URL
-        supabase = create_client(
-            settings.supabase_url, 
-            settings.supabase_anon_key
-        )
-        logger.info("supabase_client_initialized", status="success")
-    else:
-        logger.warning("supabase_not_configured", reason="invalid_config")
-        supabase = None
-except Exception as e:
-    logger.warning("supabase_client_failed", error=str(e), error_type=type(e).__name__)
-    supabase = None
+# Supabase клиент теперь управляется через connection_manager
 
 # Инициализация Project State Manager при запуске
 @app.on_event("startup")
@@ -797,7 +775,10 @@ async def ai_chat(
             from backend.services.encryption_service import get_encryption_service
             encryption_service = get_encryption_service()
             
-            user_keys_response = supabase.table("user_api_keys").select("*").eq("user_id", current_user["id"]).eq("is_active", True).execute()
+            user_keys_response = await execute_supabase_operation(
+                lambda client: client.table("user_api_keys").select("*").eq("user_id", current_user["id"]).eq("is_active", True).execute(),
+                "anon"
+            )
             if user_keys_response.data:
                 # Расшифровываем API ключи
                 for row in user_keys_response.data:
@@ -870,7 +851,10 @@ async def get_ai_usage(current_user: dict = Depends(get_current_user)):
     
     try:
         # Получаем API ключи пользователя
-        user_keys_response = supabase.table("user_api_keys").select("*").eq("user_id", current_user["id"]).eq("is_active", True).execute()
+        user_keys_response = await execute_supabase_operation(
+            lambda client: client.table("user_api_keys").select("*").eq("user_id", current_user["id"]).eq("is_active", True).execute(),
+            "anon"
+        )
         user_api_keys = {
             row['provider']: row['api_key_decrypted'] 
             for row in user_keys_response.data

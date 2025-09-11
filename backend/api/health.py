@@ -78,21 +78,16 @@ async def detailed_health_check():
 async def database_health_check():
     """Проверка состояния базы данных"""
     try:
-        from config.settings import settings
-        from supabase import create_client, Client
+        from backend.services.connection_manager import connection_manager
         
-        if not settings.supabase_url or settings.supabase_url.endswith("example.supabase.co"):
+        try:
+            supabase = connection_manager.get_pool('supabase')
+        except Exception:
             return {
                 "status": "mock",
                 "message": "Database in mock mode",
                 "timestamp": datetime.now().isoformat()
             }
-        
-        # Создаем клиент для проверки
-        supabase: Client = create_client(
-            settings.supabase_url,
-            settings.supabase_service_role_key
-        )
         
         # Проверяем подключение
         start_time = datetime.now()
@@ -200,8 +195,8 @@ async def check_external_services_health() -> Dict[str, str]:
         from config.settings import settings
         if settings.supabase_url and not settings.supabase_url.endswith("example.supabase.co"):
             try:
-                from supabase import create_client
-                supabase = create_client(settings.supabase_url, settings.supabase_service_role_key)
+                from backend.services.connection_manager import connection_manager
+                supabase = connection_manager.get_pool('supabase')
                 supabase.table("profiles").select("id").limit(1).execute()
                 external_services["supabase"] = "healthy"
             except Exception as e:
