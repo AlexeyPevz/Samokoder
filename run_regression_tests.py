@@ -181,6 +181,7 @@ class RegressionTestRunner:
         print(f"⏭️  Пропущено: {skipped}")
         print(f"💥 Ошибок: {errors}")
         
+        success_rate = 0
         if total > 0:
             success_rate = (passed / total) * 100
             print(f"📈 Процент успеха: {success_rate:.1f}%")
