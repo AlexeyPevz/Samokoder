@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from supabase import create_client, Client
 import json
 import uuid
 import os
