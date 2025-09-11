@@ -16,19 +16,23 @@ class TestRateLimiter:
         return RateLimiter()
     
     @pytest.fixture
-    async def clean_redis(self):
+    def clean_redis(self):
         """Фикстура для очистки Redis"""
-        try:
-            import redis.asyncio as redis
-            redis_client = redis.from_url("redis://localhost:6379")
-            await redis_client.flushall()
-            await redis_client.close()
-        except:
-            pass
+        async def _clean_redis():
+            try:
+                import redis.asyncio as redis
+                redis_client = redis.from_url("redis://localhost:6379")
+                await redis_client.flushall()
+                await redis_client.close()
+            except:
+                pass
+        return _clean_redis
     
     @pytest.mark.asyncio
     async def test_memory_rate_limit_allowed(self, rate_limiter, clean_redis):
         """Тест разрешенного запроса в memory режиме"""
+        await clean_redis()  # Очищаем Redis перед тестом
+        
         user_id = "test_user"
         endpoint = "/api/test"
         
@@ -48,6 +52,8 @@ class TestRateLimiter:
     @pytest.mark.asyncio
     async def test_memory_rate_limit_exceeded_minute(self, rate_limiter, clean_redis):
         """Тест превышения лимита в минуту"""
+        await clean_redis()  # Очищаем Redis перед тестом
+        
         user_id = "test_user"
         endpoint = "/api/test"
         
@@ -68,6 +74,8 @@ class TestRateLimiter:
     @pytest.mark.asyncio
     async def test_memory_rate_limit_exceeded_hour(self, rate_limiter, clean_redis):
         """Тест превышения лимита в час"""
+        await clean_redis()  # Очищаем Redis перед тестом
+        
         user_id = "test_user"
         endpoint = "/api/test"
         
@@ -88,6 +96,8 @@ class TestRateLimiter:
     @pytest.mark.asyncio
     async def test_different_users_separate_limits(self, rate_limiter, clean_redis):
         """Тест раздельных лимитов для разных пользователей"""
+        await clean_redis()  # Очищаем Redis перед тестом
+        
         user1 = "user1"
         user2 = "user2"
         endpoint = "/api/test"
@@ -133,6 +143,8 @@ class TestRateLimiter:
     @pytest.mark.asyncio
     async def test_different_endpoints_separate_limits(self, rate_limiter, clean_redis):
         """Тест раздельных лимитов для разных эндпоинтов"""
+        await clean_redis()  # Очищаем Redis перед тестом
+        
         user_id = "test_user"
         endpoint1 = "/api/endpoint1"
         endpoint2 = "/api/endpoint2"
@@ -160,6 +172,8 @@ class TestRateLimiter:
     @pytest.mark.asyncio
     async def test_reset_rate_limit(self, rate_limiter, clean_redis):
         """Тест сброса rate limit"""
+        await clean_redis()  # Очищаем Redis перед тестом
+        
         user_id = "test_user"
         endpoint = "/api/test"
         
@@ -190,6 +204,8 @@ class TestRateLimiter:
     @pytest.mark.asyncio
     async def test_get_rate_limit_info(self, rate_limiter, clean_redis):
         """Тест получения информации о rate limit"""
+        await clean_redis()  # Очищаем Redis перед тестом
+        
         user_id = "test_user"
         endpoint = "/api/test"
         
@@ -212,6 +228,8 @@ class TestRateLimiter:
     @pytest.mark.asyncio
     async def test_get_rate_limit_info_nonexistent(self, rate_limiter, clean_redis):
         """Тест получения информации о несуществующем rate limit"""
+        await clean_redis()  # Очищаем Redis перед тестом
+        
         user_id = "nonexistent_user"
         endpoint = "/api/nonexistent"
         
@@ -222,6 +240,8 @@ class TestRateLimiter:
     @pytest.mark.asyncio
     async def test_cleanup_expired_entries(self, rate_limiter, clean_redis):
         """Тест очистки устаревших записей"""
+        await clean_redis()  # Очищаем Redis перед тестом
+        
         user_id = "test_user"
         endpoint = "/api/test"
         
