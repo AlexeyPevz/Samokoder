@@ -151,7 +151,7 @@ class TestChatRequest:
                 message="A" * 4001,  # 4001 символ
                 context="chat"
             )
-        assert "at most 4000 characters" in str(exc_info.value)
+        assert "слишком длинное" in str(exc_info.value)
     
     def test_invalid_temperature(self):
         """Тест невалидной температуры"""
@@ -160,7 +160,7 @@ class TestChatRequest:
                 message="Hello",
                 temperature=3.0  # Слишком высокая
             )
-        assert "less than or equal to 2.0" in str(exc_info.value)
+        assert "меньше или равна 2.0" in str(exc_info.value)
     
     def test_negative_temperature(self):
         """Тест отрицательной температуры"""
@@ -169,7 +169,7 @@ class TestChatRequest:
                 message="Hello",
                 temperature=-0.1
             )
-        assert "greater than or equal to 0.0" in str(exc_info.value)
+        assert "больше или равна 0.0" in str(exc_info.value)
 
 class TestAPIKeyCreateRequest:
     """Тесты для модели APIKeyCreateRequest"""
@@ -246,7 +246,7 @@ class TestUserSettingsUpdateRequest:
             UserSettingsUpdateRequest(
                 theme="invalid-theme"
             )
-        assert "string does not match regex" in str(exc_info.value)
+        assert "должна быть light, dark или auto" in str(exc_info.value)
     
     def test_all_optional_fields(self):
         """Тест с всеми опциональными полями"""

@@ -234,11 +234,35 @@ class APISecurity:
     def sanitize_api_response(self, response_data: Any) -> Any:
         """V12.1.8: Санитизация ответа API"""
         if isinstance(response_data, str):
-            # Удаляем потенциально опасные символы
+            # Удаляем потенциально опасные теги и их содержимое
             sanitized = response_data
+            
+            # Удаляем script теги и их содержимое
+            sanitized = re.sub(r'<script[^>]*>.*?</script>', '', sanitized, flags=re.IGNORECASE | re.DOTALL)
+            
+            # Удаляем другие опасные теги
+            dangerous_tags = ['iframe', 'object', 'embed', 'link', 'meta', 'style', 'form', 'input', 'button', 'select', 'textarea']
+            for tag in dangerous_tags:
+                sanitized = re.sub(rf'<{tag}[^>]*>.*?</{tag}>', '', sanitized, flags=re.IGNORECASE | re.DOTALL)
+                sanitized = re.sub(rf'<{tag}[^>]*/?>', '', sanitized, flags=re.IGNORECASE)
+            
+            # Удаляем javascript: и другие опасные протоколы
+            sanitized = re.sub(r'javascript:', '', sanitized, flags=re.IGNORECASE)
+            sanitized = re.sub(r'vbscript:', '', sanitized, flags=re.IGNORECASE)
+            sanitized = re.sub(r'data:', '', sanitized, flags=re.IGNORECASE)
+            
+            # Удаляем expression() и другие опасные CSS функции
+            sanitized = re.sub(r'expression\s*\(', '', sanitized, flags=re.IGNORECASE)
+            sanitized = re.sub(r'url\s*\(', '', sanitized, flags=re.IGNORECASE)
+            
+            # Удаляем on* атрибуты
+            sanitized = re.sub(r'on\w+\s*=', '', sanitized, flags=re.IGNORECASE)
+            
+            # Удаляем оставшиеся опасные символы
             dangerous_chars = ['<', '>', '"', "'", '&', ';', '(', ')', '|', '`', '$']
             for char in dangerous_chars:
                 sanitized = sanitized.replace(char, '')
+            
             return sanitized
         
         elif isinstance(response_data, dict):
@@ -267,6 +291,10 @@ class APISecurity:
             if allowed_origin.startswith('*.'):
                 domain = allowed_origin[2:]
                 if origin.endswith(domain):
+                    return True
+            elif allowed_origin.startswith('https://*.'):
+                domain = allowed_origin[9:]  # Убираем 'https://'
+                if origin.startswith('https://') and origin[8:].endswith(domain):
                     return True
         
         return False
@@ -297,7 +325,18 @@ class APISecurity:
             r';\s*drop',
             r';\s*delete',
             r';\s*insert',
-            r';\s*update'
+            r';\s*update',
+            r"'\s*or\s*'1'\s*=\s*'1",
+            r"'\s*or\s*1\s*=\s*1",
+            r"'\s*and\s*'1'\s*=\s*'1",
+            r"'\s*and\s*1\s*=\s*1",
+            r"'\s*union\s+select",
+            r"'\s*;\s*drop",
+            r"'\s*;\s*delete",
+            r"'\s*;\s*insert",
+            r"'\s*;\s*update",
+            r"'\s*;\s*exec",
+            r"'\s*;\s*execute"
         ]
         
         for pattern in sql_patterns:

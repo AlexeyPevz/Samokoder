@@ -263,7 +263,7 @@ class TestProjectRepositoryIntegration:
         ]
         mock_response = Mock()
         mock_response.data = projects_data
-        mock_table.select.return_value.eq.return_value.eq.return_value.or_.return_value.range.return_value.order.return_value.execute.return_value = mock_response
+        mock_table.select.return_value.eq.return_value.eq.return_value.or_.return_value.range.return_value.execute.return_value = mock_response
         
         # Mock connection pool
         with patch('backend.repositories.project_repository.connection_pool_manager') as mock_pool:

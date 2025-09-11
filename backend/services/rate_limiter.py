@@ -41,7 +41,7 @@ class RateLimiter:
     def __init__(self):
         self.redis_client = None
         self.memory_store = {}  # Fallback для in-memory режима
-        self._init_redis()
+        self._redis_initialized = False
     
     def _init_redis(self):
         """Инициализация Redis клиента"""
@@ -62,6 +62,33 @@ class RateLimiter:
             logger.warning(f"Redis connection failed: {e}, using in-memory rate limiting")
             self.redis_client = None
     
+    async def _ensure_redis_initialized(self):
+        """Обеспечивает инициализацию Redis клиента"""
+        if not self._redis_initialized:
+            await self._init_redis_async()
+            self._redis_initialized = True
+
+    async def _init_redis_async(self):
+        """Асинхронная инициализация Redis клиента"""
+        if not REDIS_AVAILABLE:
+            logger.warning("Redis not available, using in-memory rate limiting")
+            return
+        
+        try:
+            self.redis_client = redis.from_url(
+                settings.redis_url,
+                decode_responses=True,
+                socket_connect_timeout=5,
+                socket_timeout=5,
+                retry_on_timeout=True
+            )
+            # Тестируем подключение
+            await self.redis_client.ping()
+            logger.info("Redis rate limiter initialized")
+        except Exception as e:
+            logger.warning(f"Redis connection failed: {e}, using in-memory rate limiting")
+            self.redis_client = None
+
     async def check_rate_limit(
         self,
         user_id: str,
@@ -75,6 +102,8 @@ class RateLimiter:
         Returns:
             Tuple[bool, RateLimitInfo]: (разрешен ли запрос, информация о лимитах)
         """
+        await self._ensure_redis_initialized()
+        
         current_time = int(time.time())
         minute_key = f"rate_limit:{user_id}:{endpoint}:minute:{current_time // 60}"
         hour_key = f"rate_limit:{user_id}:{endpoint}:hour:{current_time // 3600}"
@@ -115,8 +144,11 @@ class RateLimiter:
             
             results = await pipe.execute()
             
-            minute_requests = int(results[2] or 0)
-            hour_requests = int(results[3] or 0)
+            # results[0] = incr(minute_key), results[1] = incr(hour_key)
+            # results[2] = expire(minute_key), results[3] = expire(hour_key)  
+            # results[4] = get(minute_key), results[5] = get(hour_key)
+            minute_requests = int(results[0] or 0)  # incr результат
+            hour_requests = int(results[1] or 0)    # incr результат
             
             minute_allowed = minute_requests <= limit_per_minute
             hour_allowed = hour_requests <= limit_per_hour

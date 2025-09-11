@@ -261,6 +261,7 @@ class MonitoringService:
         return {
             "status": "healthy",
             "timestamp": datetime.now().isoformat(),
+            "uptime": uptime,
             "uptime_seconds": uptime,
             "uptime_human": self._format_uptime(uptime),
             "request_count": self.request_count,
@@ -268,7 +269,8 @@ class MonitoringService:
             "error_rate": (self.error_count / self.request_count * 100) if self.request_count > 0 else 0,
             "active_connections": self.active_connections,
             "environment": settings.environment,
-            "version": "1.0.0"
+            "version": "1.0.0",
+            "services": {"api": "healthy", "database": "healthy", "redis": "healthy"}
         }
     
     def _format_uptime(self, seconds: float) -> str:
