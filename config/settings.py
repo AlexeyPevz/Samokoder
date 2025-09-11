@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: List[str] = ["http://localhost:3000", "http://localhost:5173"]
     
+    # Session Management
+    session_secret_key: str
+    session_timeout: int = 3600
+    
     # File Storage
     max_file_size_mb: int = 50
     export_storage_path: str = "./exports"

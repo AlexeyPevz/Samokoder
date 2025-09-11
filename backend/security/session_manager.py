@@ -284,9 +284,11 @@ class SecureSessionManager:
         return False
 
 # Глобальный экземпляр менеджера сессий
+from config.settings import settings
+
 session_manager = SecureSessionManager(
-    secret_key="your-secret-key-here",  # Должен быть из настроек
-    session_timeout=3600
+    secret_key=settings.session_secret_key,  # Из настроек
+    session_timeout=settings.session_timeout
 )
 
 # Удобные функции

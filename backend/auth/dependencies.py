@@ -35,6 +35,12 @@ def validate_jwt_token(token: str) -> bool:
         if not token or len(token.split('.')) != 3:
             return False
         
+        # Проверяем заголовок токена на алгоритм
+        header = jwt.get_unverified_header(token)
+        if header.get('alg') != 'HS256':
+            logger.warning(f"Invalid JWT algorithm: {header.get('alg')}")
+            return False
+        
         # Получаем секретный ключ для проверки подписи
         secret_key = settings.secret_key
         if not secret_key:
