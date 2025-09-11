@@ -3,13 +3,13 @@ Secure Authentication API
 Исправления безопасности на основе ASVS аудита
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from backend.models.requests import LoginRequest, RegisterRequest
 from backend.models.responses import LoginResponse, RegisterResponse
 from backend.auth.dependencies import get_current_user, secure_password_validation, hash_password
-from backend.middleware.rate_limit_middleware import auth_rate_limit
+from backend.middleware.secure_rate_limiter import auth_rate_limit
 from backend.services.connection_pool import connection_pool_manager
-from backend.services.encryption import EncryptionService
+from backend.services.encryption_service import EncryptionService
 from backend.services.supabase_manager import execute_supabase_operation
 import logging
 from datetime import datetime, timedelta

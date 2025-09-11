@@ -87,12 +87,15 @@ class TestSecurityFixes:
     
     def test_race_condition_fix(self):
         """Тест исправления Race Condition"""
-        from backend.core.container import Container
+        from backend.core.container import DIContainer
         
-        container = Container()
+        container = DIContainer()
         
         # Тест атомарного создания синглтонов
         async def test_singleton_creation():
+            # Регистрируем Mock в контейнере
+            container.register_factory(Mock, lambda: Mock(), singleton=True)
+            
             # Создаем несколько задач одновременно
             tasks = []
             for i in range(10):
@@ -131,10 +134,10 @@ class TestSecurityFixes:
     
     def test_md5_to_sha256_fix(self):
         """Тест замены MD5 на SHA256"""
-        from backend.services.cache_service import CacheService
-        
-        cache_service = CacheService()
-        
+        from backend.services.cache_service import AIResponseCache, CacheService
+    
+        cache_service = AIResponseCache(CacheService())
+    
         # Тест генерации ключа кэша
         messages = [{"role": "user", "content": "test"}]
         key = cache_service._generate_key(messages, "test_model", "test_provider")
