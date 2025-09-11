@@ -67,26 +67,3 @@ spec:
       - name: data
         persistentVolumeClaim:
           claimName: elasticsearch-pvc
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: elasticsearch
-  namespace: monitoring
-spec:
-  type: ClusterIP
-  ports:
-  - port: 9200
-    targetPort: 9200
-    name: http
-  - port: 9300
-    targetPort: 9300
-    name: transport
-  selector:
-    app: elasticsearch
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: elasticsearch
-  namespace: monitoring
