@@ -103,22 +103,24 @@ class TestInputValidator:
 class TestSessionManager:
     """Тесты менеджера сессий"""
     
-    def test_session_creation(self):
+    @pytest.mark.asyncio
+    async def test_session_creation(self):
         """Тест создания сессии"""
         manager = SecureSessionManager("test-secret-key")
         
-        session_id = manager.create_session("user123", "192.168.1.1", "Mozilla/5.0")
+        session_id = await manager.create_session("user123", "192.168.1.1", "Mozilla/5.0")
         
         assert session_id is not None
         assert len(session_id) > 20
         assert session_id in manager.sessions
     
-    def test_session_validation(self):
+    @pytest.mark.asyncio
+    async def test_session_validation(self):
         """Тест валидации сессии"""
         manager = SecureSessionManager("test-secret-key")
         
         # Создаем сессию
-        session_id = manager.create_session("user123", "192.168.1.1", "Mozilla/5.0")
+        session_id = await manager.create_session("user123", "192.168.1.1", "Mozilla/5.0")
         
         # Валидируем сессию
         assert manager.validate_session(session_id, "192.168.1.1", "Mozilla/5.0") == True
@@ -129,12 +131,13 @@ class TestSessionManager:
         # Неправильный User-Agent
         assert manager.validate_session(session_id, "192.168.1.1", "Chrome/91.0") == True  # User-Agent может измениться
     
-    def test_csrf_token_validation(self):
+    @pytest.mark.asyncio
+    async def test_csrf_token_validation(self):
         """Тест валидации CSRF токена"""
         manager = SecureSessionManager("test-secret-key")
         
         # Создаем сессию
-        session_id = manager.create_session("user123", "192.168.1.1", "Mozilla/5.0")
+        session_id = await manager.create_session("user123", "192.168.1.1", "Mozilla/5.0")
         session_data = manager.sessions[session_id]
         
         # Валидируем правильный CSRF токен
