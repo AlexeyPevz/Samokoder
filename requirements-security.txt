@@ -1,0 +1,24 @@
+# Security Requirements
+# Дополнительные пакеты для безопасности
+
+# JWT обработка
+PyJWT==2.8.0
+cryptography==41.0.7
+
+# CSRF защита
+fastapi-csrf-protect==0.4.0
+
+# Rate limiting
+slowapi==0.1.9
+redis==5.0.1
+
+# Валидация и санитизация
+bleach==6.1.0
+python-multipart==0.0.6
+
+# Безопасность паролей
+bcrypt==4.1.2
+argon2-cffi==23.1.0
+
+# Мониторинг безопасности
+sentry-sdk[fastapi]==1.38.0
