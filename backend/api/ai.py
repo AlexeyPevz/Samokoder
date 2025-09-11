@@ -4,7 +4,7 @@ AI endpoints
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from backend.models.requests import ChatRequest, AIUsageRequest
-from backend.models.responses import AIResponse, AIUsageStatsResponse
+from backend.models.responses import AIResponse, AIUsageStatsResponse, AIUsageInfo
 from backend.auth.dependencies import get_current_user
 from backend.middleware.secure_rate_limiter import ai_rate_limit
 from backend.services.ai_service import get_ai_service
@@ -65,11 +65,20 @@ async def chat_with_ai(
             )
         
         return AIResponse(
-            response=response["content"],
+            content=response["content"],
             model=ai_request["model"],
             provider=ai_request["provider"],
-            usage=response.get("usage", {}),
-            metadata=response.get("metadata", {})
+            response_time=response.get("response_time", 0.0),
+            tokens_used=response.get("usage", {}).get("total_tokens"),
+            cost_usd=response.get("usage", {}).get("total_cost"),
+            usage=AIUsageInfo(
+                prompt_tokens=response.get("usage", {}).get("prompt_tokens"),
+                completion_tokens=response.get("usage", {}).get("completion_tokens"),
+                total_tokens=response.get("usage", {}).get("total_tokens"),
+                prompt_cost=response.get("usage", {}).get("prompt_cost"),
+                completion_cost=response.get("usage", {}).get("completion_cost"),
+                total_cost=response.get("usage", {}).get("total_cost")
+            )
         )
         
     except Exception as e:

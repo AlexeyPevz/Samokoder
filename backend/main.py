@@ -11,8 +11,8 @@ from backend.services.gpt_pilot_wrapper_v2 import SamokoderGPTPilot
 from backend.services.ai_service import get_ai_service
 from backend.auth.dependencies import get_current_user
 from backend.monitoring import monitoring, monitoring_middleware, get_metrics_response
-from backend.models.requests import LoginRequest, ChatRequest
-from backend.models.responses import SubscriptionTier
+from backend.models.requests import LoginRequest, ChatRequest, RegisterRequest
+from backend.models.responses import SubscriptionTier, RegisterResponse
 from backend.services.connection_manager import connection_manager
 from backend.services.supabase_manager import supabase_manager, execute_supabase_operation
 from backend.services.project_state_manager import project_state_manager, get_active_project, add_active_project, remove_active_project, is_project_active
@@ -208,7 +208,7 @@ async def login(credentials: LoginRequest):
                     "email": email,
                     "full_name": "Mock User",
                     "avatar_url": None,
-                    "subscription_tier": SubscriptionTier.FREE,
+                    "subscription_tier": SubscriptionTier.FREE.value,
                     "subscription_status": "active",
                     "api_credits_balance": 100.50,
                     "created_at": "2025-01-01T00:00:00Z",
@@ -234,7 +234,7 @@ async def login(credentials: LoginRequest):
                     "email": response.user.email,
                     "full_name": getattr(response.user, 'user_metadata', {}).get('full_name', 'User'),
                     "avatar_url": getattr(response.user, 'user_metadata', {}).get('avatar_url'),
-                    "subscription_tier": SubscriptionTier.FREE,
+                    "subscription_tier": SubscriptionTier.FREE.value,
                     "subscription_status": "active",
                     "api_credits_balance": 100.50,
                     "created_at": response.user.created_at,
@@ -259,37 +259,25 @@ async def login(credentials: LoginRequest):
         logger.error(f"login_error: {str(e)}")
         raise HTTPException(status_code=401, detail="Login failed")
 
-@app.post("/api/auth/register")
-async def register(user_data: dict):
+@app.post("/api/auth/register", response_model=RegisterResponse, status_code=201)
+async def register(user_data: RegisterRequest):
     """Регистрация нового пользователя"""
     try:
-        # Строгая проверка входных данных
-        if not user_data:
-            raise HTTPException(status_code=400, detail="Данные для регистрации обязательны")
-        
-        email = user_data.get("email")
-        password = user_data.get("password")
-        full_name = user_data.get("full_name")
-        
-        if not email or not password or not full_name:
-            raise HTTPException(status_code=400, detail="Email, пароль и имя обязательны")
-        
-        if not isinstance(email, str) or not isinstance(password, str) or not isinstance(full_name, str):
-            raise HTTPException(status_code=400, detail="Все поля должны быть строками")
-        
-        if not email.strip() or not password.strip() or not full_name.strip():
-            raise HTTPException(status_code=400, detail="Поля не могут быть пустыми")
+        # Pydantic автоматически валидирует данные
+        email = user_data.email
+        password = user_data.password
+        full_name = user_data.full_name
         
         # Если Supabase недоступен или URL содержит example, используем mock регистрацию
         supabase_client = supabase_manager.get_client("anon")
         if not supabase_client or settings.supabase_url.endswith("example.supabase.co"):
             logger.warning("supabase_unavailable", fallback="mock_register")
-            return {
-                "success": True,
-                "message": "Пользователь успешно зарегистрирован (mock режим)",
-                "user_id": f"mock_user_{email}",
-                "email": email
-            }
+            return RegisterResponse(
+                success=True,
+                message="Пользователь успешно зарегистрирован (mock режим)",
+                user_id=f"mock_user_{email}",
+                email=email
+            )
         
         # Реальная регистрация через Supabase
         response = supabase_client.auth.sign_up({
@@ -304,12 +292,12 @@ async def register(user_data: dict):
         
         if response.user:
             logger.info("user_register_success", user_email=email)
-            return {
-                "success": True,
-                "message": "Пользователь успешно зарегистрирован",
-                "user_id": response.user.id,
-                "email": email
-            }
+            return RegisterResponse(
+                success=True,
+                message="Пользователь успешно зарегистрирован",
+                user_id=response.user.id,
+                email=email
+            )
         else:
             raise HTTPException(status_code=400, detail="Ошибка регистрации")
             

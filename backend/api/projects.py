@@ -11,6 +11,7 @@ from backend.services.supabase_manager import execute_supabase_operation
 import logging
 from datetime import datetime
 import uuid
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -70,15 +71,25 @@ async def list_projects(
     current_user: dict = Depends(get_current_user),
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    status: Optional[str] = Query(None, description="Filter by project status"),
+    search: Optional[str] = Query(None, max_length=100, description="Search in project names and descriptions"),
     rate_limit: dict = Depends(api_rate_limit)
 ):
     """List user projects"""
     try:
+        # Build query with filters
+        def build_query(client):
+            query = client.table("projects").select("*").eq("user_id", current_user["id"]).eq("is_active", True)
+            
+            if status:
+                query = query.eq("status", status)
+            
+            if search:
+                query = query.or_(f"name.ilike.%{search}%,description.ilike.%{search}%")
+            
+            return query.range(offset, offset + limit - 1)
         
-        response = await execute_supabase_operation(
-            lambda client: client.table("projects").select("*").eq("user_id", current_user["id"]).eq("is_active", True).range(offset, offset + limit - 1),
-            "anon"
-        )
+        response = await execute_supabase_operation(build_query, "anon")
         
         projects = []
         for project in response.data:

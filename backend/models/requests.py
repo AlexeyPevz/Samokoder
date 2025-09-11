@@ -120,7 +120,7 @@ class ChatRequest(BaseModel):
     context: str = Field("chat", max_length=50, description="Контекст чата")
     model: Optional[str] = Field(None, max_length=100, description="Модель AI")
     provider: Optional[AIProvider] = Field(None, description="Провайдер AI")
-    max_tokens: int = Field(4096, description="Максимальное количество токенов")
+    max_tokens: int = Field(4096, ge=1, le=32000, description="Максимальное количество токенов")
     temperature: float = Field(0.7, description="Температура генерации")
     
     @field_validator('message')
