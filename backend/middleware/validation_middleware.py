@@ -98,13 +98,17 @@ async def validation_middleware(request: Request, call_next: Callable):
         
         # Для POST/PUT/PATCH запросов проверяем тело
         if request.method in ["POST", "PUT", "PATCH"] and content_type.startswith("application/json"):
-            # Читаем тело запроса
-            body = await request.body()
+            # Кэшируем тело запроса для повторного использования
+            if not hasattr(request, '_cached_body'):
+                body_bytes = await request.body()
+                request._cached_body = body_bytes
+            else:
+                body_bytes = request._cached_body
             
-            if body:
+            if body_bytes:
                 try:
                     # Парсим JSON
-                    json_data = json.loads(body.decode('utf-8'))
+                    json_data = json.loads(body_bytes.decode('utf-8'))
                     
                     # Проверяем на запрещенные паттерны
                     if await _check_forbidden_patterns(json_data, request.url.path):
@@ -159,6 +163,17 @@ async def validation_middleware(request: Request, call_next: Callable):
         # Продолжаем обработку запроса
         response = await call_next(request)
         return response
+
+# Monkey patch для FastAPI Request чтобы поддерживать кэшированное тело
+def _get_cached_body(self):
+    """Получить кэшированное тело запроса"""
+    if hasattr(self, '_cached_body'):
+        return self._cached_body
+    return None
+
+# Добавляем метод к Request классу
+from fastapi import Request
+Request.get_cached_body = _get_cached_body
         
     except Exception as e:
         logger.error(f"Validation middleware error: {e}")
