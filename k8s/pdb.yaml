@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: samokoder-backend-pdb
+  namespace: samokoder
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: samokoder-backend

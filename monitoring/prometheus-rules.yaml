@@ -1,0 +1,234 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: samokoder-golden-signals
+  namespace: monitoring
+  labels:
+    app: samokoder
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+  - name: samokoder.golden_signals
+    rules:
+    # Latency Rules
+    - alert: HighLatency
+      expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.5
+      for: 2m
+      labels:
+        severity: warning
+        service: samokoder
+        signal: latency
+      annotations:
+        summary: "High latency detected"
+        description: "95th percentile latency is {{ $value }}s, which is above the 0.5s threshold"
+        runbook_url: "https://samokoder.com/docs/runbooks/high-latency"
+        
+    - alert: CriticalLatency
+      expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1.0
+      for: 1m
+      labels:
+        severity: critical
+        service: samokoder
+        signal: latency
+      annotations:
+        summary: "Critical latency detected"
+        description: "95th percentile latency is {{ $value }}s, which is above the 1.0s threshold"
+        runbook_url: "https://samokoder.com/docs/runbooks/critical-latency"
+        
+    # Traffic Rules
+    - alert: HighTraffic
+      expr: rate(http_requests_total[5m]) > 100
+      for: 2m
+      labels:
+        severity: warning
+        service: samokoder
+        signal: traffic
+      annotations:
+        summary: "High traffic detected"
+        description: "Request rate is {{ $value }} req/s, which is above the 100 req/s threshold"
+        runbook_url: "https://samokoder.com/docs/runbooks/high-traffic"
+        
+    - alert: CriticalTraffic
+      expr: rate(http_requests_total[5m]) > 500
+      for: 1m
+      labels:
+        severity: critical
+        service: samokoder
+        signal: traffic
+      annotations:
+        summary: "Critical traffic detected"
+        description: "Request rate is {{ $value }} req/s, which is above the 500 req/s threshold"
+        runbook_url: "https://samokoder.com/docs/runbooks/critical-traffic"
+        
+    # Error Rules
+    - alert: HighErrorRate
+      expr: rate(http_requests_total{status=~"4..|5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 1
+      for: 2m
+      labels:
+        severity: warning
+        service: samokoder
+        signal: errors
+      annotations:
+        summary: "High error rate detected"
+        description: "Error rate is {{ $value }}%, which is above the 1% threshold"
+        runbook_url: "https://samokoder.com/docs/runbooks/high-error-rate"
+        
+    - alert: CriticalErrorRate
+      expr: rate(http_requests_total{status=~"4..|5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 5
+      for: 1m
+      labels:
+        severity: critical
+        service: samokoder
+        signal: errors
+      annotations:
+        summary: "Critical error rate detected"
+        description: "Error rate is {{ $value }}%, which is above the 5% threshold"
+        runbook_url: "https://samokoder.com/docs/runbooks/critical-error-rate"
+        
+    # Saturation Rules
+    - alert: HighCPUUsage
+      expr: rate(process_cpu_seconds_total[5m]) * 100 > 70
+      for: 2m
+      labels:
+        severity: warning
+        service: samokoder
+        signal: saturation
+      annotations:
+        summary: "High CPU usage detected"
+        description: "CPU usage is {{ $value }}%, which is above the 70% threshold"
+        runbook_url: "https://samokoder.com/docs/runbooks/high-cpu-usage"
+        
+    - alert: CriticalCPUUsage
+      expr: rate(process_cpu_seconds_total[5m]) * 100 > 90
+      for: 1m
+      labels:
+        severity: critical
+        service: samokoder
+        signal: saturation
+      annotations:
+        summary: "Critical CPU usage detected"
+        description: "CPU usage is {{ $value }}%, which is above the 90% threshold"
+        runbook_url: "https://samokoder.com/docs/runbooks/critical-cpu-usage"
+        
+    - alert: HighMemoryUsage
+      expr: (process_resident_memory_bytes / 1024 / 1024) > 1536
+      for: 2m
+      labels:
+        severity: warning
+        service: samokoder
+        signal: saturation
+      annotations:
+        summary: "High memory usage detected"
+        description: "Memory usage is {{ $value }}MB, which is above the 1536MB threshold"
+        runbook_url: "https://samokoder.com/docs/runbooks/high-memory-usage"
+        
+    - alert: CriticalMemoryUsage
+      expr: (process_resident_memory_bytes / 1024 / 1024) > 1843
+      for: 1m
+      labels:
+        severity: critical
+        service: samokoder
+        signal: saturation
+      annotations:
+        summary: "Critical memory usage detected"
+        description: "Memory usage is {{ $value }}MB, which is above the 1843MB threshold"
+        runbook_url: "https://samokoder.com/docs/runbooks/critical-memory-usage"
+        
+    # Application-specific Rules
+    - alert: DatabaseConnectionFailure
+      expr: increase(database_connection_errors_total[5m]) > 0
+      for: 1m
+      labels:
+        severity: critical
+        service: samokoder
+        signal: errors
+      annotations:
+        summary: "Database connection failures detected"
+        description: "{{ $value }} database connection errors in the last 5 minutes"
+        runbook_url: "https://samokoder.com/docs/runbooks/database-connection-failure"
+        
+    - alert: RedisConnectionFailure
+      expr: increase(redis_connection_errors_total[5m]) > 0
+      for: 1m
+      labels:
+        severity: warning
+        service: samokoder
+        signal: errors
+      annotations:
+        summary: "Redis connection failures detected"
+        description: "{{ $value }} Redis connection errors in the last 5 minutes"
+        runbook_url: "https://samokoder.com/docs/runbooks/redis-connection-failure"
+        
+    - alert: FileUploadFailure
+      expr: rate(file_upload_errors_total[5m]) > 0.1
+      for: 2m
+      labels:
+        severity: warning
+        service: samokoder
+        signal: errors
+      annotations:
+        summary: "High file upload failure rate"
+        description: "File upload error rate is {{ $value }} errors/s"
+        runbook_url: "https://samokoder.com/docs/runbooks/file-upload-failure"
+        
+    - alert: AIProviderFailure
+      expr: rate(ai_provider_errors_total[5m]) > 0.1
+      for: 2m
+      labels:
+        severity: warning
+        service: samokoder
+        signal: errors
+      annotations:
+        summary: "AI provider failures detected"
+        description: "AI provider error rate is {{ $value }} errors/s"
+        runbook_url: "https://samokoder.com/docs/runbooks/ai-provider-failure"
+        
+    # Infrastructure Rules
+    - alert: PodCrashLooping
+      expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+      for: 5m
+      labels:
+        severity: critical
+        service: samokoder
+        signal: errors
+      annotations:
+        summary: "Pod is crash looping"
+        description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is crash looping"
+        runbook_url: "https://samokoder.com/docs/runbooks/pod-crash-looping"
+        
+    - alert: PodNotReady
+      expr: kube_pod_status_phase{phase!="Running"} == 1
+      for: 5m
+      labels:
+        severity: warning
+        service: samokoder
+        signal: errors
+      annotations:
+        summary: "Pod is not ready"
+        description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is not ready"
+        runbook_url: "https://samokoder.com/docs/runbooks/pod-not-ready"
+        
+    - alert: HighDiskUsage
+      expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+      for: 2m
+      labels:
+        severity: warning
+        service: samokoder
+        signal: saturation
+      annotations:
+        summary: "High disk usage detected"
+        description: "Disk usage on {{ $labels.instance }} is {{ $value }}% available"
+        runbook_url: "https://samokoder.com/docs/runbooks/high-disk-usage"
+        
+    - alert: CriticalDiskUsage
+      expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 5
+      for: 1m
+      labels:
+        severity: critical
+        service: samokoder
+        signal: saturation
+      annotations:
+        summary: "Critical disk usage detected"
+        description: "Disk usage on {{ $labels.instance }} is {{ $value }}% available"
+        runbook_url: "https://samokoder.com/docs/runbooks/critical-disk-usage"

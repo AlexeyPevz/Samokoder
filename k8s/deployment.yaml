@@ -1,0 +1,264 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: samokoder-backend
+  namespace: samokoder
+  labels:
+    app: samokoder-backend
+    version: v1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: samokoder-backend
+  template:
+    metadata:
+      labels:
+        app: samokoder-backend
+        version: v1.0.0
+    spec:
+      serviceAccountName: samokoder-backend
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: samokoder-backend
+        image: samokoder/backend:1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        - containerPort: 9090
+          name: metrics
+          protocol: TCP
+        env:
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: ENVIRONMENT
+        - name: DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: DEBUG
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: LOG_LEVEL
+        - name: HOST
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: HOST
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: PORT
+        - name: CORS_ORIGINS
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: CORS_ORIGINS
+        - name: MAX_FILE_SIZE_MB
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: MAX_FILE_SIZE_MB
+        - name: RATE_LIMIT_PER_MINUTE
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: RATE_LIMIT_PER_MINUTE
+        - name: RATE_LIMIT_PER_HOUR
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: RATE_LIMIT_PER_HOUR
+        - name: DATABASE_POOL_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: DATABASE_POOL_SIZE
+        - name: DATABASE_MAX_OVERFLOW
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: DATABASE_MAX_OVERFLOW
+        - name: ENABLE_METRICS
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: ENABLE_METRICS
+        - name: METRICS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: METRICS_PORT
+        - name: MAX_PROJECTS_PER_USER
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: MAX_PROJECTS_PER_USER
+        - name: MAX_FILE_SIZE_BYTES
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: MAX_FILE_SIZE_BYTES
+        - name: ENABLE_BACKUPS
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: ENABLE_BACKUPS
+        - name: BACKUP_INTERVAL_HOURS
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: BACKUP_INTERVAL_HOURS
+        - name: DEFAULT_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: DEFAULT_MODEL
+        - name: DEFAULT_PROVIDER
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: DEFAULT_PROVIDER
+        - name: GPT_PILOT_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: GPT_PILOT_PATH
+        - name: GPT_PILOT_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: samokoder-config
+              key: GPT_PILOT_TIMEOUT
+        # Secrets
+        - name: SUPABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: samokoder-secrets
+              key: SUPABASE_URL
+        - name: SUPABASE_ANON_KEY
+          valueFrom:
+            secretKeyRef:
+              name: samokoder-secrets
+              key: SUPABASE_ANON_KEY
+        - name: SUPABASE_SERVICE_ROLE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: samokoder-secrets
+              key: SUPABASE_SERVICE_ROLE_KEY
+        - name: API_ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: samokoder-secrets
+              key: API_ENCRYPTION_KEY
+        - name: API_ENCRYPTION_SALT
+          valueFrom:
+            secretKeyRef:
+              name: samokoder-secrets
+              key: API_ENCRYPTION_SALT
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: samokoder-secrets
+              key: JWT_SECRET
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: samokoder-secrets
+              key: REDIS_URL
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: samokoder-secrets
+              key: DATABASE_URL
+        - name: SENTRY_DSN
+          valueFrom:
+            secretKeyRef:
+              name: samokoder-secrets
+              key: SENTRY_DSN
+        - name: SLACK_WEBHOOK_URL
+          valueFrom:
+            secretKeyRef:
+              name: samokoder-secrets
+              key: SLACK_WEBHOOK_URL
+        - name: PAGERDUTY_ROUTING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: samokoder-secrets
+              key: PAGERDUTY_ROUTING_KEY
+        - name: SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: samokoder-secrets
+              key: SMTP_PASSWORD
+        - name: SYSTEM_OPENROUTER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: samokoder-secrets
+              key: SYSTEM_OPENROUTER_KEY
+        - name: SYSTEM_OPENAI_KEY
+          valueFrom:
+            secretKeyRef:
+              name: samokoder-secrets
+              key: SYSTEM_OPENAI_KEY
+        - name: SYSTEM_ANTHROPIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: samokoder-secrets
+              key: SYSTEM_ANTHROPIC_KEY
+        - name: SYSTEM_GROQ_KEY
+          valueFrom:
+            secretKeyRef:
+              name: samokoder-secrets
+              key: SYSTEM_GROQ_KEY
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: workspace-storage
+          mountPath: /app/workspaces
+        - name: export-storage
+          mountPath: /app/exports
+        - name: logs-storage
+          mountPath: /app/logs
+      volumes:
+      - name: workspace-storage
+        persistentVolumeClaim:
+          claimName: samokoder-workspace-pvc
+      - name: export-storage
+        persistentVolumeClaim:
+          claimName: samokoder-export-pvc
+      - name: logs-storage
+        persistentVolumeClaim:
+          claimName: samokoder-logs-pvc
+      imagePullSecrets:
+      - name: docker-registry-secret

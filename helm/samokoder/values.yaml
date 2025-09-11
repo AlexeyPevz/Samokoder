@@ -1,0 +1,302 @@
+# Default values for samokoder
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global settings
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# Image settings
+image:
+  registry: docker.io
+  repository: samokoder/backend
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+# Image pull secrets
+imagePullSecrets: []
+  # - name: docker-registry-secret
+
+# Service account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# Security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 8000
+  targetPort: 8000
+  annotations: {}
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: samokoder.com
+      paths:
+        - path: /
+          pathType: Prefix
+    - host: app.samokoder.com
+      paths:
+        - path: /
+          pathType: Prefix
+    - host: api.samokoder.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: samokoder-tls
+      hosts:
+        - samokoder.com
+        - app.samokoder.com
+        - api.samokoder.com
+
+# Resource limits
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+# Autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
+# Environment variables
+env:
+  ENVIRONMENT: "production"
+  DEBUG: "false"
+  LOG_LEVEL: "INFO"
+  HOST: "0.0.0.0"
+  PORT: "8000"
+  CORS_ORIGINS: "https://samokoder.com,https://app.samokoder.com"
+  MAX_FILE_SIZE_MB: "50"
+  RATE_LIMIT_PER_MINUTE: "60"
+  RATE_LIMIT_PER_HOUR: "1000"
+  DATABASE_POOL_SIZE: "10"
+  DATABASE_MAX_OVERFLOW: "20"
+  ENABLE_METRICS: "true"
+  METRICS_PORT: "9090"
+  MAX_PROJECTS_PER_USER: "10"
+  MAX_FILE_SIZE_BYTES: "52428800"
+  ENABLE_BACKUPS: "true"
+  BACKUP_INTERVAL_HOURS: "24"
+  DEFAULT_MODEL: "deepseek/deepseek-v3"
+  DEFAULT_PROVIDER: "openrouter"
+  GPT_PILOT_PATH: "/app/samokoder-core"
+  GPT_PILOT_TIMEOUT: "300"
+
+# Secrets
+secrets:
+  SUPABASE_URL: ""
+  SUPABASE_ANON_KEY: ""
+  SUPABASE_SERVICE_ROLE_KEY: ""
+  API_ENCRYPTION_KEY: ""
+  API_ENCRYPTION_SALT: ""
+  JWT_SECRET: ""
+  REDIS_URL: ""
+  DATABASE_URL: ""
+  SENTRY_DSN: ""
+  SLACK_WEBHOOK_URL: ""
+  PAGERDUTY_ROUTING_KEY: ""
+  SMTP_PASSWORD: ""
+  DOCKER_USERNAME: ""
+  DOCKER_PASSWORD: ""
+  SYSTEM_OPENROUTER_KEY: ""
+  SYSTEM_OPENAI_KEY: ""
+  SYSTEM_ANTHROPIC_KEY: ""
+  SYSTEM_GROQ_KEY: ""
+
+# Persistent volumes
+persistence:
+  enabled: true
+  storageClass: "fast-ssd"
+  accessMode: ReadWriteOnce
+  size: 100Gi
+  annotations: {}
+
+# Health checks
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+      scrapeTimeout: 10s
+  grafana:
+    enabled: true
+    adminPassword: "admin"
+    persistence:
+      enabled: true
+      size: 10Gi
+    dashboardProviders:
+      dashboardproviders.yaml:
+        apiVersion: 1
+        providers:
+        - name: 'samokoder'
+          orgId: 1
+          folder: 'Samokoder'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/samokoder
+    dashboards:
+      samokoder:
+        golden-signals:
+          gnetId: 1
+          revision: 1
+          datasource: Prometheus
+
+# PostgreSQL configuration
+postgresql:
+  enabled: false
+  auth:
+    postgresPassword: "postgres"
+    database: "samokoder"
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+
+# Redis configuration
+redis:
+  enabled: false
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+# Ingress controller
+ingress:
+  nginx:
+    enabled: true
+    controller:
+      service:
+        type: LoadBalancer
+      metrics:
+        enabled: true
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+
+# Network policies
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: monitoring
+      ports:
+      - protocol: TCP
+        port: 9090
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: ingress-nginx
+      ports:
+      - protocol: TCP
+        port: 8000
+
+# Pod security policy
+podSecurityPolicy:
+  enabled: false
+
+# Service mesh
+serviceMesh:
+  enabled: false
+  istio:
+    enabled: false
