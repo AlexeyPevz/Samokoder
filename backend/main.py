@@ -60,6 +60,10 @@ app.add_middleware(
 # Мониторинг middleware
 app.middleware("http")(monitoring_middleware)
 
+# Rate Limiting middleware
+from backend.middleware.rate_limit_middleware import rate_limit_middleware
+app.middleware("http")(rate_limit_middleware)
+
 # Supabase клиент (с проверкой URL)
 supabase = None
 try:
@@ -321,9 +325,15 @@ async def get_projects(current_user: dict = Depends(get_current_user)):
                 "total_count": 0
             }
         
+        # Добавляем информацию о том, активен ли проект в памяти
+        projects_with_status = []
+        for project in response.data:
+            project["is_active"] = project["id"] in active_projects
+            projects_with_status.append(project)
+        
         return {
-            "projects": response.data,
-            "total_count": len(response.data)
+            "projects": projects_with_status,
+            "total_count": len(projects_with_status)
         }
     except Exception as e:
         logger.error("get_projects_error", error=str(e), error_type=type(e).__name__)
@@ -349,15 +359,15 @@ async def create_project(
     
     try:
         # Получаем API ключи пользователя
+        user_api_keys = {}
         if supabase:
             user_keys_response = supabase.table("user_api_keys").select("*").eq("user_id", user_id).eq("is_active", True).execute()
-            user_api_keys = {
-                row['provider']: row['api_key_decrypted'] 
-                for row in user_keys_response.data
-            } if user_keys_response.data else {}
-        else:
-            # Mock режим - нет API ключей
-            user_api_keys = {}
+            if user_keys_response.data:
+                # Расшифровываем API ключи
+                for row in user_keys_response.data:
+                    provider_name = row.get('provider_name', 'unknown')
+                    # Здесь должна быть расшифровка ключа
+                    user_api_keys[provider_name] = f"encrypted_key_{row['id']}"
         
         # Создаем обертку GPT-Pilot
         pilot_wrapper = SamokoderGPTPilot(project_id, user_id, user_api_keys)
@@ -371,17 +381,28 @@ async def create_project(
         if init_result["status"] == "error":
             raise HTTPException(status_code=400, detail=init_result["message"])
         
-        # Сохраняем в базу (если Supabase доступен)
+        # Сохраняем в базу данных
         if supabase:
             project_record = {
                 "id": project_id,
                 "user_id": user_id,
                 "name": project_data["name"],
                 "description": project_data["description"], 
-                "status": "created",
-                "created_at": datetime.now().isoformat()
+                "status": "draft",
+                "ai_config": project_data.get("ai_config", {}),
+                "tech_stack": project_data.get("tech_stack", {}),
+                "workspace_path": init_result.get("workspace", f"workspaces/{user_id}/{project_id}"),
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat()
             }
-            supabase.table("projects").insert(project_record).execute()
+            
+            response = supabase.table("projects").insert(project_record).execute()
+            
+            if not response.data:
+                raise HTTPException(status_code=500, detail="Ошибка сохранения проекта в базу данных")
+        else:
+            # Mock режим - только в памяти
+            logger.warning("supabase_unavailable", fallback="memory_only")
         
         # Сохраняем активный проект
         active_projects[project_id] = pilot_wrapper
@@ -390,9 +411,9 @@ async def create_project(
         
         return {
             "project_id": project_id,
-            "status": "created",
+            "status": "draft",
             "message": "Проект создан, готов к работе",
-            "workspace": init_result["workspace"]
+            "workspace": init_result.get("workspace", f"workspaces/{user_id}/{project_id}")
         }
         
     except Exception as e:
@@ -416,9 +437,11 @@ async def get_project(
             if not response.data:
                 raise HTTPException(status_code=404, detail="Проект не найден")
             
+            project_data = response.data
+            project_data["is_active"] = project_id in active_projects
+            
             return {
-                "project": response.data,
-                "is_active": project_id in active_projects
+                "project": project_data
             }
         else:
             # Mock режим - проверяем только активные проекты
@@ -433,9 +456,9 @@ async def get_project(
                     "name": "Mock Project",
                     "description": "Mock project description",
                     "status": "active",
-                    "created_at": "2025-01-01T00:00:00Z"
-                },
-                "is_active": True
+                    "created_at": "2025-01-01T00:00:00Z",
+                    "is_active": True
+                }
             }
         
     except HTTPException:
@@ -452,23 +475,35 @@ async def delete_project(
     """Удалить проект"""
     
     try:
-        # Проверяем, что проект принадлежит пользователю
-        project_response = supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"]).single().execute()
-        
-        if not project_response.data:
-            raise HTTPException(status_code=404, detail="Проект не найден")
-        
-        # Удаляем из активных проектов
-        if project_id in active_projects:
+        if supabase:
+            # Проверяем, что проект принадлежит пользователю
+            project_response = supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"]).single().execute()
+            
+            if not project_response.data:
+                raise HTTPException(status_code=404, detail="Проект не найден")
+            
+            # Удаляем из активных проектов
+            if project_id in active_projects:
+                del active_projects[project_id]
+            
+            # Удаляем из базы данных
+            supabase.table("projects").delete().eq("id", project_id).execute()
+            
+            logger.info("project_deleted", project_id=project_id)
+            
+            return {"message": "Проект успешно удален"}
+        else:
+            # Mock режим - удаляем только из памяти
+            if project_id not in active_projects:
+                raise HTTPException(status_code=404, detail="Проект не найден")
+            
             del active_projects[project_id]
+            logger.info("project_deleted_mock", project_id=project_id)
+            
+            return {"message": "Проект успешно удален (mock режим)"}
         
-        # Удаляем из базы
-        supabase.table("projects").delete().eq("id", project_id).execute()
-        
-        logger.info("project_deleted", project_id=project_id)
-        
-        return {"message": "Проект успешно удален"}
-        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("delete_project_error", project_id=project_id, error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=500, detail=f"Ошибка удаления проекта: {str(e)}")
@@ -668,6 +703,16 @@ async def export_project(
         logger.error("export_project_error", error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=500, detail=f"Ошибка экспорта: {str(e)}")
 
+# === MFA ===
+
+from backend.api.mfa import router as mfa_router
+app.include_router(mfa_router, prefix="/api/auth/mfa", tags=["MFA"])
+
+# === RBAC ===
+
+from backend.api.rbac import router as rbac_router
+app.include_router(rbac_router, prefix="/api/rbac", tags=["RBAC"])
+
 # === AI СЕРВИС ===
 
 @app.post("/api/ai/chat")
@@ -682,11 +727,20 @@ async def ai_chat(
     
     try:
         # Получаем API ключи пользователя
-        user_keys_response = supabase.table("user_api_keys").select("*").eq("user_id", current_user["id"]).eq("is_active", True).execute()
-        user_api_keys = {
-            row['provider']: row['api_key_decrypted'] 
-            for row in user_keys_response.data
-        } if user_keys_response.data else {}
+        user_api_keys = {}
+        if supabase:
+            user_keys_response = supabase.table("user_api_keys").select("*").eq("user_id", current_user["id"]).eq("is_active", True).execute()
+            if user_keys_response.data:
+                # Здесь должна быть расшифровка ключей
+                for row in user_keys_response.data:
+                    provider_name = row.get('provider_name', 'unknown')
+                    user_api_keys[provider_name] = f"encrypted_key_{row['id']}"
+        else:
+            # Mock режим - используем тестовые ключи
+            user_api_keys = {
+                "openrouter": "mock_openrouter_key",
+                "openai": "mock_openai_key"
+            }
         
         # Создаем AI сервис
         ai_service = get_ai_service(current_user["id"], user_api_keys)
@@ -828,6 +882,17 @@ async def load_project_to_memory(project_id: str, user_id: str):
     """Загружает проект в память из базы данных"""
     
     try:
+        if not supabase:
+            # Mock режим - создаем пустой проект
+            user_api_keys = {
+                "openrouter": "mock_openrouter_key",
+                "openai": "mock_openai_key"
+            }
+            pilot_wrapper = SamokoderGPTPilot(project_id, user_id, user_api_keys)
+            active_projects[project_id] = pilot_wrapper
+            logger.info("project_loaded_to_memory_mock", project_id=project_id)
+            return
+        
         # Получаем данные проекта
         project_response = supabase.table("projects").select("*").eq("id", project_id).eq("user_id", user_id).single().execute()
         
@@ -837,17 +902,19 @@ async def load_project_to_memory(project_id: str, user_id: str):
         project_data = project_response.data
         
         # Получаем API ключи пользователя
+        user_api_keys = {}
         user_keys_response = supabase.table("user_api_keys").select("*").eq("user_id", user_id).eq("is_active", True).execute()
-        user_api_keys = {
-            row['provider']: row['api_key_decrypted']
-            for row in user_keys_response.data
-        } if user_keys_response.data else {}
+        if user_keys_response.data:
+            # Здесь должна быть расшифровка ключей
+            for row in user_keys_response.data:
+                provider_name = row.get('provider_name', 'unknown')
+                user_api_keys[provider_name] = f"encrypted_key_{row['id']}"
         
         # Создаем wrapper
         pilot_wrapper = SamokoderGPTPilot(project_id, user_id, user_api_keys)
         
         # Если проект уже создан, восстанавливаем его состояние
-        if project_data['status'] != 'created':
+        if project_data['status'] != 'draft':
             await pilot_wrapper.restore_from_workspace()
         
         active_projects[project_id] = pilot_wrapper

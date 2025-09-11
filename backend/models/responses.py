@@ -237,6 +237,34 @@ class DetailedHealthResponse(BaseModel):
     memory_usage: Dict[str, Any] = Field(..., description="Использование памяти")
     disk_usage: Dict[str, Any] = Field(..., description="Использование диска")
 
+# === MFA ===
+
+class MFASetupResponse(BaseModel):
+    """Ответ на настройку MFA"""
+    secret: str = Field(..., description="TOTP секрет")
+    qr_code: str = Field(..., description="QR код в base64")
+    backup_codes: List[str] = Field(..., description="Резервные коды")
+
+class MFAVerifyResponse(BaseModel):
+    """Ответ на проверку MFA"""
+    verified: bool = Field(..., description="Код подтвержден")
+    message: str = Field(..., description="Сообщение")
+
+# === RBAC ===
+
+class RoleResponse(BaseModel):
+    """Ответ с информацией о роли"""
+    id: str = Field(..., description="ID роли")
+    name: str = Field(..., description="Название роли")
+    description: str = Field(..., description="Описание роли")
+    permissions: List[str] = Field(..., description="Список разрешений")
+
+class PermissionResponse(BaseModel):
+    """Ответ с информацией о разрешении"""
+    id: str = Field(..., description="ID разрешения")
+    name: str = Field(..., description="Название разрешения")
+    description: str = Field(..., description="Описание разрешения")
+
 # === МЕТРИКИ ===
 
 class MetricsResponse(BaseModel):

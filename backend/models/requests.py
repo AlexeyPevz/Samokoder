@@ -242,6 +242,35 @@ class ExportRequest(BaseModel):
     include_dependencies: bool = Field(True, description="Включить зависимости")
     include_documentation: bool = Field(True, description="Включить документацию")
 
+# === MFA ===
+
+class MFASetupRequest(BaseModel):
+    """Запрос на настройку MFA"""
+    pass  # Настройка не требует дополнительных данных
+
+class MFAVerifyRequest(BaseModel):
+    """Запрос на проверку MFA кода"""
+    code: str = Field(..., min_length=6, max_length=6, description="6-значный TOTP код")
+    
+    @field_validator('code')
+    @classmethod
+    def validate_code(cls, v: str) -> str:
+        if not v.isdigit() or len(v) != 6:
+            raise ValueError('Код должен содержать 6 цифр')
+        return v
+
+# === RBAC ===
+
+class RoleCreateRequest(BaseModel):
+    """Запрос на создание роли"""
+    name: str = Field(..., min_length=1, max_length=100, description="Название роли")
+    description: str = Field(..., max_length=500, description="Описание роли")
+    permissions: List[str] = Field(..., description="Список разрешений")
+
+class PermissionAssignRequest(BaseModel):
+    """Запрос на назначение разрешения"""
+    permission: str = Field(..., min_length=1, max_length=100, description="Разрешение")
+
 # === ПОИСК И ФИЛЬТРАЦИЯ ===
 
 class SearchRequest(BaseModel):
