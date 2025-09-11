@@ -1,6 +1,5 @@
 """
-Безопасный валидатор входных данных
-Защита от SQL injection, XSS, и других атак
+Упрощенный валидатор входных данных без внешних зависимостей
 """
 
 import re
@@ -10,26 +9,10 @@ import logging
 from typing import Any, Dict, List, Optional, Union, Tuple
 from urllib.parse import unquote
 
-# Опциональные импорты с fallback
-try:
-    import bleach
-    BLEACH_AVAILABLE = True
-except ImportError:
-    BLEACH_AVAILABLE = False
-    bleach = None
-
-try:
-    from pydantic import BaseModel, validator
-    PYDANTIC_AVAILABLE = True
-except ImportError:
-    PYDANTIC_AVAILABLE = False
-    BaseModel = None
-    validator = None
-
 logger = logging.getLogger(__name__)
 
-class SecureInputValidator:
-    """Безопасный валидатор входных данных"""
+class SimpleInputValidator:
+    """Упрощенный валидатор входных данных"""
     
     def __init__(self):
         # Паттерны для опасных SQL конструкций
@@ -69,18 +52,6 @@ class SecureInputValidator:
             r'\.\.%2f',
             r'\.\.%5c',
         ]
-        
-        # Разрешенные HTML теги для bleach
-        self.allowed_tags = [
-            'p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-            'ul', 'ol', 'li', 'blockquote', 'code', 'pre'
-        ]
-        
-        # Разрешенные HTML атрибуты
-        self.allowed_attributes = {
-            'a': ['href', 'title'],
-            'img': ['src', 'alt', 'title', 'width', 'height'],
-        }
     
     def validate_sql_input(self, value: str) -> bool:
         """Проверяет входные данные на SQL injection"""
@@ -132,52 +103,8 @@ class SecureInputValidator:
         if not isinstance(value, str):
             return str(value)
         
-        if BLEACH_AVAILABLE:
-            # Используем bleach для очистки HTML
-            cleaned = bleach.clean(
-                value,
-                tags=self.allowed_tags,
-                attributes=self.allowed_attributes,
-                strip=True
-            )
-            return cleaned
-        else:
-            # Fallback: базовая очистка HTML
-            return html.escape(value)
-    
-    def sanitize_json(self, value: str) -> Optional[Dict]:
-        """Безопасно парсит JSON"""
-        if not isinstance(value, str):
-            return None
-        
-        try:
-            # Парсим JSON
-            data = json.loads(value)
-            
-            # Рекурсивно санитизируем данные
-            return self._sanitize_data_structure(data)
-            
-        except json.JSONDecodeError:
-            logger.warning("Invalid JSON provided")
-            return None
-    
-    def _sanitize_data_structure(self, data: Any) -> Any:
-        """Рекурсивно санитизирует структуру данных"""
-        if isinstance(data, dict):
-            return {key: self._sanitize_data_structure(value) for key, value in data.items()}
-        elif isinstance(data, list):
-            return [self._sanitize_data_structure(item) for item in data]
-        elif isinstance(data, str):
-            # Санитизируем строки
-            if not self.validate_sql_input(data):
-                return "[BLOCKED: SQL injection attempt]"
-            if not self.validate_xss_input(data):
-                return "[BLOCKED: XSS attempt]"
-            if not self.validate_path_traversal(data):
-                return "[BLOCKED: Path traversal attempt]"
-            return html.escape(data)
-        else:
-            return data
+        # Базовая очистка HTML
+        return html.escape(value)
     
     def validate_email(self, email: str) -> bool:
         """Валидирует email адрес"""
@@ -233,21 +160,6 @@ class SecureInputValidator:
         
         return len(errors) == 0, errors
     
-    def validate_api_key_format(self, api_key: str) -> bool:
-        """Валидирует формат API ключа"""
-        if not isinstance(api_key, str):
-            return False
-        
-        # Проверяем длину
-        if len(api_key) < 20 or len(api_key) > 200:
-            return False
-        
-        # Проверяем на подозрительные символы
-        if not re.match(r'^[a-zA-Z0-9_\-\.]+$', api_key):
-            return False
-        
-        return True
-    
     def validate_project_name(self, name: str) -> bool:
         """Валидирует имя проекта"""
         if not isinstance(name, str):
@@ -271,41 +183,33 @@ class SecureInputValidator:
         return True
 
 # Глобальный экземпляр валидатора
-secure_validator = SecureInputValidator()
+simple_validator = SimpleInputValidator()
 
 # Удобные функции
 def validate_sql_input(value: str) -> bool:
     """Проверяет входные данные на SQL injection"""
-    return secure_validator.validate_sql_input(value)
+    return simple_validator.validate_sql_input(value)
 
 def validate_xss_input(value: str) -> bool:
     """Проверяет входные данные на XSS"""
-    return secure_validator.validate_xss_input(value)
+    return simple_validator.validate_xss_input(value)
 
 def validate_path_traversal(value: str) -> bool:
     """Проверяет на path traversal атаки"""
-    return secure_validator.validate_path_traversal(value)
+    return simple_validator.validate_path_traversal(value)
 
 def sanitize_html(value: str) -> str:
     """Санитизирует HTML контент"""
-    return secure_validator.sanitize_html(value)
-
-def sanitize_json(value: str) -> Optional[Dict]:
-    """Безопасно парсит JSON"""
-    return secure_validator.sanitize_json(value)
+    return simple_validator.sanitize_html(value)
 
 def validate_email(email: str) -> bool:
     """Валидирует email адрес"""
-    return secure_validator.validate_email(email)
+    return simple_validator.validate_email(email)
 
 def validate_password_strength(password: str) -> Tuple[bool, List[str]]:
     """Валидирует силу пароля"""
-    return secure_validator.validate_password_strength(password)
-
-def validate_api_key_format(api_key: str) -> bool:
-    """Валидирует формат API ключа"""
-    return secure_validator.validate_api_key_format(api_key)
+    return simple_validator.validate_password_strength(password)
 
 def validate_project_name(name: str) -> bool:
     """Валидирует имя проекта"""
-    return secure_validator.validate_project_name(name)
+    return simple_validator.validate_project_name(name)

@@ -1,6 +1,5 @@
 """
-Безопасная загрузка файлов
-Защита от malware, path traversal и других атак
+Упрощенная безопасная загрузка файлов без внешних зависимостей
 """
 
 import os
@@ -14,60 +13,18 @@ from datetime import datetime
 import zipfile
 import tarfile
 
-# Опциональные импорты с fallback
-try:
-    import magic
-    MAGIC_AVAILABLE = True
-except ImportError:
-    MAGIC_AVAILABLE = False
-    magic = None
-
-try:
-    import aiofiles
-    AIOFILES_AVAILABLE = True
-except ImportError:
-    AIOFILES_AVAILABLE = False
-    aiofiles = None
-
-try:
-    from PIL import Image
-    PIL_AVAILABLE = True
-except ImportError:
-    PIL_AVAILABLE = False
-    Image = None
-
 logger = logging.getLogger(__name__)
 
-class FileUploadSecurity:
-    """Безопасная загрузка файлов"""
+class SimpleFileUploadSecurity:
+    """Упрощенная безопасная загрузка файлов"""
     
     def __init__(self):
-        # Разрешенные MIME типы
-        self.allowed_mime_types = {
-            # Изображения
-            'image/jpeg': ['.jpg', '.jpeg'],
-            'image/png': ['.png'],
-            'image/gif': ['.gif'],
-            'image/webp': ['.webp'],
-            'image/svg+xml': ['.svg'],
-            
-            # Документы
-            'application/pdf': ['.pdf'],
-            'text/plain': ['.txt'],
-            'text/csv': ['.csv'],
-            'application/json': ['.json'],
-            'application/xml': ['.xml'],
-            
-            # Архивы
-            'application/zip': ['.zip'],
-            'application/x-tar': ['.tar'],
-            'application/gzip': ['.gz'],
-            
-            # Код
-            'text/x-python': ['.py'],
-            'text/javascript': ['.js'],
-            'text/css': ['.css'],
-            'text/html': ['.html', '.htm'],
+        # Разрешенные расширения файлов
+        self.allowed_extensions = {
+            '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg',
+            '.pdf', '.txt', '.csv', '.json', '.xml',
+            '.zip', '.tar', '.gz',
+            '.py', '.js', '.css', '.html', '.htm'
         }
         
         # Запрещенные расширения
@@ -78,23 +35,25 @@ class FileUploadSecurity:
         
         # Максимальные размеры файлов (в байтах)
         self.max_file_sizes = {
-            'image/jpeg': 10 * 1024 * 1024,  # 10 MB
-            'image/png': 10 * 1024 * 1024,   # 10 MB
-            'image/gif': 5 * 1024 * 1024,    # 5 MB
-            'image/webp': 10 * 1024 * 1024,  # 10 MB
-            'image/svg+xml': 1 * 1024 * 1024, # 1 MB
-            'application/pdf': 50 * 1024 * 1024, # 50 MB
-            'text/plain': 1 * 1024 * 1024,   # 1 MB
-            'text/csv': 5 * 1024 * 1024,     # 5 MB
-            'application/json': 1 * 1024 * 1024, # 1 MB
-            'application/xml': 1 * 1024 * 1024,  # 1 MB
-            'application/zip': 100 * 1024 * 1024, # 100 MB
-            'application/x-tar': 100 * 1024 * 1024, # 100 MB
-            'application/gzip': 100 * 1024 * 1024,  # 100 MB
-            'text/x-python': 1 * 1024 * 1024, # 1 MB
-            'text/javascript': 1 * 1024 * 1024, # 1 MB
-            'text/css': 1 * 1024 * 1024,      # 1 MB
-            'text/html': 1 * 1024 * 1024,     # 1 MB
+            '.jpg': 10 * 1024 * 1024,   # 10 MB
+            '.jpeg': 10 * 1024 * 1024,  # 10 MB
+            '.png': 10 * 1024 * 1024,   # 10 MB
+            '.gif': 5 * 1024 * 1024,    # 5 MB
+            '.webp': 10 * 1024 * 1024,  # 10 MB
+            '.svg': 1 * 1024 * 1024,    # 1 MB
+            '.pdf': 50 * 1024 * 1024,   # 50 MB
+            '.txt': 1 * 1024 * 1024,    # 1 MB
+            '.csv': 5 * 1024 * 1024,    # 5 MB
+            '.json': 1 * 1024 * 1024,   # 1 MB
+            '.xml': 1 * 1024 * 1024,    # 1 MB
+            '.zip': 100 * 1024 * 1024,  # 100 MB
+            '.tar': 100 * 1024 * 1024,  # 100 MB
+            '.gz': 100 * 1024 * 1024,   # 100 MB
+            '.py': 1 * 1024 * 1024,     # 1 MB
+            '.js': 1 * 1024 * 1024,     # 1 MB
+            '.css': 1 * 1024 * 1024,    # 1 MB
+            '.html': 1 * 1024 * 1024,   # 1 MB
+            '.htm': 1 * 1024 * 1024,    # 1 MB
         }
         
         # Максимальное количество файлов
@@ -104,32 +63,7 @@ class FileUploadSecurity:
         self.upload_base_dir = Path("uploads")
         self.upload_base_dir.mkdir(exist_ok=True)
     
-    def _get_mime_type_by_extension(self, extension: str) -> str:
-        """Определяет MIME тип по расширению файла"""
-        mime_map = {
-            '.jpg': 'image/jpeg',
-            '.jpeg': 'image/jpeg',
-            '.png': 'image/png',
-            '.gif': 'image/gif',
-            '.webp': 'image/webp',
-            '.svg': 'image/svg+xml',
-            '.pdf': 'application/pdf',
-            '.txt': 'text/plain',
-            '.csv': 'text/csv',
-            '.json': 'application/json',
-            '.xml': 'application/xml',
-            '.zip': 'application/zip',
-            '.tar': 'application/x-tar',
-            '.gz': 'application/gzip',
-            '.py': 'text/x-python',
-            '.js': 'text/javascript',
-            '.css': 'text/css',
-            '.html': 'text/html',
-            '.htm': 'text/html',
-        }
-        return mime_map.get(extension, 'application/octet-stream')
-    
-    async def validate_file(self, file_content: bytes, filename: str) -> Tuple[bool, str, Optional[str]]:
+    def validate_file(self, file_content: bytes, filename: str) -> Tuple[bool, str, Optional[str]]:
         """Валидирует загружаемый файл"""
         try:
             # Проверяем размер файла
@@ -141,69 +75,62 @@ class FileUploadSecurity:
             if file_ext in self.forbidden_extensions:
                 return False, f"Forbidden file extension: {file_ext}", None
             
-            # Определяем MIME тип
-            if MAGIC_AVAILABLE:
-                mime_type = magic.from_buffer(file_content, mime=True)
-            else:
-                # Fallback: определяем по расширению
-                mime_type = self._get_mime_type_by_extension(file_ext)
-            
-            # Проверяем, разрешен ли MIME тип
-            if mime_type not in self.allowed_mime_types:
-                return False, f"Forbidden MIME type: {mime_type}", None
-            
-            # Проверяем соответствие расширения и MIME типа
-            if file_ext not in self.allowed_mime_types[mime_type]:
-                return False, f"File extension {file_ext} doesn't match MIME type {mime_type}", None
+            if file_ext not in self.allowed_extensions:
+                return False, f"Unsupported file extension: {file_ext}", None
             
             # Проверяем размер файла
-            max_size = self.max_file_sizes.get(mime_type, 1 * 1024 * 1024)  # 1 MB по умолчанию
+            max_size = self.max_file_sizes.get(file_ext, 1 * 1024 * 1024)  # 1 MB по умолчанию
             if len(file_content) > max_size:
                 return False, f"File too large. Maximum size: {max_size} bytes", None
             
             # Дополнительные проверки для изображений
-            if mime_type.startswith('image/'):
-                if not await self._validate_image(file_content):
+            if file_ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+                if not self._validate_image(file_content):
                     return False, "Invalid or corrupted image", None
             
             # Дополнительные проверки для архивов
-            if mime_type in ['application/zip', 'application/x-tar', 'application/gzip']:
-                if not await self._validate_archive(file_content, mime_type):
+            if file_ext in ['.zip', '.tar', '.gz']:
+                if not self._validate_archive(file_content, file_ext):
                     return False, "Invalid or potentially dangerous archive", None
             
-            return True, "File is valid", mime_type
+            return True, "File is valid", file_ext
             
         except Exception as e:
             logger.error(f"Error validating file {filename}: {e}")
             return False, f"Validation error: {str(e)}", None
     
-    async def _validate_image(self, file_content: bytes) -> bool:
+    def _validate_image(self, file_content: bytes) -> bool:
         """Валидирует изображение"""
         try:
-            if PIL_AVAILABLE:
-                # Проверяем с помощью PIL
-                image = Image.open(io.BytesIO(file_content))
-                image.verify()
-                
-                # Проверяем размеры изображения
-                if image.width > 10000 or image.height > 10000:
-                    return False
-                
-                return True
-            else:
-                # Fallback: базовая проверка заголовков
-                if file_content.startswith(b'\x89PNG') or file_content.startswith(b'\xff\xd8\xff'):
+            # Базовая проверка заголовков различных форматов
+            image_signatures = [
+                b'\x89PNG',           # PNG
+                b'\xff\xd8\xff',      # JPEG
+                b'GIF87a',            # GIF87a
+                b'GIF89a',            # GIF89a
+                b'RIFF',              # WebP (начинается с RIFF)
+                b'<svg',              # SVG (текстовый формат)
+                b'<?xml',             # SVG может начинаться с XML
+            ]
+            
+            for signature in image_signatures:
+                if file_content.startswith(signature):
                     return True
-                return False
+            
+            # Дополнительная проверка для WebP
+            if b'WEBP' in file_content[:20]:
+                return True
+            
+            return False
             
         except Exception as e:
             logger.warning(f"Image validation failed: {e}")
             return False
     
-    async def _validate_archive(self, file_content: bytes, mime_type: str) -> bool:
+    def _validate_archive(self, file_content: bytes, extension: str) -> bool:
         """Валидирует архив"""
         try:
-            if mime_type == 'application/zip':
+            if extension == '.zip':
                 with zipfile.ZipFile(io.BytesIO(file_content)) as zip_file:
                     # Проверяем количество файлов в архиве
                     if len(zip_file.namelist()) > 1000:
@@ -219,7 +146,7 @@ class FileUploadSecurity:
                         if file_ext in self.forbidden_extensions:
                             return False
             
-            elif mime_type == 'application/x-tar':
+            elif extension == '.tar':
                 with tarfile.open(fileobj=io.BytesIO(file_content)) as tar_file:
                     # Проверяем количество файлов в архиве
                     if len(tar_file.getnames()) > 1000:
@@ -241,11 +168,11 @@ class FileUploadSecurity:
             logger.warning(f"Archive validation failed: {e}")
             return False
     
-    async def save_file(self, file_content: bytes, filename: str, user_id: str, project_id: str) -> Tuple[bool, str, Optional[str]]:
+    def save_file(self, file_content: bytes, filename: str, user_id: str, project_id: str) -> Tuple[bool, str, Optional[str]]:
         """Безопасно сохраняет файл"""
         try:
             # Валидируем файл
-            is_valid, message, mime_type = await self.validate_file(file_content, filename)
+            is_valid, message, file_ext = self.validate_file(file_content, filename)
             if not is_valid:
                 return False, message, None
             
@@ -266,13 +193,8 @@ class FileUploadSecurity:
                 counter += 1
             
             # Сохраняем файл
-            if AIOFILES_AVAILABLE:
-                async with aiofiles.open(file_path, 'wb') as f:
-                    await f.write(file_content)
-            else:
-                # Fallback: синхронное сохранение
-                with open(file_path, 'wb') as f:
-                    f.write(file_content)
+            with open(file_path, 'wb') as f:
+                f.write(file_content)
             
             # Вычисляем хеш файла
             file_hash = hashlib.sha256(file_content).hexdigest()
@@ -303,11 +225,8 @@ class FileUploadSecurity:
         
         return safe_filename
     
-    async def scan_file_for_malware(self, file_path: str) -> Tuple[bool, str]:
+    def scan_file_for_malware(self, file_path: str) -> Tuple[bool, str]:
         """Сканирует файл на malware (заглушка)"""
-        # В реальном приложении здесь должен быть интеграция с антивирусом
-        # Например, ClamAV или VirusTotal API
-        
         try:
             # Простая проверка на подозрительные паттерны
             with open(file_path, 'rb') as f:
@@ -350,14 +269,39 @@ class FileUploadSecurity:
                 "created_at": datetime.fromtimestamp(stat.st_ctime).isoformat(),
                 "modified_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
                 "extension": path.suffix,
-                "mime_type": magic.from_file(str(path), mime=True) if MAGIC_AVAILABLE else self._get_mime_type_by_extension(path.suffix)
+                "mime_type": self._get_mime_type_by_extension(path.suffix)
             }
             
         except Exception as e:
             logger.error(f"Error getting file info for {file_path}: {e}")
             return None
     
-    async def delete_file(self, file_path: str) -> bool:
+    def _get_mime_type_by_extension(self, extension: str) -> str:
+        """Определяет MIME тип по расширению файла"""
+        mime_map = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp',
+            '.svg': 'image/svg+xml',
+            '.pdf': 'application/pdf',
+            '.txt': 'text/plain',
+            '.csv': 'text/csv',
+            '.json': 'application/json',
+            '.xml': 'application/xml',
+            '.zip': 'application/zip',
+            '.tar': 'application/x-tar',
+            '.gz': 'application/gzip',
+            '.py': 'text/x-python',
+            '.js': 'text/javascript',
+            '.css': 'text/css',
+            '.html': 'text/html',
+            '.htm': 'text/html',
+        }
+        return mime_map.get(extension, 'application/octet-stream')
+    
+    def delete_file(self, file_path: str) -> bool:
         """Безопасно удаляет файл"""
         try:
             path = Path(file_path)
@@ -379,25 +323,25 @@ class FileUploadSecurity:
             return False
 
 # Глобальный экземпляр
-file_upload_security = FileUploadSecurity()
+simple_file_upload_security = SimpleFileUploadSecurity()
 
 # Удобные функции
-async def validate_file(file_content: bytes, filename: str) -> Tuple[bool, str, Optional[str]]:
+def validate_file(file_content: bytes, filename: str) -> Tuple[bool, str, Optional[str]]:
     """Валидирует загружаемый файл"""
-    return await file_upload_security.validate_file(file_content, filename)
+    return simple_file_upload_security.validate_file(file_content, filename)
 
-async def save_file(file_content: bytes, filename: str, user_id: str, project_id: str) -> Tuple[bool, str, Optional[str]]:
+def save_file(file_content: bytes, filename: str, user_id: str, project_id: str) -> Tuple[bool, str, Optional[str]]:
     """Безопасно сохраняет файл"""
-    return await file_upload_security.save_file(file_content, filename, user_id, project_id)
+    return simple_file_upload_security.save_file(file_content, filename, user_id, project_id)
 
-async def scan_file_for_malware(file_path: str) -> Tuple[bool, str]:
+def scan_file_for_malware(file_path: str) -> Tuple[bool, str]:
     """Сканирует файл на malware"""
-    return await file_upload_security.scan_file_for_malware(file_path)
+    return simple_file_upload_security.scan_file_for_malware(file_path)
 
 def get_file_info(file_path: str) -> Optional[Dict]:
     """Получает информацию о файле"""
-    return file_upload_security.get_file_info(file_path)
+    return simple_file_upload_security.get_file_info(file_path)
 
-async def delete_file(file_path: str) -> bool:
+def delete_file(file_path: str) -> bool:
     """Безопасно удаляет файл"""
-    return await file_upload_security.delete_file(file_path)
+    return simple_file_upload_security.delete_file(file_path)

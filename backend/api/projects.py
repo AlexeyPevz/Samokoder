@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Optional
 from backend.utils.uuid_manager import generate_unique_uuid
 from backend.services.transaction_manager import transaction
-from backend.security.input_validator import validate_project_name, validate_sql_input, validate_xss_input
+from backend.security.simple_input_validator import validate_project_name, validate_sql_input, validate_xss_input
 
 logger = logging.getLogger(__name__)
 

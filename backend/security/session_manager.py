@@ -7,7 +7,7 @@ import secrets
 import time
 import hashlib
 import hmac
-from typing import Dict, Optional, Set
+from typing import Dict, Optional, Set, List
 from datetime import datetime, timedelta
 import logging
 from dataclasses import dataclass
@@ -204,8 +204,12 @@ class SecureSessionManager:
         now = datetime.now()
         expired_sessions = []
         
-        for session_id, session_data in self.sessions.items():
-            if self._is_session_expired(session_data):
+        # Создаем копию списка ключей для безопасной итерации
+        session_ids = list(self.sessions.keys())
+        
+        for session_id in session_ids:
+            session_data = self.sessions.get(session_id)
+            if session_data and self._is_session_expired(session_data):
                 expired_sessions.append(session_id)
         
         for session_id in expired_sessions:
