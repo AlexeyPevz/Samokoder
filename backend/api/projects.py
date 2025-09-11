@@ -6,7 +6,7 @@ from backend.models.requests import ProjectCreateRequest, ProjectUpdateRequest
 from backend.models.responses import ProjectResponse, ProjectListResponse, ProjectCreateResponse
 from backend.auth.dependencies import get_current_user
 from backend.middleware.secure_rate_limiter import api_rate_limit
-from backend.services.connection_pool import connection_pool_manager
+# from backend.services.connection_pool import connection_pool_manager
 from backend.services.supabase_manager import execute_supabase_operation
 import logging
 from datetime import datetime
@@ -24,7 +24,6 @@ async def create_project(
 ):
     """Create a new project"""
     try:
-        supabase = connection_pool_manager.get_supabase_client()
         
         project_id = str(uuid.uuid4())
         workspace_path = f"workspaces/{current_user['id']}/{project_id}"
@@ -41,7 +40,8 @@ async def create_project(
         }
         
         response = await execute_supabase_operation(
-            supabase.table("projects").insert(project_record)
+            lambda client: client.table("projects").insert(project_record),
+            "anon"
         )
         
         if not response.data:
@@ -74,10 +74,10 @@ async def list_projects(
 ):
     """List user projects"""
     try:
-        supabase = connection_pool_manager.get_supabase_client()
         
         response = await execute_supabase_operation(
-            supabase.table("projects").select("*").eq("user_id", current_user["id"]).eq("is_active", True).range(offset, offset + limit - 1)
+            lambda client: client.table("projects").select("*").eq("user_id", current_user["id"]).eq("is_active", True).range(offset, offset + limit - 1),
+            "anon"
         )
         
         projects = []
@@ -114,10 +114,9 @@ async def get_project(
 ):
     """Get project by ID"""
     try:
-        supabase = connection_pool_manager.get_supabase_client()
         
         response = await execute_supabase_operation(
-            supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"])
+            lambda client: client.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"])
         )
         
         if not response.data:
@@ -156,11 +155,10 @@ async def update_project(
 ):
     """Update project"""
     try:
-        supabase = connection_pool_manager.get_supabase_client()
         
         # Check if project exists and belongs to user
         existing_response = await execute_supabase_operation(
-            supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"])
+            lambda client: client.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"])
         )
         
         if not existing_response.data:
@@ -174,7 +172,7 @@ async def update_project(
         update_data["updated_at"] = datetime.now().isoformat()
         
         response = await execute_supabase_operation(
-            supabase.table("projects").update(update_data).eq("id", project_id)
+            lambda client: client.table("projects").update(update_data).eq("id", project_id)
         )
         
         if not response.data:
@@ -212,11 +210,10 @@ async def delete_project(
 ):
     """Delete project (soft delete)"""
     try:
-        supabase = connection_pool_manager.get_supabase_client()
         
         # Check if project exists and belongs to user
         existing_response = await execute_supabase_operation(
-            supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"])
+            lambda client: client.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"])
         )
         
         if not existing_response.data:
@@ -227,7 +224,7 @@ async def delete_project(
         
         # Soft delete project
         response = await execute_supabase_operation(
-            supabase.table("projects").update({"is_active": False}).eq("id", project_id)
+            lambda client: client.table("projects").update({"is_active": False}).eq("id", project_id)
         )
         
         if not response.data:
@@ -245,4 +242,222 @@ async def delete_project(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete project"
+        )
+
+@router.get("/{project_id}/files")
+async def get_project_files(
+    project_id: str,
+    current_user: dict = Depends(get_current_user),
+    rate_limit: dict = Depends(api_rate_limit)
+):
+    """Get project files list"""
+    try:
+        
+        # Check if project exists and belongs to user
+        project_response = await execute_supabase_operation(
+            lambda client: client.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"])
+        )
+        
+        if not project_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found"
+            )
+        
+        # Mock implementation - in real app would read from filesystem
+        files = [
+            {
+                "name": "main.py",
+                "path": "main.py",
+                "size": 1024,
+                "type": "file",
+                "modified_at": "2024-12-19T10:00:00Z"
+            },
+            {
+                "name": "requirements.txt",
+                "path": "requirements.txt", 
+                "size": 512,
+                "type": "file",
+                "modified_at": "2024-12-19T10:00:00Z"
+            }
+        ]
+        
+        return {
+            "files": files,
+            "total_count": len(files),
+            "project_id": project_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get project files {project_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get project files"
+        )
+
+@router.get("/{project_id}/files/{file_path:path}")
+async def get_file_content(
+    project_id: str,
+    file_path: str,
+    current_user: dict = Depends(get_current_user),
+    rate_limit: dict = Depends(api_rate_limit)
+):
+    """Get file content"""
+    try:
+        
+        # Check if project exists and belongs to user
+        project_response = await execute_supabase_operation(
+            lambda client: client.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"])
+        )
+        
+        if not project_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found"
+            )
+        
+        # Mock implementation - in real app would read from filesystem
+        content = f"# Mock content for {file_path}\n# This is a placeholder implementation"
+        
+        return {
+            "file_path": file_path,
+            "content": content,
+            "project_id": project_id,
+            "size": len(content)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get file content {project_id}/{file_path}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get file content"
+        )
+
+@router.post("/{project_id}/chat")
+async def chat_with_project(
+    project_id: str,
+    chat_data: dict,
+    current_user: dict = Depends(get_current_user),
+    rate_limit: dict = Depends(api_rate_limit)
+):
+    """Chat with project AI assistant"""
+    try:
+        
+        # Check if project exists and belongs to user
+        project_response = await execute_supabase_operation(
+            lambda client: client.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"])
+        )
+        
+        if not project_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found"
+            )
+        
+        # Mock implementation - in real app would use AI service
+        message = chat_data.get("message", "")
+        response = f"AI Assistant for project {project_id}: I received your message: '{message}'. This is a mock response."
+        
+        return {
+            "message": response,
+            "project_id": project_id,
+            "timestamp": "2024-12-19T10:00:00Z",
+            "agent": "project_ai"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to chat with project {project_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to chat with project"
+        )
+
+@router.post("/{project_id}/generate")
+async def generate_project_code(
+    project_id: str,
+    generation_data: dict,
+    current_user: dict = Depends(get_current_user),
+    rate_limit: dict = Depends(api_rate_limit)
+):
+    """Generate code for project"""
+    try:
+        
+        # Check if project exists and belongs to user
+        project_response = await execute_supabase_operation(
+            lambda client: client.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"])
+        )
+        
+        if not project_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found"
+            )
+        
+        # Mock implementation - in real app would use AI service
+        prompt = generation_data.get("prompt", "")
+        generated_files = [
+            {
+                "path": "generated_file.py",
+                "content": f"# Generated code for: {prompt}\nprint('Hello from generated code!')",
+                "size": 100
+            }
+        ]
+        
+        return {
+            "generated_files": generated_files,
+            "message": "Code generation completed",
+            "project_id": project_id,
+            "timestamp": "2024-12-19T10:00:00Z"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to generate code for project {project_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate code"
+        )
+
+@router.post("/{project_id}/export")
+async def export_project(
+    project_id: str,
+    current_user: dict = Depends(get_current_user),
+    rate_limit: dict = Depends(api_rate_limit)
+):
+    """Export project as ZIP"""
+    try:
+        
+        # Check if project exists and belongs to user
+        project_response = await execute_supabase_operation(
+            lambda client: client.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"])
+        )
+        
+        if not project_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found"
+            )
+        
+        # Mock implementation - in real app would create ZIP
+        return {
+            "message": "Project export initiated",
+            "project_id": project_id,
+            "download_url": f"/api/projects/{project_id}/download/export.zip",
+            "status": "processing"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to export project {project_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to export project"
         )

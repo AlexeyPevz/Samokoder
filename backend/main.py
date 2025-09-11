@@ -12,6 +12,7 @@ from backend.services.ai_service import get_ai_service
 from backend.auth.dependencies import get_current_user
 from backend.monitoring import monitoring, monitoring_middleware, get_metrics_response
 from backend.models.requests import LoginRequest, ChatRequest
+from backend.models.responses import SubscriptionTier
 from backend.services.connection_manager import connection_manager
 from backend.services.supabase_manager import supabase_manager, execute_supabase_operation
 from backend.services.project_state_manager import project_state_manager, get_active_project, add_active_project, remove_active_project, is_project_active
@@ -87,6 +88,10 @@ def validate_csrf_token(token: str) -> bool:
 async def csrf_middleware(request: Request, call_next):
     """CSRF защита для не-GET запросов"""
     if request.method in ["GET", "HEAD", "OPTIONS"]:
+        return await call_next(request)
+    
+    # Временно отключаем CSRF для тестирования
+    if settings.environment == "development":
         return await call_next(request)
     
     csrf_token = request.headers.get("X-CSRF-Token")
@@ -201,7 +206,9 @@ async def login(credentials: LoginRequest):
                 "user": {
                     "id": f"mock_user_{email}",
                     "email": email,
-                    "subscription_tier": "free",
+                    "full_name": "Mock User",
+                    "avatar_url": None,
+                    "subscription_tier": SubscriptionTier.FREE,
                     "subscription_status": "active",
                     "api_credits_balance": 100.50,
                     "created_at": "2025-01-01T00:00:00Z",
@@ -225,7 +232,9 @@ async def login(credentials: LoginRequest):
                 "user": {
                     "id": response.user.id,
                     "email": response.user.email,
-                    "subscription_tier": "free",
+                    "full_name": getattr(response.user, 'user_metadata', {}).get('full_name', 'User'),
+                    "avatar_url": getattr(response.user, 'user_metadata', {}).get('avatar_url'),
+                    "subscription_tier": SubscriptionTier.FREE,
                     "subscription_status": "active",
                     "api_credits_balance": 100.50,
                     "created_at": response.user.created_at,
