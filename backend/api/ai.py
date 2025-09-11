@@ -9,6 +9,7 @@ from backend.auth.dependencies import get_current_user
 from backend.middleware.rate_limit_middleware import ai_rate_limit
 from backend.services.ai_service import get_ai_service
 from backend.services.connection_pool import connection_pool_manager
+from backend.services.supabase_manager import execute_supabase_operation
 import logging
 import json
 
@@ -28,7 +29,9 @@ async def chat_with_ai(
         
         # Get user's AI configuration
         supabase = connection_pool_manager.get_supabase_client()
-        settings_response = supabase.table("user_settings").select("*").eq("user_id", current_user["id"]).execute()
+        settings_response = await execute_supabase_operation(
+            supabase.table("user_settings").select("*").eq("user_id", current_user["id"])
+        )
         
         user_settings = settings_response.data[0] if settings_response.data else {}
         
@@ -55,7 +58,9 @@ async def chat_with_ai(
                 "cost": response["usage"].get("cost", 0.0)
             }
             
-            supabase.table("ai_usage").insert(usage_data).execute()
+            await execute_supabase_operation(
+                supabase.table("ai_usage").insert(usage_data)
+            )
         
         return AIResponse(
             response=response["content"],
@@ -84,7 +89,9 @@ async def chat_with_ai_stream(
         
         # Get user's AI configuration
         supabase = connection_pool_manager.get_supabase_client()
-        settings_response = supabase.table("user_settings").select("*").eq("user_id", current_user["id"]).execute()
+        settings_response = await execute_supabase_operation(
+            supabase.table("user_settings").select("*").eq("user_id", current_user["id"])
+        )
         
         user_settings = settings_response.data[0] if settings_response.data else {}
         
@@ -129,7 +136,9 @@ async def get_ai_usage(
         from datetime import datetime, timedelta
         start_date = datetime.now() - timedelta(days=days)
         
-        response = supabase.table("ai_usage").select("*").eq("user_id", current_user["id"]).gte("created_at", start_date.isoformat()).execute()
+        response = await execute_supabase_operation(
+            supabase.table("ai_usage").select("*").eq("user_id", current_user["id"]).gte("created_at", start_date.isoformat())
+        )
         
         usage_data = response.data
         
@@ -171,7 +180,9 @@ async def get_ai_providers(
     try:
         supabase = connection_pool_manager.get_supabase_client()
         
-        response = supabase.table("ai_providers").select("*").eq("is_active", True).execute()
+        response = await execute_supabase_operation(
+            supabase.table("ai_providers").select("*").eq("is_active", True)
+        )
         
         providers = []
         for provider in response.data:

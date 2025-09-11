@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any
 from uuid import UUID
 from backend.contracts.database import DatabaseServiceProtocol
 from backend.services.connection_pool import connection_pool_manager
+from backend.services.supabase_manager import execute_supabase_operation
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Get user by ID"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("profiles").select("*").eq("id", str(user_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table("profiles").select("*").eq("id", str(user_id))
+            )
             return response.data[0] if response.data else None
         except Exception as e:
             logger.error(f"Failed to get user {user_id}: {e}")
@@ -46,7 +49,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Create new user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("profiles").insert(user_data).execute()
+            response = await execute_supabase_operation(
+                supabase.table("profiles").insert(user_data)
+            )
             return response.data[0] if response.data else {}
         except Exception as e:
             logger.error(f"Failed to create user: {e}")
@@ -61,7 +66,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Update user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("profiles").update(user_data).eq("id", str(user_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table("profiles").update(user_data).eq("id", str(user_id))
+            )
             return response.data[0] if response.data else {}
         except Exception as e:
             logger.error(f"Failed to update user {user_id}: {e}")
@@ -71,7 +78,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Delete user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("profiles").delete().eq("id", str(user_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table("profiles").delete().eq("id", str(user_id))
+            )
             return len(response.data) > 0
         except Exception as e:
             logger.error(f"Failed to delete user {user_id}: {e}")
@@ -81,7 +90,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Get project by ID for user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("projects").select("*").eq("id", str(project_id)).eq("user_id", str(user_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table("projects").select("*").eq("id", str(project_id)).eq("user_id", str(user_id))
+            )
             return response.data[0] if response.data else None
         except Exception as e:
             logger.error(f"Failed to get project {project_id}: {e}")
@@ -91,7 +102,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Create new project"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("projects").insert(project_data).execute()
+            response = await execute_supabase_operation(
+                supabase.table("projects").insert(project_data)
+            )
             return response.data[0] if response.data else {}
         except Exception as e:
             logger.error(f"Failed to create project: {e}")
@@ -101,7 +114,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Update project"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("projects").update(project_data).eq("id", str(project_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table("projects").update(project_data).eq("id", str(project_id))
+            )
             return response.data[0] if response.data else {}
         except Exception as e:
             logger.error(f"Failed to update project {project_id}: {e}")
@@ -111,7 +126,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Delete project"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("projects").update({"is_active": False}).eq("id", str(project_id)).eq("user_id", str(user_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table("projects").update({"is_active": False}).eq("id", str(project_id)).eq("user_id", str(user_id))
+            )
             return len(response.data) > 0
         except Exception as e:
             logger.error(f"Failed to delete project {project_id}: {e}")
@@ -121,7 +138,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """List user projects"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("projects").select("*").eq("user_id", str(user_id)).eq("is_active", True).range(offset, offset + limit - 1).execute()
+            response = await execute_supabase_operation(
+                supabase.table("projects").select("*").eq("user_id", str(user_id)).eq("is_active", True).range(offset, offset + limit - 1)
+            )
             return response.data or []
         except Exception as e:
             logger.error(f"Failed to list projects for user {user_id}: {e}")
@@ -131,7 +150,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Get chat session by ID for user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("chat_sessions").select("*").eq("id", str(session_id)).eq("user_id", str(user_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table("chat_sessions").select("*").eq("id", str(session_id)).eq("user_id", str(user_id))
+            )
             return response.data[0] if response.data else None
         except Exception as e:
             logger.error(f"Failed to get chat session {session_id}: {e}")
@@ -141,7 +162,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Create new chat session"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("chat_sessions").insert(session_data).execute()
+            response = await execute_supabase_operation(
+                supabase.table("chat_sessions").insert(session_data)
+            )
             return response.data[0] if response.data else {}
         except Exception as e:
             logger.error(f"Failed to create chat session: {e}")
@@ -151,7 +174,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Get chat messages for session"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("chat_messages").select("*").eq("session_id", str(session_id)).range(offset, offset + limit - 1).order("created_at", desc=False).execute()
+            response = await execute_supabase_operation(
+                supabase.table("chat_messages").select("*").eq("session_id", str(session_id)).range(offset, offset + limit - 1).order("created_at", desc=False)
+            )
             return response.data or []
         except Exception as e:
             logger.error(f"Failed to get chat messages for session {session_id}: {e}")
@@ -161,7 +186,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Create new chat message"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("chat_messages").insert(message_data).execute()
+            response = await execute_supabase_operation(
+                supabase.table("chat_messages").insert(message_data)
+            )
             return response.data[0] if response.data else {}
         except Exception as e:
             logger.error(f"Failed to create chat message: {e}")
@@ -171,7 +198,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Get API key by ID for user"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("api_keys").select("*").eq("id", str(key_id)).eq("user_id", str(user_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table("api_keys").select("*").eq("id", str(key_id)).eq("user_id", str(user_id))
+            )
             return response.data[0] if response.data else None
         except Exception as e:
             logger.error(f"Failed to get API key {key_id}: {e}")
@@ -181,7 +210,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Create new API key"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("api_keys").insert(key_data).execute()
+            response = await execute_supabase_operation(
+                supabase.table("api_keys").insert(key_data)
+            )
             return response.data[0] if response.data else {}
         except Exception as e:
             logger.error(f"Failed to create API key: {e}")
@@ -191,7 +222,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Update API key"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("api_keys").update(key_data).eq("id", str(key_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table("api_keys").update(key_data).eq("id", str(key_id))
+            )
             return response.data[0] if response.data else {}
         except Exception as e:
             logger.error(f"Failed to update API key {key_id}: {e}")
@@ -201,7 +234,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Delete API key"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("api_keys").delete().eq("id", str(key_id)).eq("user_id", str(user_id)).execute()
+            response = await execute_supabase_operation(
+                supabase.table("api_keys").delete().eq("id", str(key_id)).eq("user_id", str(user_id))
+            )
             return len(response.data) > 0
         except Exception as e:
             logger.error(f"Failed to delete API key {key_id}: {e}")
@@ -211,7 +246,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """List user API keys"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("api_keys").select("*").eq("user_id", str(user_id)).eq("is_active", True).execute()
+            response = await execute_supabase_operation(
+                supabase.table("api_keys").select("*").eq("user_id", str(user_id)).eq("is_active", True)
+            )
             return response.data or []
         except Exception as e:
             logger.error(f"Failed to list API keys for user {user_id}: {e}")
@@ -224,7 +261,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
             start_date = datetime.now() - timedelta(days=days)
             
             supabase = self._get_supabase()
-            response = supabase.table("ai_usage").select("*").eq("user_id", str(user_id)).gte("created_at", start_date.isoformat()).execute()
+            response = await execute_supabase_operation(
+                supabase.table("ai_usage").select("*").eq("user_id", str(user_id)).gte("created_at", start_date.isoformat())
+            )
             return response.data or []
         except Exception as e:
             logger.error(f"Failed to get AI usage for user {user_id}: {e}")
@@ -234,7 +273,9 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
         """Create AI usage record"""
         try:
             supabase = self._get_supabase()
-            response = supabase.table("ai_usage").insert(usage_data).execute()
+            response = await execute_supabase_operation(
+                supabase.table("ai_usage").insert(usage_data)
+            )
             return response.data[0] if response.data else {}
         except Exception as e:
             logger.error(f"Failed to create AI usage record: {e}")

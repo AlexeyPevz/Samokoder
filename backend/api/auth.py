@@ -8,6 +8,7 @@ from backend.auth.dependencies import get_current_user
 from backend.middleware.rate_limit_middleware import auth_rate_limit
 from backend.services.connection_pool import connection_pool_manager
 from backend.services.encryption import EncryptionService
+from backend.services.supabase_manager import execute_supabase_operation
 import logging
 from datetime import datetime, timedelta
 import uuid
@@ -38,7 +39,9 @@ async def login(
             )
         
         # Get user profile
-        profile_response = supabase.table("profiles").select("*").eq("id", response.user.id).execute()
+        profile_response = await execute_supabase_operation(
+            supabase.table("profiles").select("*").eq("id", response.user.id)
+        )
         
         if not profile_response.data:
             raise HTTPException(
@@ -93,7 +96,9 @@ async def register(
             "subscription_status": "active"
         }
         
-        profile_response = supabase.table("profiles").insert(profile_data).execute()
+        profile_response = await execute_supabase_operation(
+            supabase.table("profiles").insert(profile_data)
+        )
         
         if not profile_response.data:
             raise HTTPException(
@@ -109,7 +114,9 @@ async def register(
             "theme": "light"
         }
         
-        supabase.table("user_settings").insert(settings_data).execute()
+        await execute_supabase_operation(
+            supabase.table("user_settings").insert(settings_data)
+        )
         
         return RegisterResponse(
             user_id=str(response.user.id),

@@ -7,6 +7,7 @@ from backend.models.responses import ProjectResponse, ProjectListResponse, Proje
 from backend.auth.dependencies import get_current_user
 from backend.middleware.rate_limit_middleware import api_rate_limit
 from backend.services.connection_pool import connection_pool_manager
+from backend.services.supabase_manager import execute_supabase_operation
 import logging
 from datetime import datetime
 import uuid
@@ -39,7 +40,9 @@ async def create_project(
             "is_active": True
         }
         
-        response = supabase.table("projects").insert(project_record).execute()
+        response = await execute_supabase_operation(
+            supabase.table("projects").insert(project_record)
+        )
         
         if not response.data:
             raise HTTPException(
@@ -73,7 +76,9 @@ async def list_projects(
     try:
         supabase = connection_pool_manager.get_supabase_client()
         
-        response = supabase.table("projects").select("*").eq("user_id", current_user["id"]).eq("is_active", True).range(offset, offset + limit - 1).execute()
+        response = await execute_supabase_operation(
+            supabase.table("projects").select("*").eq("user_id", current_user["id"]).eq("is_active", True).range(offset, offset + limit - 1)
+        )
         
         projects = []
         for project in response.data:
@@ -111,7 +116,9 @@ async def get_project(
     try:
         supabase = connection_pool_manager.get_supabase_client()
         
-        response = supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"]).execute()
+        response = await execute_supabase_operation(
+            supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"])
+        )
         
         if not response.data:
             raise HTTPException(
@@ -152,7 +159,9 @@ async def update_project(
         supabase = connection_pool_manager.get_supabase_client()
         
         # Check if project exists and belongs to user
-        existing_response = supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"]).execute()
+        existing_response = await execute_supabase_operation(
+            supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"])
+        )
         
         if not existing_response.data:
             raise HTTPException(
@@ -164,7 +173,9 @@ async def update_project(
         update_data = project_data.dict(exclude_unset=True)
         update_data["updated_at"] = datetime.now().isoformat()
         
-        response = supabase.table("projects").update(update_data).eq("id", project_id).execute()
+        response = await execute_supabase_operation(
+            supabase.table("projects").update(update_data).eq("id", project_id)
+        )
         
         if not response.data:
             raise HTTPException(
@@ -204,7 +215,9 @@ async def delete_project(
         supabase = connection_pool_manager.get_supabase_client()
         
         # Check if project exists and belongs to user
-        existing_response = supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"]).execute()
+        existing_response = await execute_supabase_operation(
+            supabase.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"])
+        )
         
         if not existing_response.data:
             raise HTTPException(
@@ -213,7 +226,9 @@ async def delete_project(
             )
         
         # Soft delete project
-        response = supabase.table("projects").update({"is_active": False}).eq("id", project_id).execute()
+        response = await execute_supabase_operation(
+            supabase.table("projects").update({"is_active": False}).eq("id", project_id)
+        )
         
         if not response.data:
             raise HTTPException(

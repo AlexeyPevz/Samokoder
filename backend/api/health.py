@@ -10,6 +10,7 @@ from backend.core.exceptions import (
     DatabaseError, RedisError, NetworkError, 
     ConfigurationError, MonitoringError
 )
+from backend.services.supabase_manager import execute_supabase_operation
 from typing import Dict, Any
 import asyncio
 import logging
@@ -119,7 +120,9 @@ async def database_health_check():
         
         # Проверяем подключение
         start_time = datetime.now()
-        response = supabase.table("profiles").select("id").limit(1).execute()
+        response = await execute_supabase_operation(
+            supabase.table("profiles").select("id").limit(1)
+        )
         response_time = (datetime.now() - start_time).total_seconds()
         
         return {
@@ -246,7 +249,9 @@ async def check_external_services_health() -> Dict[str, str]:
             try:
                 from backend.services.connection_manager import connection_manager
                 supabase = connection_manager.get_pool('supabase')
-                supabase.table("profiles").select("id").limit(1).execute()
+                await execute_supabase_operation(
+                    supabase.table("profiles").select("id").limit(1)
+                )
                 external_services["supabase"] = "healthy"
             except Exception as e:
                 external_services["supabase"] = f"unhealthy: {str(e)}"
