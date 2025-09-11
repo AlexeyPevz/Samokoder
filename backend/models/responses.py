@@ -311,3 +311,29 @@ class MetricsResponse(BaseModel):
     error_rate: float = Field(..., description="Процент ошибок")
     active_users: int = Field(..., description="Активные пользователи")
     active_projects: int = Field(..., description="Активные проекты")
+
+# === ФАЙЛЫ ===
+
+class FileInfo(BaseModel):
+    """Информация о файле"""
+    filename: str = Field(..., description="Имя файла")
+    size: int = Field(..., description="Размер файла в байтах")
+    created_at: str = Field(..., description="Время создания")
+    modified_at: str = Field(..., description="Время изменения")
+    extension: str = Field(..., description="Расширение файла")
+    mime_type: str = Field(..., description="MIME тип файла")
+
+class FileUploadResponse(BaseModel):
+    """Ответ на загрузку файла"""
+    success: bool = Field(..., description="Успешность операции")
+    message: str = Field(..., description="Сообщение")
+    file_path: Optional[str] = Field(None, description="Путь к файлу")
+    filename: Optional[str] = Field(None, description="Имя файла")
+    mime_type: Optional[str] = Field(None, description="MIME тип")
+    size: Optional[int] = Field(None, description="Размер файла")
+    file_info: Optional[FileInfo] = Field(None, description="Информация о файле")
+
+class FileInfoResponse(BaseModel):
+    """Ответ с информацией о файле"""
+    success: bool = Field(..., description="Успешность операции")
+    file_info: Optional[FileInfo] = Field(None, description="Информация о файле")

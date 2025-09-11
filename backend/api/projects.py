@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Optional
 from backend.utils.uuid_manager import generate_unique_uuid
 from backend.services.transaction_manager import transaction
+from backend.security.input_validator import validate_project_name, validate_sql_input, validate_xss_input
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,18 @@ async def create_project(
 ):
     """Create a new project"""
     try:
+        # Валидируем входные данные
+        if not validate_project_name(project_data.name):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid project name"
+            )
+        
+        if project_data.description and not validate_xss_input(project_data.description):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid project description"
+            )
         
         project_id = generate_unique_uuid("project_creation")
         workspace_path = f"workspaces/{current_user['id']}/{project_id}"

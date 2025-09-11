@@ -18,6 +18,7 @@ from backend.models.requests import LoginRequest, ChatRequest, RegisterRequest
 from backend.models.responses import SubscriptionTier, RegisterResponse
 from backend.services.connection_manager import connection_manager
 from backend.services.supabase_manager import supabase_manager, execute_supabase_operation
+from backend.security.secure_error_handler import SecureErrorHandler, ErrorSeverity
 from backend.services.project_state_manager import project_state_manager, get_active_project, add_active_project, remove_active_project, is_project_active
 from backend.core.exceptions import (
     SamokoderException, AuthenticationError, AuthorizationError, ValidationError,
@@ -35,6 +36,15 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Глобальный обработчик ошибок
+secure_error_handler = SecureErrorHandler()
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Глобальный обработчик ошибок"""
+    context = secure_error_handler.create_error_context(request, ErrorSeverity.HIGH)
+    return secure_error_handler.handle_generic_error(exc, context)
 
 # Настройка CORS
 allowed_origins = [
@@ -409,6 +419,10 @@ app.include_router(projects_router, prefix="/api/projects", tags=["Projects"])
 # === AI ===
 from backend.api.ai import router as ai_router
 app.include_router(ai_router, prefix="/api/ai", tags=["AI"])
+
+# === FILE UPLOAD ===
+from backend.api.file_upload import router as file_upload_router
+app.include_router(file_upload_router, prefix="/api/files", tags=["File Upload"])
 
 # === HEALTH CHECKS ===
 from backend.api.health import router as health_router
