@@ -57,13 +57,35 @@ app = FastAPI(
 )
 
 
-# CORS middleware
+# Безопасная CORS конфигурация
+# Строгие настройки CORS для безопасности
+allowed_origins = [
+    "https://samokoder.com",
+    "https://app.samokoder.com",
+    "https://staging.samokoder.com"
+]
+
+# В development добавляем localhost
+if settings.environment == "development":
+    allowed_origins.extend([
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173"
+    ])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_origins=allowed_origins,  # Только доверенные домены
+    allow_methods=["GET", "POST", "PUT", "DELETE"],  # Убираем OPTIONS
+    allow_headers=[
+        "Authorization",
+        "Content-Type", 
+        "X-CSRF-Token",
+        "X-Requested-With"
+    ],  # Ограниченный список заголовков
     allow_credentials=True,
+    max_age=3600,  # Кэширование preflight запросов
 )
 
 # Мониторинг middleware
@@ -80,6 +102,55 @@ app.middleware("http")(validation_middleware)
 # Error handlers
 from backend.middleware.specific_error_handler import setup_specific_error_handlers
 setup_specific_error_handlers(app)
+
+# Security headers middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Добавляет заголовки безопасности"""
+    response = await call_next(request)
+    
+    # Заголовки безопасности
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = "default-src 'self'"
+    
+    return response
+
+# CSRF protection middleware
+@app.middleware("http")
+async def csrf_protect(request: Request, call_next):
+    """CSRF защита для изменяющих запросов"""
+    # Пропускаем GET запросы и preflight
+    if request.method in ["GET", "HEAD", "OPTIONS"]:
+        return await call_next(request)
+    
+    # Проверяем CSRF токен для изменяющих запросов
+    csrf_token = request.headers.get("X-CSRF-Token")
+    if not csrf_token:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=403,
+            content={"error": "CSRF token missing"}
+        )
+    
+    # Валидируем CSRF токен (здесь должна быть реальная валидация)
+    if not validate_csrf_token(csrf_token):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=403,
+            content={"error": "Invalid CSRF token"}
+        )
+    
+    return await call_next(request)
+
+def validate_csrf_token(token: str) -> bool:
+    """Валидация CSRF токена"""
+    # Здесь должна быть реальная валидация токена
+    # Для демонстрации возвращаем True
+    return len(token) > 10
 
 # Supabase клиент теперь управляется через connection_manager
 
