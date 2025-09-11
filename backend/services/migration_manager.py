@@ -2,11 +2,12 @@
 Migration Manager для управления миграциями БД
 """
 import asyncio
+import os
 import subprocess
 import logging
 from pathlib import Path
 from typing import Optional, List
-from config.settings import settings
+from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +151,7 @@ class MigrationManager:
         
         return {
             "current_revision": current,
+            "history": history,
             "total_migrations": len(history),
             "is_up_to_date": current and " (head)" in str(history[-1]) if history else False
         }

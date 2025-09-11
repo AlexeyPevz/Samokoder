@@ -1,6 +1,6 @@
 # FastAPI и веб-сервер
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
 python-multipart==0.0.6
 
 # Supabase
@@ -13,6 +13,7 @@ cryptography>=42.0.0
 # HTTP клиенты
 httpx<0.28
 aiohttp==3.9.1
+starlette>=0.37.2
 
 # AI провайдеры
 openai==1.40.6

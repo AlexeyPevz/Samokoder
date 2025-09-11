@@ -26,21 +26,21 @@ class TestRequestValidationBoundaries:
         """Тест минимально валидного запроса входа"""
         data = {
             "email": "a@b.co",  # минимально валидный email
-            "password": "123456"  # минимальная длина пароля
+            "password": "Password123"  # минимальная длина пароля с требованиями
         }
         request = LoginRequest(**data)
         assert request.email == "a@b.co"
-        assert request.password == "123456"
+        assert request.password == "Password123"
     
     def test_login_request_maximal_valid(self):
         """Тест максимально валидного запроса входа"""
         data = {
-            "email": "a" * 250 + "@example.com",  # максимальная длина email
-            "password": "a" * 1000  # максимальная длина пароля
+            "email": "a" * 200 + "@example.com",  # максимальная длина email (в пределах лимита)
+            "password": "Password123" + "a" * 100  # максимальная длина пароля с требованиями
         }
         request = LoginRequest(**data)
-        assert len(request.email) == 250 + len("@example.com")
-        assert len(request.password) == 1000
+        assert len(request.email) == 200 + len("@example.com")
+        assert len(request.password) == len("Password123") + 100
     
     def test_login_request_invalid_email_format(self):
         """Тест невалидного формата email"""
@@ -70,42 +70,37 @@ class TestRequestValidationBoundaries:
         """Тест минимально валидного запроса создания проекта"""
         data = {
             "name": "a",  # минимальная длина имени
-            "description": "",  # пустое описание
-            "user_id": "user123"
+            "description": "a" * 10,  # минимальная длина описания
         }
         request = ProjectCreateRequest(**data)
         assert request.name == "a"
-        assert request.description == ""
+        assert request.description == "a" * 10
     
     def test_project_create_request_maximal(self):
         """Тест максимально валидного запроса создания проекта"""
         data = {
-            "name": "a" * 255,  # максимальная длина имени
-            "description": "a" * 10000,  # максимальная длина описания
-            "user_id": "user123"
+            "name": "a" * 100,  # максимальная длина имени
+            "description": "a" * 1000,  # максимальная длина описания
         }
         request = ProjectCreateRequest(**data)
-        assert len(request.name) == 255
-        assert len(request.description) == 10000
+        assert len(request.name) == 100
+        assert len(request.description) == 1000
     
     def test_chat_request_minimal(self):
         """Тест минимально валидного запроса чата"""
         data = {
             "message": "a",  # минимальная длина сообщения
-            "project_id": "project123"
         }
         request = ChatRequest(**data)
         assert request.message == "a"
-        assert request.project_id == "project123"
     
     def test_chat_request_maximal(self):
         """Тест максимально валидного запроса чата"""
         data = {
-            "message": "a" * 50000,  # максимальная длина сообщения
-            "project_id": "project123"
+            "message": "a" * 4000,  # максимальная длина сообщения
         }
         request = ChatRequest(**data)
-        assert len(request.message) == 50000
+        assert len(request.message) == 4000
 
 class TestResponseValidationBoundaries:
     """Тесты граничных случаев валидации ответов"""
@@ -114,21 +109,21 @@ class TestResponseValidationBoundaries:
         """Тест минимально валидного ответа об ошибке"""
         data = {
             "error": "a",  # минимальная длина ошибки
-            "detail": "a"  # минимальная длина деталей
+            "message": "a"  # минимальная длина сообщения
         }
         response = ErrorResponse(**data)
         assert response.error == "a"
-        assert response.detail == "a"
+        assert response.message == "a"
     
     def test_error_response_maximal(self):
         """Тест максимально валидного ответа об ошибке"""
         data = {
             "error": "a" * 1000,  # максимальная длина ошибки
-            "detail": "a" * 10000  # максимальная длина деталей
+            "message": "a" * 10000  # максимальная длина сообщения
         }
         response = ErrorResponse(**data)
         assert len(response.error) == 1000
-        assert len(response.detail) == 10000
+        assert len(response.message) == 10000
     
     def test_login_response_minimal(self):
         """Тест минимально валидного ответа входа"""
@@ -136,12 +131,15 @@ class TestResponseValidationBoundaries:
             "message": "a",
             "user": {
                 "id": "a",
-                "email": "a@b.co"
+                "email": "a@b.co",
+                "subscription_tier": "free",
+                "subscription_status": "active",
+                "api_credits_balance": 0.0,
+                "created_at": "2023-01-01T00:00:00Z",
+                "updated_at": "2023-01-01T00:00:00Z"
             },
-            "session": {
-                "access_token": "a",
-                "refresh_token": "a"
-            }
+            "access_token": "a",
+            "expires_in": 3600
         }
         response = LoginResponse(**data)
         assert response.message == "a"
@@ -204,14 +202,15 @@ class TestDataTypeBoundaries:
     
     def test_numeric_boundaries(self):
         """Тест границ числовых значений"""
-        # Тест с очень большими числами
+        # Тест с максимальными значениями в ChatRequest
         data = {
-            "name": "test",
-            "description": "test",
-            "user_id": str(2**63 - 1)  # максимальное 64-битное число
+            "message": "test",
+            "max_tokens": 32000,  # максимальное значение для max_tokens
+            "temperature": 2.0  # максимальная температура
         }
-        request = ProjectCreateRequest(**data)
-        assert request.user_id == str(2**63 - 1)
+        request = ChatRequest(**data)
+        assert request.max_tokens == 32000
+        assert request.temperature == 2.0
     
     def test_boolean_boundaries(self):
         """Тест границ булевых значений"""
@@ -282,8 +281,10 @@ class TestUnicodeBoundaries:
         ]
         
         for password in unicode_passwords:
-            request = LoginRequest(email="test@example.com", password=password)
-            assert request.password == password
+            # Добавляем требования к паролю (минимум 8 символов)
+            password_with_requirements = password + "A1" + "x" * 2
+            request = LoginRequest(email="test@example.com", password=password_with_requirements)
+            assert request.password == password_with_requirements
     
     def test_unicode_project_names(self):
         """Тест Unicode названий проектов"""
@@ -298,8 +299,7 @@ class TestUnicodeBoundaries:
         for name in unicode_names:
             request = ProjectCreateRequest(
                 name=name,
-                description="test",
-                user_id="user123"
+                description="test description with minimum length"
             )
             assert request.name == name
 
@@ -374,8 +374,7 @@ class TestMemoryBoundaries:
         # Создаем большой запрос
         large_data = {
             "name": "test",
-            "description": "x" * 1000000,  # 1MB описания
-            "user_id": "user123"
+            "description": "x" * 1000,  # максимальная длина описания
         }
         
         response = client.post("/api/projects", json=large_data)

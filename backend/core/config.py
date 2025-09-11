@@ -67,9 +67,10 @@ class Settings(BaseSettings):
     rate_limit_ai_max_requests: int = 20
     rate_limit_ai_window_seconds: int = 60
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": False
+    }
 
 # Глобальный экземпляр настроек
 settings = Settings()

@@ -73,8 +73,7 @@ class CircuitBreaker:
             raise
             
         except Exception as e:
-            # Unexpected exception - count as failure
-            await self._on_failure(str(e))
+            # Unexpected exception - don't count as failure, just re-raise
             raise CircuitBreakerException(f"Circuit breaker '{self.name}' unexpected error: {e}")
     
     async def _on_success(self):

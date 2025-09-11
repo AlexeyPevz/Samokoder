@@ -3,7 +3,7 @@ Pydantic модели для валидации входящих запросо�
 Обеспечивают безопасность и типизацию API
 """
 
-from pydantic import BaseModel, Field, validator, EmailStr
+from pydantic import BaseModel, Field, field_validator, EmailStr
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from enum import Enum
@@ -38,7 +38,8 @@ class LoginRequest(BaseModel):
     email: EmailStr = Field(..., description="Email пользователя")
     password: str = Field(..., min_length=8, max_length=128, description="Пароль")
     
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def validate_password(cls, v):
         if not any(c.isupper() for c in v):
             raise ValueError('Пароль должен содержать хотя бы одну заглавную букву')
@@ -54,7 +55,8 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=128, description="Пароль")
     full_name: Optional[str] = Field(None, max_length=100, description="Полное имя")
     
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def validate_password(cls, v):
         if not any(c.isupper() for c in v):
             raise ValueError('Пароль должен содержать хотя бы одну заглавную букву')
@@ -73,13 +75,15 @@ class ProjectCreateRequest(BaseModel):
     tech_stack: Optional[Dict[str, Any]] = Field(None, description="Технологический стек")
     ai_config: Optional[Dict[str, Any]] = Field(None, description="Конфигурация AI")
     
-    @validator('name')
+    @field_validator('name')
+    @classmethod
     def validate_name(cls, v):
         if not v.strip():
             raise ValueError('Название проекта не может быть пустым')
         return v.strip()
     
-    @validator('description')
+    @field_validator('description')
+    @classmethod
     def validate_description(cls, v):
         if not v.strip():
             raise ValueError('Описание проекта не может быть пустым')
@@ -111,7 +115,8 @@ class ChatRequest(BaseModel):
     max_tokens: int = Field(4096, ge=1, le=32000, description="Максимальное количество токенов")
     temperature: float = Field(0.7, ge=0.0, le=2.0, description="Температура генерации")
     
-    @validator('message')
+    @field_validator('message')
+    @classmethod
     def validate_message(cls, v):
         if not v.strip():
             raise ValueError('Сообщение не может быть пустым')
@@ -131,15 +136,17 @@ class APIKeyCreateRequest(BaseModel):
     key_name: str = Field(..., min_length=1, max_length=50, description="Название ключа")
     api_key: str = Field(..., min_length=10, max_length=200, description="API ключ")
     
-    @validator('key_name')
+    @field_validator('key_name')
+    @classmethod
     def validate_key_name(cls, v):
         if not v.strip():
             raise ValueError('Название ключа не может быть пустым')
         return v.strip()
     
-    @validator('api_key')
-    def validate_api_key(cls, v, values):
-        provider = values.get('provider')
+    @field_validator('api_key')
+    @classmethod
+    def validate_api_key(cls, v, info):
+        provider = info.data.get('provider')
         if provider == AIProvider.OPENAI and not v.startswith('sk-'):
             raise ValueError('OpenAI ключ должен начинаться с "sk-"')
         if provider == AIProvider.ANTHROPIC and not v.startswith('sk-ant-'):
@@ -172,7 +179,8 @@ class FileUploadRequest(BaseModel):
     content_type: str = Field(..., max_length=100, description="Тип содержимого")
     size: int = Field(..., ge=1, le=52428800, description="Размер файла в байтах")
     
-    @validator('filename')
+    @field_validator('filename')
+    @classmethod
     def validate_filename(cls, v):
         # Проверяем на path traversal атаки
         if '..' in v or '/' in v or '\\' in v:
@@ -183,7 +191,8 @@ class FileContentRequest(BaseModel):
     """Запрос на получение содержимого файла"""
     file_path: str = Field(..., min_length=1, max_length=500, description="Путь к файлу")
     
-    @validator('file_path')
+    @field_validator('file_path')
+    @classmethod
     def validate_file_path(cls, v):
         # Проверяем на path traversal атаки
         if '..' in v or v.startswith('/') or '\\' in v:
@@ -194,7 +203,7 @@ class FileContentRequest(BaseModel):
 
 class ExportRequest(BaseModel):
     """Запрос на экспорт проекта"""
-    format: str = Field("zip", pattern="^(zip|tar|tar\.gz)$", description="Формат экспорта")
+    format: str = Field("zip", pattern=r"^(zip|tar|tar\.gz)$", description="Формат экспорта")
     include_dependencies: bool = Field(True, description="Включить зависимости")
     include_documentation: bool = Field(True, description="Включить документацию")
 
@@ -206,7 +215,8 @@ class SearchRequest(BaseModel):
     page: int = Field(1, ge=1, description="Номер страницы")
     limit: int = Field(10, ge=1, le=100, description="Количество результатов")
     
-    @validator('query')
+    @field_validator('query')
+    @classmethod
     def validate_query(cls, v):
         if not v.strip():
             raise ValueError('Поисковый запрос не может быть пустым')
@@ -218,7 +228,8 @@ class APIKeyValidationRequest(BaseModel):
     """Запрос на валидацию API ключей"""
     keys: Dict[AIProvider, str] = Field(..., description="Словарь ключей для валидации")
     
-    @validator('keys')
+    @field_validator('keys')
+    @classmethod
     def validate_keys_dict(cls, v):
         if not v:
             raise ValueError('Словарь ключей не может быть пустым')

@@ -284,7 +284,7 @@ class TestConfigurationSecurity:
         }, clear=True):
             issues = config_security.check_environment_security()
             assert len(issues) > 0
-            assert any("DEBUG" in issue for issue in issues)
+            assert any("Debug mode" in issue for issue in issues)
             assert any("HTTPS" in issue for issue in issues)
     
     def test_security_report_generation(self, config_security):
@@ -403,7 +403,9 @@ class TestConfigurationSecurity:
         with patch.dict(os.environ, {
             "DATABASE_URL": "postgresql://test:test@localhost/test",
             "JWT_SECRET": "test_secret",
-            "ENCRYPTION_KEY": "test_key"
+            "ENCRYPTION_KEY": "test_key",
+            "DEBUG": "false",
+            "HTTPS_ONLY": "true"
         }):
             env_issues = config_security.check_environment_security()
             assert len(env_issues) == 0
