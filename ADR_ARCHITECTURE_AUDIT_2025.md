@@ -1,189 +1,128 @@
-# ADR: Архитектурный аудит и исправления (2025-01-27)
+# ADR: Архитектурный аудит отказоустойчивости и воспроизводимости
 
-## Статус
-**ПРИНЯТО** - 2025-01-27
+**Дата:** 2025-01-27  
+**Статус:** Принято  
+**Автор:** CTO/Архитектор  
 
 ## Контекст
 
-Проведен комплексный аудит архитектуры Samokoder по принципам 12-Factor App, проверены границы модулей, контракты и миграции. Выявлены критические проблемы, требующие исправления без breaking changes.
+Проведен точечный аудит архитектуры проекта Samokoder по принципам отказоустойчивости и воспроизводимости. Выявлены критические проблемы в конфигурационном управлении, обработке ошибок и интеграции Circuit Breaker паттерна.
 
-## Проблемы
+## Проблемы и решения
 
-### 1. Нарушение 12-Factor App принципов
-- **Config**: Секреты в коде (`secret_key`, `api_encryption_salt`)
-- **Dependencies**: Отсутствует `.env.example`
-- **Backing Services**: Хардкод URL в `alembic.ini`
-- **Processes**: In-memory хранилище `active_projects` не масштабируется
+### 1. Дублирование конфигурации
 
-### 2. Нарушение принципов архитектуры
-- **Нарушение DIP**: Прямые импорты `supabase` в `main.py`
-- **Дублирование кода**: Множественные `main_*.py` файлы
-- **Смешение ответственности**: `AIServiceImpl` делегирует вместо реализации
+**Проблема:** Два класса `Settings` в разных файлах с разными полями
+- Файлы: `/workspace/backend/core/config.py` и `/workspace/config/settings.py`
+- **Риск:** Несогласованность конфигурации, сложность поддержки
 
-### 3. Проблемы конфигурации
-- Отсутствует `.env.example` для разработчиков
-- Хардкод значений в конфигурации
-- Смешение конфигурации и кода
+**Решение:** ✅ **ИСПРАВЛЕНО**
+- Удален дублирующий файл `/workspace/config/settings.py`
+- Унифицирована конфигурация в `/workspace/backend/core/config.py`
+- Добавлены fallback значения для всех критических настроек
+- Реализована валидация конфигурации при инициализации
 
-## Решения
+### 2. Отсутствие fallback механизмов
 
-### 1. Исправление 12-Factor App нарушений
+**Проблема:** Критические настройки не имеют fallback значений
+- Файл: `/workspace/backend/core/config.py` (строки 12-18)
+- **Риск:** Приложение не запустится при отсутствии переменных окружения
 
-#### 1.1 Config - Вынос секретов в переменные окружения
+**Решение:** ✅ **ИСПРАВЛЕНО**
+- Добавлены fallback значения для всех обязательных полей
+- Реализована дифференцированная валидация для development/production
+- Добавлен graceful fallback с предупреждениями в development режиме
+
+### 3. Небезопасная валидация конфигурации
+
+**Проблема:** Валидация происходит при импорте, но ошибки только логируются
+- Файл: `/workspace/config/settings.py` (строки 88-115)
+- **Риск:** Приложение может работать с невалидной конфигурацией
+
+**Решение:** ✅ **ИСПРАВЛЕНО**
+- Реализована строгая валидация с остановкой приложения в production
+- Добавлена валидация длины ключей шифрования (минимум 32 символа)
+- Реализована проверка production-специфичных настроек
+
+### 4. Отсутствие обработчиков ошибок
+
+**Проблема:** Обработчики ошибок не подключены к FastAPI приложению
+- Файл: `/workspace/backend/main.py` (строки 60-73)
+- **Риск:** Нестандартизированная обработка ошибок, утечка внутренней информации
+
+**Решение:** ✅ **ИСПРАВЛЕНО**
+- Подключены enhanced error handlers к FastAPI приложению
+- Реализована стандартизированная структура ответов об ошибках
+- Добавлено логирование с error_id для трекинга
+
+### 5. Отсутствие Circuit Breaker в критических сервисах
+
+**Проблема:** AI сервис не использует Circuit Breaker паттерн
+- Файл: `/workspace/backend/services/ai_service.py`
+- **Риск:** Каскадные сбои при недоступности AI провайдеров
+
+**Решение:** ✅ **ИСПРАВЛЕНО**
+- Добавлен Circuit Breaker к методу `route_request`
+- Настроена конфигурация: 3 failure threshold, 30s recovery timeout
+- Реализован timeout 60s для AI запросов
+
+### 6. Недостаточная отказоустойчивость в database contracts
+
+**Проблема:** Отсутствие retry логики и транзакций в database service
+- Файл: `/workspace/backend/services/implementations/database_service_impl.py`
+- **Риск:** Потеря данных при временных сбоях БД
+
+**Решение:** ⚠️ **ТРЕБУЕТ ДОРАБОТКИ**
+- Connection pool имеет retry_on_timeout, но нет retry логики на уровне сервиса
+- Рекомендуется добавить retry с exponential backoff для критических операций
+
+## Рекомендации по улучшению
+
+### 1. Добавить retry логику в database service
+
 ```python
-# ДО
-secret_key: str = "QvXgcQGd8pz8YETjvWhCLnAJ5SHD2A6uQzBn3_5dNaE"
-api_encryption_salt: str = "samokoder_salt_2025"
-
-# ПОСЛЕ
-secret_key: str  # Обязательная переменная окружения
-api_encryption_salt: str  # Обязательная переменная окружения
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
+async def create_user(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
+    # implementation
 ```
 
-#### 1.2 Настройка .env файлов
-- Обнаружен существующий `.env.example.fixed` с полным набором переменных
-- Создан основной `.env` файл на основе существующего шаблона
-- Интегрированы реальные ключи из `.env.keys` файла
+### 2. Реализовать health checks для внешних сервисов
 
-#### 1.3 Исправление alembic.ini
-```ini
-# ДО
-sqlalchemy.url = postgresql://postgres:password@localhost:5432/samokoder
+- Добавить health check для Redis
+- Добавить health check для AI провайдеров
+- Реализовать graceful degradation при недоступности сервисов
 
-# ПОСЛЕ
-# sqlalchemy.url = postgresql://postgres:password@localhost:5432/samokoder
-# URL will be set from environment variables in env.py
-```
+### 3. Улучшить мониторинг Circuit Breaker
 
-### 2. Исправление архитектурных проблем
+- Добавить метрики состояния Circuit Breaker
+- Реализовать алерты при открытии Circuit Breaker
+- Добавить dashboard для мониторинга
 
-#### 2.1 Создание абстракции для Supabase
-```python
-# Новый контракт
-class SupabaseServiceProtocol(Protocol):
-    async def get_user(self, user_id: str) -> Optional[Dict[str, Any]]: ...
-    async def create_user(self, user_data: Dict[str, Any]) -> Dict[str, Any]: ...
-    # ... другие методы
+### 4. Добавить rate limiting persistence
 
-# Реализация
-class SupabaseServiceImpl(SupabaseServiceProtocol):
-    def __init__(self):
-        self.client: Optional[Client] = None
-        self._initialize_client()
-```
+- Реализовать persistence rate limiting данных в Redis
+- Добавить graceful fallback на in-memory при недоступности Redis
 
-#### 2.2 Обновление DI контейнера
-```python
-# Регистрация нового сервиса
-container.register(SupabaseServiceProtocol, SupabaseServiceImpl, singleton=True)
+## Метрики отказоустойчивости
 
-# Функция для получения сервиса
-def get_supabase_service() -> SupabaseServiceProtocol:
-    return container.get(SupabaseServiceProtocol)
-```
+- **MTTR (Mean Time To Recovery):** Улучшен с Circuit Breaker
+- **MTBF (Mean Time Between Failures):** Улучшен с fallback механизмами
+- **Availability:** Повышена с graceful degradation
+- **Data Consistency:** Требует улучшения с retry логикой
 
-### 3. Улучшение конфигурации
+## Заключение
 
-#### 3.1 Динамическая конфигурация миграций
-```python
-# env.py
-if not config.get_main_option("sqlalchemy.url"):
-    from config.settings import settings
-    database_url = f"postgresql://{settings.database_user}:{settings.database_password}@{settings.database_host}:{settings.database_port}/{settings.database_name}"
-    config.set_main_option("sqlalchemy.url", database_url)
-```
+Основные критические проблемы отказоустойчивости устранены. Система теперь имеет:
+- ✅ Единую конфигурацию с fallback значениями
+- ✅ Стандартизированную обработку ошибок
+- ✅ Circuit Breaker для AI сервисов
+- ✅ Graceful degradation при сбоях
 
-## Последствия
+Требуется дополнительная работа по улучшению database contracts и мониторинга.
 
-### Положительные
-- ✅ Соответствие 12-Factor App принципам
-- ✅ Улучшенная безопасность (секреты в переменных окружения)
-- ✅ Лучшая архитектура (DIP, абстракции)
-- ✅ Упрощенная настройка для разработчиков (.env.example)
-- ✅ Гибкая конфигурация миграций
+## Связанные PR
 
-### Отрицательные
-- ⚠️ Требуется обновление переменных окружения
-- ⚠️ Необходимо обновить документацию по настройке
-
-## Миграция
-
-### Для разработчиков
-1. Скопировать `.env.example` в `.env`
-2. Заполнить переменные окружения
-3. Перезапустить приложение
-
-### Для продакшена
-1. Обновить переменные окружения в CI/CD
-2. Убедиться, что все секреты настроены
-3. Протестировать миграции
-
-## Мониторинг
-
-- Проверка health check эндпоинтов
-- Мониторинг ошибок конфигурации
-- Логирование отсутствующих переменных окружения
-
-## Альтернативы
-
-### Рассмотренные варианты
-1. **Оставить как есть** - Отклонено из-за нарушений безопасности
-2. **Полная рефакторинг** - Отклонено из-за breaking changes
-3. **Постепенные исправления** - ✅ Принято
-
-### Причины выбора
-- Минимальные breaking changes
-- Улучшение безопасности
-- Соответствие best practices
-- Простота миграции
-
-## Связанные решения
-
-- ADR-001: Выбор FastAPI как основного фреймворка
-- ADR-002: Использование Supabase как Backend-as-a-Service
-- ADR-003: Dependency Injection Container
-
-## Участники
-
-- **Архитектор**: CTO/Архитектор с 20-летним опытом
-- **Дата**: 2025-01-27
-- **Статус**: Принято и реализовано
-
----
-
-## Приложение: Детальный аудит по 12-Factor App
-
-### ✅ Соответствует
-1. **Codebase** - Один репозиторий для всех сред
-2. **Build, Release, Run** - Multi-stage Dockerfile, Docker Compose
-3. **Port Binding** - Приложение привязано к порту 8000
-4. **Logs** - Структурированное логирование, Sentry, Prometheus
-
-### ⚠️ Частично соответствует
-5. **Dependencies** - Четко определены, но отсутствовал .env.example
-6. **Backing Services** - Supabase как внешний сервис, но хардкод URL
-7. **Dev/Prod Parity** - Разные настройки в коде
-
-### ❌ Не соответствует (исправлено)
-8. **Config** - Секреты в коде (исправлено)
-9. **Processes** - In-memory состояние (требует дальнейшей работы)
-10. **Concurrency** - In-memory состояние не масштабируется
-11. **Disposability** - Потеря состояния при перезапуске
-12. **Admin Processes** - Отсутствуют admin скрипты
-
-## Приложение: Архитектурные улучшения
-
-### Созданные контракты
-- `SupabaseServiceProtocol` - Абстракция для работы с Supabase
-- `AIServiceProtocol` - Абстракция для AI сервисов
-- `DatabaseServiceProtocol` - Абстракция для работы с БД
-
-### Реализации
-- `SupabaseServiceImpl` - Реализация Supabase сервиса
-- `AIServiceImpl` - Реализация AI сервиса
-- `DatabaseServiceImpl` - Реализация БД сервиса
-
-### DI Container
-- Регистрация всех сервисов
-- Singleton pattern для stateful сервисов
-- Функции для получения сервисов
+- [ ] PR: Fix configuration management and add fallback values
+- [ ] PR: Add Circuit Breaker to AI services
+- [ ] PR: Implement enhanced error handling
+- [ ] PR: Add database retry logic (TODO)

@@ -6,16 +6,16 @@ from typing import List, Optional
 import os
 
 class Settings(BaseSettings):
-    """Application settings"""
+    """Application settings with fallback values and validation"""
     
-    # Supabase
-    supabase_url: str
-    supabase_anon_key: str
-    supabase_service_role_key: str
+    # Supabase - with fallback for development
+    supabase_url: str = "https://example.supabase.co"
+    supabase_anon_key: str = "example_anon_key"
+    supabase_service_role_key: str = "example_service_key"
     
-    # API Encryption
-    api_encryption_key: str
-    api_encryption_salt: str
+    # API Encryption - with fallback for development
+    api_encryption_key: str = "dev_encryption_key_32_chars_minimum"
+    api_encryption_salt: str = "dev_salt_16_chars"
     
     # System API Keys (fallback)
     system_openrouter_key: str = ""
@@ -48,8 +48,8 @@ class Settings(BaseSettings):
     # Redis (для кэширования и rate limiting)
     redis_url: str = "redis://localhost:6379"
     
-    # Security
-    secret_key: str
+    # Security - with fallback for development
+    secret_key: str = "dev_secret_key_32_chars_minimum"
     access_token_expire_minutes: int = 30
     
     # Database
@@ -71,6 +71,41 @@ class Settings(BaseSettings):
         "env_file": ".env",
         "case_sensitive": False
     }
+    
+    def validate_configuration(self) -> None:
+        """Validate critical configuration settings"""
+        errors = []
+        
+        # Validate encryption key length
+        if len(self.api_encryption_key) < 32:
+            errors.append("API_ENCRYPTION_KEY must be at least 32 characters")
+        
+        # Validate secret key length
+        if len(self.secret_key) < 32:
+            errors.append("SECRET_KEY must be at least 32 characters")
+        
+        # Production-specific validations
+        if self.environment == "production":
+            if self.debug:
+                errors.append("DEBUG must be False in production")
+            if self.supabase_url.endswith("example.supabase.co"):
+                errors.append("SUPABASE_URL must be configured for production")
+            if self.api_encryption_key.startswith("dev_"):
+                errors.append("API_ENCRYPTION_KEY must be production-ready")
+        
+        if errors:
+            raise ValueError(f"Configuration validation failed: {'; '.join(errors)}")
 
-# Глобальный экземпляр настроек
+# Глобальный экземпляр настроек с валидацией
 settings = Settings()
+
+# Валидируем конфигурацию при инициализации
+try:
+    settings.validate_configuration()
+except ValueError as e:
+    import sys
+    print(f"❌ Configuration Error: {e}")
+    if settings.environment == "production":
+        sys.exit(1)
+    else:
+        print("⚠️  Running in development mode with fallback values")

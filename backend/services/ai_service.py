@@ -18,6 +18,7 @@ from openai import AsyncOpenAI
 from anthropic import AsyncAnthropic
 
 from config.settings import settings
+from backend.patterns.circuit_breaker import circuit_breaker, CircuitBreakerConfig
 
 logger = logging.getLogger(__name__)
 
@@ -376,6 +377,12 @@ class AIService:
                 )
             # Если нет системных ключей, оставляем clients пустым
     
+    @circuit_breaker("ai_service", CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=30,
+        success_threshold=2,
+        timeout=60
+    ))
     async def route_request(self, 
                           messages: List[Dict[str, str]], 
                           model: str = None, 

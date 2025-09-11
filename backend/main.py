@@ -68,6 +68,10 @@ app.middleware("http")(rate_limit_middleware)
 from backend.middleware.validation_middleware import validation_middleware
 app.middleware("http")(validation_middleware)
 
+# Error handlers
+from backend.middleware.enhanced_error_handler import setup_error_handlers
+setup_error_handlers(app)
+
 # Supabase клиент (с проверкой URL)
 supabase = None
 try:
