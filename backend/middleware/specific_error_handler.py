@@ -11,11 +11,14 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 try:
-    from sqlalchemy.exceptions import SQLAlchemyError
+    from sqlalchemy.exc import SQLAlchemyError
 except ImportError:
-    # Fallback для случаев когда SQLAlchemy не установлен
-    class SQLAlchemyError(Exception):
-        pass
+    try:
+        from sqlalchemy.exceptions import SQLAlchemyError
+    except ImportError:
+        # Fallback для случаев когда SQLAlchemy не установлен
+        class SQLAlchemyError(Exception):
+            pass
 from redis.exceptions import RedisError
 from httpx import HTTPError, TimeoutException, ConnectError
 from pydantic import ValidationError
