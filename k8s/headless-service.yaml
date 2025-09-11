@@ -1,12 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: samokoder-backend-service
+  name: samokoder-backend-headless
   namespace: samokoder
   labels:
     app: samokoder-backend
 spec:
   type: ClusterIP
+  clusterIP: None
   ports:
   - port: 8000
     targetPort: 8000
