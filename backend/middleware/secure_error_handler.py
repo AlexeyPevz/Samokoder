@@ -17,6 +17,16 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 logger = structlog.get_logger(__name__)
 
 @dataclass
+class ErrorResponseParams:
+    """Параметры для создания ответа об ошибке"""
+    error: str
+    detail: str
+    status_code: int
+    error_code: Optional[str] = None
+    request: Optional[Request] = None
+    show_details: bool = False
+
+@dataclass
 class ErrorContext:
     """Контекст ошибки для группировки связанных параметров"""
     path: Optional[str] = None
@@ -76,42 +86,35 @@ class SecureErrorResponse:
         
         return response
 
-def create_secure_error_response(
-    error: str,
-    detail: str,
-    status_code: int,
-    error_code: str = None,
-    request: Request = None,
-    show_details: bool = False
-) -> JSONResponse:
+def create_secure_error_response(params: ErrorResponseParams) -> JSONResponse:
     """Создать безопасный ответ об ошибке"""
     
     # В production скрываем детали
-    if not show_details:
+    if not params.show_details:
         # Общие сообщения для пользователей
-        if status_code == 500:
-            detail = "Внутренняя ошибка сервера. Обратитесь к администратору."
-        elif status_code == 404:
-            detail = "Ресурс не найден."
-        elif status_code == 403:
-            detail = "Доступ запрещен."
-        elif status_code == 401:
-            detail = "Требуется аутентификация."
-        elif status_code == 400:
-            detail = "Некорректный запрос."
+        if params.status_code == 500:
+            params.detail = "Внутренняя ошибка сервера. Обратитесь к администратору."
+        elif params.status_code == 404:
+            params.detail = "Ресурс не найден."
+        elif params.status_code == 403:
+            params.detail = "Доступ запрещен."
+        elif params.status_code == 401:
+            params.detail = "Требуется аутентификация."
+        elif params.status_code == 400:
+            params.detail = "Некорректный запрос."
     
     # Создаем детали ошибки
     error_details = ErrorDetails(
-        error=error,
-        detail=detail,
-        error_code=error_code,
-        show_details=show_details
+        error=params.error,
+        detail=params.detail,
+        error_code=params.error_code,
+        show_details=params.show_details
     )
     
     # Создаем контекст ошибки
     context = ErrorContext(
-        path=request.url.path if request else None,
-        method=request.method if request else None
+        path=params.request.url.path if params.request else None,
+        method=params.request.method if params.request else None
     )
     
     error_response = SecureErrorResponse(
@@ -122,18 +125,18 @@ def create_secure_error_response(
     # Логируем ошибку безопасно
     logger.error(
         "api_error",
-        error=error,
-        error_code=error_code,
+        error=params.error,
+        error_code=params.error_code,
         error_id=error_response.error_id,
-        status_code=status_code,
-        path=request.url.path if request else None,
-        method=request.method if request else None,
+        status_code=params.status_code,
+        path=params.request.url.path if params.request else None,
+        method=params.request.method if params.request else None,
         # НЕ логируем детали ошибки в production
-        details=detail if show_details else "hidden"
+        details=params.detail if params.show_details else "hidden"
     )
     
     return JSONResponse(
-        status_code=status_code,
+        status_code=params.status_code,
         content=error_response.to_dict()
     )
 
