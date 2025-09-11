@@ -237,6 +237,50 @@ class DetailedHealthResponse(BaseModel):
     memory_usage: Dict[str, Any] = Field(..., description="Использование памяти")
     disk_usage: Dict[str, Any] = Field(..., description="Использование диска")
 
+# === MFA ===
+
+class MFASetupResponse(BaseModel):
+    """Ответ на настройку MFA"""
+    secret: str = Field(..., description="TOTP секрет")
+    qr_code: str = Field(..., description="QR код в base64")
+    backup_codes: List[str] = Field(..., description="Резервные коды")
+
+class MFAVerifyResponse(BaseModel):
+    """Ответ на проверку MFA"""
+    verified: bool = Field(..., description="Код подтвержден")
+    message: str = Field(..., description="Сообщение")
+
+# === RBAC ===
+
+class RoleResponse(BaseModel):
+    """Ответ с информацией о роли"""
+    id: str = Field(..., description="ID роли")
+    name: str = Field(..., description="Название роли")
+    description: str = Field(..., description="Описание роли")
+    permissions: List[str] = Field(..., description="Список разрешений")
+
+class PermissionResponse(BaseModel):
+    """Ответ с информацией о разрешении"""
+    id: str = Field(..., description="ID разрешения")
+    name: str = Field(..., description="Название разрешения")
+    description: str = Field(..., description="Описание разрешения")
+
+# === API КЛЮЧИ ===
+
+class APIKeyResponse(BaseModel):
+    """Ответ с информацией об API ключе"""
+    id: str = Field(..., description="ID ключа")
+    provider: str = Field(..., description="AI провайдер")
+    key_name: str = Field(..., description="Название ключа")
+    key_last_4: str = Field(..., description="Последние 4 символа ключа")
+    is_active: bool = Field(..., description="Активен ли ключ")
+    created_at: str = Field(..., description="Дата создания")
+
+class APIKeyListResponse(BaseModel):
+    """Ответ со списком API ключей"""
+    keys: List[APIKeyResponse] = Field(..., description="Список ключей")
+    total_count: int = Field(..., description="Общее количество ключей")
+
 # === МЕТРИКИ ===
 
 class MetricsResponse(BaseModel):
