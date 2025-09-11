@@ -78,6 +78,10 @@ class CacheError(SamokoderException):
     """Ошибка кэша"""
     pass
 
+class RedisError(SamokoderException):
+    """Ошибка Redis"""
+    pass
+
 class MonitoringError(SamokoderException):
     """Ошибка мониторинга"""
     pass

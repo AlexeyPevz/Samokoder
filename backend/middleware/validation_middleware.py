@@ -163,6 +163,11 @@ async def validation_middleware(request: Request, call_next: Callable):
         # Продолжаем обработку запроса
         response = await call_next(request)
         return response
+        
+    except Exception as e:
+        logger.error(f"Validation middleware error: {e}")
+        # В случае ошибки в middleware, пропускаем запрос
+        return await call_next(request)
 
 # Monkey patch для FastAPI Request чтобы поддерживать кэшированное тело
 def _get_cached_body(self):
@@ -174,11 +179,6 @@ def _get_cached_body(self):
 # Добавляем метод к Request классу
 from fastapi import Request
 Request.get_cached_body = _get_cached_body
-        
-    except Exception as e:
-        logger.error(f"Validation middleware error: {e}")
-        # В случае ошибки в middleware, пропускаем запрос
-        return await call_next(request)
 
 async def _check_forbidden_patterns(data: dict, path: str) -> bool:
     """
