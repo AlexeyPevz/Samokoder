@@ -13,12 +13,14 @@ import jwt
 import time
 import hashlib
 import secrets
+import bcrypt
+from backend.utils.secure_logging import get_secure_logger
 
 from config.settings import settings
 from backend.services.connection_manager import connection_manager
 from backend.services.supabase_manager import execute_supabase_operation
 
-logger = logging.getLogger(__name__)
+logger = get_secure_logger(__name__)
 
 security = HTTPBearer(auto_error=False)
 
@@ -33,16 +35,33 @@ def validate_jwt_token(token: str) -> bool:
         if not token or len(token.split('.')) != 3:
             return False
         
-        # Декодируем без проверки подписи для получения payload
-        payload = jwt.decode(token, options={"verify_signature": False})
+        # Получаем секретный ключ для проверки подписи
+        secret_key = settings.secret_key
+        if not secret_key:
+            logger.error("JWT secret key not configured")
+            return False
         
-        # Проверяем срок действия
+        # Декодируем с проверкой подписи
+        payload = jwt.decode(
+            token, 
+            secret_key, 
+            algorithms=["HS256"],
+            options={"verify_exp": True, "verify_signature": True}
+        )
+        
+        # Дополнительные проверки
         if 'exp' in payload and payload['exp'] < time.time():
             return False
             
         return True
+    except jwt.ExpiredSignatureError:
+        logger.warning("JWT token expired")
+        return False
+    except jwt.InvalidTokenError as e:
+        logger.warning("Invalid JWT token", error=str(e))
+        return False
     except Exception as e:
-        logger.warning(f"JWT validation error: {e}")
+        logger.warning("JWT validation error", error=str(e))
         return False
 
 async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Dict:
@@ -167,17 +186,39 @@ def secure_password_validation(password: str) -> bool:
     
     return has_upper and has_lower and has_digit and has_special
 
-def hash_password(password: str, salt: bytes = None) -> tuple[str, bytes]:
-    """Безопасное хеширование пароля"""
-    if salt is None:
-        salt = secrets.token_bytes(32)
-    
-    password_hash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
-    return password_hash.hex(), salt
+def hash_password(password: str) -> str:
+    """Безопасное хеширование пароля с использованием bcrypt"""
+    # bcrypt автоматически генерирует соль и включает её в хеш
+    password_bytes = password.encode('utf-8')
+    hashed = bcrypt.hashpw(password_bytes, bcrypt.gensalt(rounds=12))
+    return hashed.decode('utf-8')
 
-def verify_password(password: str, stored_hash: str, salt: bytes) -> bool:
-    """Проверка пароля"""
-    password_hash, _ = hash_password(password, salt)
-    return password_hash == stored_hash
+def verify_password(password: str, stored_hash: str) -> bool:
+    """Проверка пароля с защитой от timing attack"""
+    if not password or not stored_hash:
+        return False
+    
+    password_bytes = password.encode('utf-8')
+    stored_hash_bytes = stored_hash.encode('utf-8')
+    
+    try:
+        # Проверяем формат bcrypt хеша
+        if not stored_hash.startswith('$2b$') and not stored_hash.startswith('$2a$'):
+            # Невалидный формат - выполняем фиктивное сравнение для constant-time
+            dummy_hash = bcrypt.gensalt()
+            bcrypt.checkpw(password_bytes, dummy_hash)
+            return False
+        
+        # bcrypt.checkpw использует constant-time сравнение
+        return bcrypt.checkpw(password_bytes, stored_hash_bytes)
+    except Exception as e:
+        logger.error(f"Password verification error: {e}")
+        # Выполняем фиктивное сравнение для constant-time
+        try:
+            dummy_hash = bcrypt.gensalt()
+            bcrypt.checkpw(password_bytes, dummy_hash)
+        except:
+            pass
+        return False
 
 # Остальные функции остаются без изменений...

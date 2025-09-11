@@ -11,6 +11,7 @@ from backend.services.encryption_service import get_encryption_service
 from typing import List, Dict
 import uuid
 import logging
+from backend.utils.uuid_manager import generate_unique_uuid
 from backend.services.connection_manager import connection_manager
 from backend.services.supabase_manager import execute_supabase_operation
 from backend.core.exceptions import (
@@ -44,7 +45,7 @@ async def create_api_key(
         
         # Создаем запись в базе данных
         api_key_record = {
-            "id": str(uuid.uuid4()),
+            "id": generate_unique_uuid("api_key_creation"),
             "user_id": user_id,
             "provider_name": request.provider.value,
             "key_name": request.key_name,

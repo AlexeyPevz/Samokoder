@@ -3,6 +3,9 @@ from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import json
 import uuid
+import time
+import hmac
+import hashlib
 from datetime import datetime
 from typing import Dict, Optional
 
@@ -15,6 +18,7 @@ from backend.models.requests import LoginRequest, ChatRequest, RegisterRequest
 from backend.models.responses import SubscriptionTier, RegisterResponse
 from backend.services.connection_manager import connection_manager
 from backend.services.supabase_manager import supabase_manager, execute_supabase_operation
+from backend.security.secure_error_handler import SecureErrorHandler, ErrorSeverity
 from backend.services.project_state_manager import project_state_manager, get_active_project, add_active_project, remove_active_project, is_project_active
 from backend.core.exceptions import (
     SamokoderException, AuthenticationError, AuthorizationError, ValidationError,
@@ -32,6 +36,15 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Глобальный обработчик ошибок
+secure_error_handler = SecureErrorHandler()
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Глобальный обработчик ошибок"""
+    context = secure_error_handler.create_error_context(request, ErrorSeverity.HIGH)
+    return secure_error_handler.handle_generic_error(exc, context)
 
 # Настройка CORS
 allowed_origins = [
@@ -72,17 +85,73 @@ async def security_headers_middleware(request: Request, call_next):
     # Заголовки безопасности
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    # X-XSS-Protection устарел, используем CSP
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Content-Security-Policy"] = "default-src 'self'"
+    # Более гибкий CSP для API
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: https:; "
+        "connect-src 'self' https://api.openai.com https://api.anthropic.com https://openrouter.ai; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'"
+    )
+    response.headers["Permissions-Policy"] = (
+        "geolocation=(), "
+        "microphone=(), "
+        "camera=(), "
+        "payment=(), "
+        "usb=(), "
+        "magnetometer=(), "
+        "gyroscope=(), "
+        "speaker=()"
+    )
     
     return response
 
 # CSRF защита
 def validate_csrf_token(token: str) -> bool:
-    """Простая валидация CSRF токена"""
-    return token and len(token) > 10
+    """Безопасная валидация CSRF токена с HMAC"""
+    try:
+        if not token:
+            return False
+        
+        # Получаем секретный ключ для CSRF
+        csrf_secret = settings.secret_key
+        if not csrf_secret:
+            logger.error("CSRF secret key not configured")
+            return False
+        
+        # Проверяем формат токена (должен содержать timestamp и HMAC)
+        if '.' not in token:
+            return False
+        
+        timestamp_str, hmac_signature = token.split('.', 1)
+        
+        # Проверяем timestamp (токен действителен 1 час)
+        try:
+            timestamp = int(timestamp_str)
+            current_time = int(time.time())
+            if current_time - timestamp > 3600:  # 1 час
+                return False
+        except ValueError:
+            return False
+        
+        # Проверяем HMAC
+        expected_signature = hmac.new(
+            csrf_secret.encode(),
+            timestamp_str.encode(),
+            hashlib.sha256
+        ).hexdigest()
+        
+        return hmac.compare_digest(hmac_signature, expected_signature)
+        
+    except Exception as e:
+        logger.warning(f"CSRF validation error: {e}")
+        return False
 
 @app.middleware("http")
 async def csrf_middleware(request: Request, call_next):
@@ -90,9 +159,7 @@ async def csrf_middleware(request: Request, call_next):
     if request.method in ["GET", "HEAD", "OPTIONS"]:
         return await call_next(request)
     
-    # Временно отключаем CSRF для тестирования
-    if settings.environment == "development":
-        return await call_next(request)
+    # CSRF защита включена для всех сред
     
     csrf_token = request.headers.get("X-CSRF-Token")
     if not csrf_token:
@@ -196,28 +263,21 @@ async def login(credentials: LoginRequest):
         email = credentials.email
         password = credentials.password
         
-        # Если Supabase недоступен или URL содержит example, используем mock аутентификацию
+        # Проверяем доступность Supabase
         supabase_client = supabase_manager.get_client("anon")
-        if not supabase_client or settings.supabase_url.endswith("example.supabase.co"):
-            logger.warning("supabase_unavailable", fallback="mock_auth")
-            return {
-                "success": True,
-                "message": "Успешный вход (mock режим)",
-                "user": {
-                    "id": f"mock_user_{email}",
-                    "email": email,
-                    "full_name": "Mock User",
-                    "avatar_url": None,
-                    "subscription_tier": SubscriptionTier.FREE.value,
-                    "subscription_status": "active",
-                    "api_credits_balance": 100.50,
-                    "created_at": "2025-01-01T00:00:00Z",
-                    "updated_at": "2025-01-01T00:00:00Z"
-                },
-                "access_token": f"mock_token_{email}",
-                "token_type": "bearer",
-                "expires_in": 3600
-            }
+        if not supabase_client:
+            logger.error("Supabase client not available")
+            raise HTTPException(
+                status_code=503,
+                detail="Authentication service unavailable"
+            )
+        
+        if settings.supabase_url.endswith("example.supabase.co"):
+            logger.error("Supabase URL not configured properly")
+            raise HTTPException(
+                status_code=503,
+                detail="Database configuration error"
+            )
         
         response = supabase_client.auth.sign_in_with_password({
             "email": email,
@@ -268,15 +328,20 @@ async def register(user_data: RegisterRequest):
         password = user_data.password
         full_name = user_data.full_name
         
-        # Если Supabase недоступен или URL содержит example, используем mock регистрацию
+        # Проверяем доступность Supabase
         supabase_client = supabase_manager.get_client("anon")
-        if not supabase_client or settings.supabase_url.endswith("example.supabase.co"):
-            logger.warning("supabase_unavailable", fallback="mock_register")
-            return RegisterResponse(
-                success=True,
-                message="Пользователь успешно зарегистрирован (mock режим)",
-                user_id=f"mock_user_{email}",
-                email=email
+        if not supabase_client:
+            logger.error("Supabase client not available")
+            raise HTTPException(
+                status_code=503,
+                detail="Authentication service unavailable"
+            )
+        
+        if settings.supabase_url.endswith("example.supabase.co"):
+            logger.error("Supabase URL not configured properly")
+            raise HTTPException(
+                status_code=503,
+                detail="Database configuration error"
             )
         
         # Реальная регистрация через Supabase
@@ -354,6 +419,10 @@ app.include_router(projects_router, prefix="/api/projects", tags=["Projects"])
 # === AI ===
 from backend.api.ai import router as ai_router
 app.include_router(ai_router, prefix="/api/ai", tags=["AI"])
+
+# === FILE UPLOAD ===
+from backend.api.file_upload import router as file_upload_router
+app.include_router(file_upload_router, prefix="/api/files", tags=["File Upload"])
 
 # === HEALTH CHECKS ===
 from backend.api.health import router as health_router
