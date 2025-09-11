@@ -59,18 +59,15 @@ async def login(
         
         supabase = connection_pool_manager.get_supabase_client()
         
-        # Безопасная аутентификация с хешированием
-        password_hash, salt = hash_password(credentials.password)
-        
-        # Аутентификация через Supabase (пароль уже хеширован на клиенте)
+        # Аутентификация через Supabase (пароль хешируется на стороне Supabase)
         response = supabase.auth.sign_in_with_password({
             "email": credentials.email,
-            "password": password_hash  # Хешированный пароль
+            "password": credentials.password  # Пароль в открытом виде для Supabase
         })
         
         if not response.user:
             # Логируем без чувствительных данных
-            logger.warning(f"Login failed for user: {credentials.email[:3]}***")
+            logger.warning("Login failed", email_prefix=credentials.email[:3])
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials"
@@ -136,13 +133,10 @@ async def register(
         
         supabase = connection_pool_manager.get_supabase_client()
         
-        # Хешируем пароль
-        password_hash, salt = hash_password(user_data.password)
-        
-        # Регистрация через Supabase
+        # Регистрация через Supabase (пароль хешируется на стороне Supabase)
         response = supabase.auth.sign_up({
             "email": user_data.email,
-            "password": password_hash  # Хешированный пароль
+            "password": user_data.password  # Пароль в открытом виде для Supabase
         })
         
         if not response.user:

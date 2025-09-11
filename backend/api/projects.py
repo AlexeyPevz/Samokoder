@@ -11,7 +11,10 @@ from backend.services.supabase_manager import execute_supabase_operation
 import logging
 from datetime import datetime
 import uuid
+from pathlib import Path
 from typing import Optional
+from backend.utils.uuid_manager import generate_unique_uuid
+from backend.services.transaction_manager import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +29,7 @@ async def create_project(
     """Create a new project"""
     try:
         
-        project_id = str(uuid.uuid4())
+        project_id = generate_unique_uuid("project_creation")
         workspace_path = f"workspaces/{current_user['id']}/{project_id}"
         
         # Create project record
@@ -40,19 +43,39 @@ async def create_project(
             "is_active": True
         }
         
-        response = await execute_supabase_operation(
-            lambda client: client.table("projects").insert(project_record),
-            "anon"
-        )
+        # Save to database with transaction
+        async with transaction() as txn_id:
+            response = await execute_supabase_operation(
+                lambda client: client.table("projects").insert(project_record),
+                "anon"
+            )
+            
+            if not response.data:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to create project"
+                )
         
-        if not response.data:
+        # Create workspace directory with path validation
+        try:
+            # Валидируем путь для предотвращения path traversal
+            workspace_path_obj = Path(workspace_path).resolve()
+            base_workspace = Path("workspaces").resolve()
+            
+            # Проверяем, что путь находится внутри базовой директории
+            if not str(workspace_path_obj).startswith(str(base_workspace)):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid workspace path"
+                )
+            
+            workspace_path_obj.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            logger.error(f"Failed to create workspace directory: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create project"
+                detail="Failed to create workspace directory"
             )
-        
-        # Create workspace directory
-        os.makedirs(workspace_path, exist_ok=True)
         
         return ProjectCreateResponse(
             project_id=project_id,

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, AsyncGenerator
 from datetime import datetime
 import zipfile
+from backend.services.environment_manager import isolated_environment
 
 # Добавляем путь к GPT-Pilot в sys.path
 sys.path.append(str(Path(__file__).parent.parent.parent / "samokoder-core"))
@@ -34,72 +35,54 @@ class SamokoderGPTPilot:
     
     def setup_api_config(self):
         """Настраивает API ключи из пользовательских BYOK"""
-        
-        # Приоритет: пользовательские ключи > системные fallback
-        if 'openrouter' in self.user_api_keys:
-            os.environ['OPENROUTER_API_KEY'] = self.user_api_keys['openrouter']
-            os.environ['MODEL_NAME'] = 'deepseek/deepseek-v3'  # Бесплатная модель
-            os.environ['ENDPOINT'] = 'OPENROUTER'
-        elif 'openai' in self.user_api_keys:
-            os.environ['OPENAI_API_KEY'] = self.user_api_keys['openai']
-            os.environ['MODEL_NAME'] = 'gpt-4o-mini'
-            os.environ['ENDPOINT'] = 'OPENAI'
-        elif 'anthropic' in self.user_api_keys:
-            os.environ['ANTHROPIC_API_KEY'] = self.user_api_keys['anthropic']
-            os.environ['MODEL_NAME'] = 'claude-3-haiku-20240307'
-            os.environ['ENDPOINT'] = 'ANTHROPIC'
-        elif 'groq' in self.user_api_keys:
-            os.environ['GROQ_API_KEY'] = self.user_api_keys['groq']
-            os.environ['MODEL_NAME'] = 'llama-3-8b-8192'
-            os.environ['ENDPOINT'] = 'GROQ'
-        else:
-            # Fallback на системные ключи для бесплатных моделей
-            os.environ['OPENROUTER_API_KEY'] = os.getenv('SYSTEM_OPENROUTER_KEY')
-            os.environ['MODEL_NAME'] = 'deepseek/deepseek-v3'
-            os.environ['ENDPOINT'] = 'OPENROUTER'
+        # API ключи теперь управляются через EnvironmentManager
+        # Этот метод оставлен для совместимости, но не изменяет глобальные переменные
+        pass
     
     async def initialize_project(self, app_description: str, app_name: str):
         """Инициализирует новый проект через GPT-Pilot"""
         
-        try:
-            # Создаем конфиг проекта для GPT-Pilot
-            project_config = {
-                'app': {
-                    'app_name': app_name,
-                    'app_type': 'web',
-                    'description': app_description
-                },
-                'workspace': str(self.workspace),
-                'user_id': self.user_id
-            }
-            
-            # Временно создаем заглушки до полной интеграции GPT-Pilot
-            self.project = {
-                'config': project_config,
-                'status': 'initialized',
-                'created_at': datetime.now().isoformat()
-            }
-            self.orchestrator = None
-            
-            # Создаем базовую структуру проекта
-            await self._create_basic_project_structure(app_name, app_description)
-            
-            return {
-                'project_id': self.project_id,
-                'status': 'initialized',
-                'workspace': str(self.workspace),
-                'message': 'Проект успешно инициализирован'
-            }
-            
-        except Exception as e:
-            # Логируем ошибку
-            print(f"Error initializing project {self.project_id}: {e}")
-            return {
-                'project_id': self.project_id,
-                'status': 'error',
-                'error': str(e),
-                'message': f'Ошибка инициализации проекта: {str(e)}'
-            }
+        # Используем изолированное окружение для API ключей
+        with isolated_environment(self.user_id, self.user_api_keys):
+            try:
+                # Создаем конфиг проекта для GPT-Pilot
+                project_config = {
+                    'app': {
+                        'app_name': app_name,
+                        'app_type': 'web',
+                        'description': app_description
+                    },
+                    'workspace': str(self.workspace),
+                    'user_id': self.user_id
+                }
+                
+                # Временно создаем заглушки до полной интеграции GPT-Pilot
+                self.project = {
+                    'config': project_config,
+                    'status': 'initialized',
+                    'created_at': datetime.now().isoformat()
+                }
+                self.orchestrator = None
+                
+                # Создаем базовую структуру проекта
+                await self._create_basic_project_structure(app_name, app_description)
+                
+                return {
+                    'project_id': self.project_id,
+                    'status': 'initialized',
+                    'workspace': str(self.workspace),
+                    'message': 'Проект успешно инициализирован'
+                }
+                
+            except Exception as e:
+                # Логируем ошибку
+                print(f"Error initializing project {self.project_id}: {e}")
+                return {
+                    'project_id': self.project_id,
+                    'status': 'error',
+                    'error': str(e),
+                    'message': f'Ошибка инициализации проекта: {str(e)}'
+                }
     
     async def _create_basic_project_structure(self, app_name: str, app_description: str):
         """Создает базовую структуру проекта"""
@@ -198,8 +181,9 @@ export default App;''',
     
     async def chat_with_agents(self, message: str, context: str = "chat") -> AsyncGenerator[Dict, None]:
         """Основной метод для общения с агентами GPT-Pilot"""
-        
-        if not self.project:
+        # Используем изолированное окружение для API ключей
+        with isolated_environment(self.user_id, self.user_api_keys):
+            if not self.project:
             yield {
                 'type': 'error',
                 'message': 'Проект не инициализирован',

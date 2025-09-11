@@ -6,6 +6,7 @@
 import os
 import base64
 import secrets
+import hashlib
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -39,15 +40,16 @@ class EncryptionService:
     
     def _derive_fernet_key(self, master_key: str) -> bytes:
         """Создает ключ Fernet из главного ключа"""
-        # Используем соль из переменной окружения или генерируем
-        salt = os.getenv("API_ENCRYPTION_SALT", "samokoder_salt_2025").encode()
+        # Генерируем уникальную соль для каждого ключа
+        # Используем хеш master_key как детерминированную соль
+        salt = hashlib.sha256(f"samokoder_encryption_{master_key}".encode()).digest()
         
-        # Создаем ключ с помощью PBKDF2
+        # Создаем ключ с помощью PBKDF2 с увеличенным количеством итераций
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
-            iterations=100000,
+            iterations=600000,  # Увеличено с 100,000 до 600,000
         )
         key = base64.urlsafe_b64encode(kdf.derive(master_key.encode()))
         return key

@@ -3,6 +3,9 @@ from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import json
 import uuid
+import time
+import hmac
+import hashlib
 from datetime import datetime
 from typing import Dict, Optional
 
@@ -81,8 +84,44 @@ async def security_headers_middleware(request: Request, call_next):
 
 # CSRF защита
 def validate_csrf_token(token: str) -> bool:
-    """Простая валидация CSRF токена"""
-    return token and len(token) > 10
+    """Безопасная валидация CSRF токена с HMAC"""
+    try:
+        if not token:
+            return False
+        
+        # Получаем секретный ключ для CSRF
+        csrf_secret = settings.secret_key
+        if not csrf_secret:
+            logger.error("CSRF secret key not configured")
+            return False
+        
+        # Проверяем формат токена (должен содержать timestamp и HMAC)
+        if '.' not in token:
+            return False
+        
+        timestamp_str, hmac_signature = token.split('.', 1)
+        
+        # Проверяем timestamp (токен действителен 1 час)
+        try:
+            timestamp = int(timestamp_str)
+            current_time = int(time.time())
+            if current_time - timestamp > 3600:  # 1 час
+                return False
+        except ValueError:
+            return False
+        
+        # Проверяем HMAC
+        expected_signature = hmac.new(
+            csrf_secret.encode(),
+            timestamp_str.encode(),
+            hashlib.sha256
+        ).hexdigest()
+        
+        return hmac.compare_digest(hmac_signature, expected_signature)
+        
+    except Exception as e:
+        logger.warning(f"CSRF validation error: {e}")
+        return False
 
 @app.middleware("http")
 async def csrf_middleware(request: Request, call_next):
@@ -90,9 +129,7 @@ async def csrf_middleware(request: Request, call_next):
     if request.method in ["GET", "HEAD", "OPTIONS"]:
         return await call_next(request)
     
-    # Временно отключаем CSRF для тестирования
-    if settings.environment == "development":
-        return await call_next(request)
+    # CSRF защита включена для всех сред
     
     csrf_token = request.headers.get("X-CSRF-Token")
     if not csrf_token:
@@ -196,28 +233,21 @@ async def login(credentials: LoginRequest):
         email = credentials.email
         password = credentials.password
         
-        # Если Supabase недоступен или URL содержит example, используем mock аутентификацию
+        # Проверяем доступность Supabase
         supabase_client = supabase_manager.get_client("anon")
-        if not supabase_client or settings.supabase_url.endswith("example.supabase.co"):
-            logger.warning("supabase_unavailable", fallback="mock_auth")
-            return {
-                "success": True,
-                "message": "Успешный вход (mock режим)",
-                "user": {
-                    "id": f"mock_user_{email}",
-                    "email": email,
-                    "full_name": "Mock User",
-                    "avatar_url": None,
-                    "subscription_tier": SubscriptionTier.FREE.value,
-                    "subscription_status": "active",
-                    "api_credits_balance": 100.50,
-                    "created_at": "2025-01-01T00:00:00Z",
-                    "updated_at": "2025-01-01T00:00:00Z"
-                },
-                "access_token": f"mock_token_{email}",
-                "token_type": "bearer",
-                "expires_in": 3600
-            }
+        if not supabase_client:
+            logger.error("Supabase client not available")
+            raise HTTPException(
+                status_code=503,
+                detail="Authentication service unavailable"
+            )
+        
+        if settings.supabase_url.endswith("example.supabase.co"):
+            logger.error("Supabase URL not configured properly")
+            raise HTTPException(
+                status_code=503,
+                detail="Database configuration error"
+            )
         
         response = supabase_client.auth.sign_in_with_password({
             "email": email,
@@ -268,15 +298,20 @@ async def register(user_data: RegisterRequest):
         password = user_data.password
         full_name = user_data.full_name
         
-        # Если Supabase недоступен или URL содержит example, используем mock регистрацию
+        # Проверяем доступность Supabase
         supabase_client = supabase_manager.get_client("anon")
-        if not supabase_client or settings.supabase_url.endswith("example.supabase.co"):
-            logger.warning("supabase_unavailable", fallback="mock_register")
-            return RegisterResponse(
-                success=True,
-                message="Пользователь успешно зарегистрирован (mock режим)",
-                user_id=f"mock_user_{email}",
-                email=email
+        if not supabase_client:
+            logger.error("Supabase client not available")
+            raise HTTPException(
+                status_code=503,
+                detail="Authentication service unavailable"
+            )
+        
+        if settings.supabase_url.endswith("example.supabase.co"):
+            logger.error("Supabase URL not configured properly")
+            raise HTTPException(
+                status_code=503,
+                detail="Database configuration error"
             )
         
         # Реальная регистрация через Supabase

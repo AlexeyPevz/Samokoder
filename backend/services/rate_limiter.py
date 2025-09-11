@@ -129,6 +129,8 @@ class RateLimiter:
                 minute_key, hour_key, limit_per_minute, limit_per_hour, current_time
             )
         else:
+            # Автоочистка перед проверкой
+            self._auto_cleanup_if_needed()
             return await self._check_memory_rate_limit(
                 user_id, endpoint, limit_per_minute, limit_per_hour, current_time
             )
@@ -351,6 +353,25 @@ class RateLimiter:
         
         if keys_to_remove:
             logger.info(f"Cleaned up {len(keys_to_remove)} expired rate limit entries")
+    
+    def _auto_cleanup_if_needed(self):
+        """Автоматическая очистка при достижении лимита записей"""
+        if self.redis_client:
+            return  # Redis автоматически управляет памятью
+        
+        # Если записей больше 10000, принудительно очищаем
+        if len(self.memory_store) > 10000:
+            logger.warning(f"Memory store size exceeded limit: {len(self.memory_store)} entries")
+            # Очищаем половину самых старых записей
+            sorted_keys = sorted(self.memory_store.keys(), 
+                               key=lambda k: min(self.memory_store[k]['minute']['window'], 
+                                               self.memory_store[k]['hour']['window']))
+            keys_to_remove = sorted_keys[:len(sorted_keys) // 2]
+            
+            for key in keys_to_remove:
+                del self.memory_store[key]
+            
+            logger.info(f"Emergency cleanup: removed {len(keys_to_remove)} entries")
 
 # Глобальный экземпляр rate limiter
 rate_limiter = RateLimiter()

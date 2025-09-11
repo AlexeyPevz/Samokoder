@@ -135,7 +135,7 @@ class AIResponseCache:
             "provider": provider
         }, sort_keys=True)
         
-        hash_obj = hashlib.md5(content.encode())
+        hash_obj = hashlib.sha256(content.encode())
         return f"ai_response:{hash_obj.hexdigest()}"
     
     async def get_cached_response(self, messages: List[Dict], model: str, provider: str) -> Optional[Dict]:

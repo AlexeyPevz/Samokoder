@@ -53,8 +53,10 @@ class DIContainer:
             # Check if we have a factory
             if interface in self._factories:
                 if self._singletons.get(interface, True):
+                    # Атомарное создание синглтона
                     if interface not in self._instances:
-                        self._instances[interface] = self._factories[interface]()
+                        instance = self._factories[interface]()
+                        self._instances[interface] = instance
                     return self._instances[interface]
                 else:
                     return self._factories[interface]()
