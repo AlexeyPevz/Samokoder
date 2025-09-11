@@ -58,10 +58,10 @@ def validate_jwt_token(token: str) -> bool:
         logger.warning("JWT token expired")
         return False
     except jwt.InvalidTokenError as e:
-        logger.warning("Invalid JWT token", error=str(e))
+        logger.warning(f"Invalid JWT token: {str(e)}")
         return False
     except Exception as e:
-        logger.warning("JWT validation error", error=str(e))
+        logger.warning(f"JWT validation error: {str(e)}")
         return False
 
 async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Dict:

@@ -67,7 +67,7 @@ async def login(
         
         if not response.user:
             # Логируем без чувствительных данных
-            logger.warning("Login failed", email_prefix=credentials.email[:3])
+            logger.warning(f"Login failed for email: {credentials.email[:3]}***")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials"
