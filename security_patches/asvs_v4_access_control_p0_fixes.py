@@ -4,10 +4,21 @@ ASVS V4: Критические исправления контроля дост
 import re
 from typing import Dict, List, Optional, Set, Any
 from enum import Enum
+from dataclasses import dataclass
 from fastapi import HTTPException, status
 from backend.core.common_imports import get_logger
 
 logger = get_logger(__name__)
+
+@dataclass
+class AccessAttemptInfo:
+    """Информация о попытке доступа для группировки параметров"""
+    user_id: str
+    user_role: str
+    resource_id: str
+    resource_type: str
+    action: str
+    success: bool
 
 class PermissionLevel(Enum):
     """Уровни разрешений"""
@@ -240,17 +251,16 @@ class AccessControlSecurity:
         
         return allowed_scopes
     
-    def audit_access_attempt(self, user_id: str, user_role: str, resource_id: str, 
-                           resource_type: str, action: str, success: bool) -> None:
+    def audit_access_attempt(self, attempt_info: AccessAttemptInfo) -> None:
         """V4.1.13: Аудит попыток доступа"""
         import time
         audit_data = {
-            "user_id": user_id,
-            "user_role": user_role,
-            "resource_id": resource_id,
-            "resource_type": resource_type,
-            "action": action,
-            "success": success,
+            "user_id": attempt_info.user_id,
+            "user_role": attempt_info.user_role,
+            "resource_id": attempt_info.resource_id,
+            "resource_type": attempt_info.resource_type,
+            "action": attempt_info.action,
+            "success": attempt_info.success,
             "timestamp": time.time()
         }
         

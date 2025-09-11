@@ -7,10 +7,21 @@ import time
 import hashlib
 from typing import Dict, Any, Optional, List
 from datetime import datetime
+from dataclasses import dataclass
 from fastapi import HTTPException, status
 from backend.core.common_imports import get_logger
 
 logger = get_logger(__name__)
+
+@dataclass
+class APIAccessInfo:
+    """Информация о доступе к API для группировки параметров"""
+    user_id: Optional[str]
+    endpoint: str
+    method: str
+    status_code: int
+    response_time: float
+    details: Dict[str, Any]
 
 class ErrorHandlingSecurity:
     """Критические исправления обработки ошибок и логирования"""
@@ -166,27 +177,26 @@ class ErrorHandlingSecurity:
         random_data = str(hash(timestamp))
         return hashlib.md5(f"{timestamp}{random_data}".encode()).hexdigest()[:16]
     
-    def log_api_access(self, user_id: Optional[str], endpoint: str, method: str, 
-                      status_code: int, response_time: float, details: Dict[str, Any]) -> None:
+    def log_api_access(self, access_info: APIAccessInfo) -> None:
         """V7.1.11: Логирование доступа к API"""
         log_entry = {
-            "endpoint": endpoint,
-            "method": method,
-            "status_code": status_code,
-            "response_time": response_time,
-            "message": f"API access: {method} {endpoint} - {status_code}",
-            **details
+            "endpoint": access_info.endpoint,
+            "method": access_info.method,
+            "status_code": access_info.status_code,
+            "response_time": access_info.response_time,
+            "message": f"API access: {access_info.method} {access_info.endpoint} - {access_info.status_code}",
+            **access_info.details
         }
         
         severity = "INFO"
-        if status_code >= 400:
+        if access_info.status_code >= 400:
             severity = "WARNING"
-        if status_code >= 500:
+        if access_info.status_code >= 500:
             severity = "ERROR"
         
         self.log_security_event(
             "API_ACCESS",
-            user_id,
+            access_info.user_id,
             log_entry,
             severity
         )

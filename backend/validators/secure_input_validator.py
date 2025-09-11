@@ -223,35 +223,77 @@ class SecureInputValidator:
         return len(errors) == 0, errors, sanitized_data
     
     @classmethod
-    def validate_api_key_format(cls, api_key: str, provider: str) -> tuple[bool, str]:
-        """Безопасная валидация API ключа"""
+    def _validate_basic_api_key_checks(cls, api_key: str) -> tuple[bool, str]:
+        """Базовые проверки API ключа"""
         if not api_key or len(api_key.strip()) == 0:
             return False, "API ключ не может быть пустым"
         
-        # Базовые проверки длины
         if len(api_key) < 10:
             return False, "API ключ слишком короткий"
         
         if len(api_key) > 200:
             return False, "API ключ слишком длинный"
         
-        # Проверка на подозрительные символы
         if any(char in api_key for char in ['<', '>', '"', "'", '&', '\x00', ' ']):
             return False, "API ключ содержит недопустимые символы"
         
-        # Проверки для конкретных провайдеров
-        if provider.lower() == "openai":
-            if not api_key.startswith('sk-') or len(api_key) < 20:
-                return False, 'OpenAI ключ должен начинаться с "sk-" и быть длиннее 20 символов'
-        elif provider.lower() == "anthropic":
-            if not api_key.startswith('sk-ant-') or len(api_key) < 20:
-                return False, 'Anthropic ключ должен начинаться с "sk-ant-" и быть длиннее 20 символов'
-        elif provider.lower() == "openrouter":
-            if not api_key.startswith('sk-or-') or len(api_key) < 20:
-                return False, 'OpenRouter ключ должен начинаться с "sk-or-" и быть длиннее 20 символов'
-        elif provider.lower() == "groq":
-            if len(api_key) < 20:
-                return False, 'Groq ключ должен быть длиннее 20 символов'
+        return True, ""
+
+    @classmethod
+    def _validate_provider_specific_format(cls, api_key: str, provider: str) -> tuple[bool, str]:
+        """Проверка формата для конкретного провайдера"""
+        # Конфигурация провайдеров
+        provider_configs = {
+            "openai": {
+                "prefix": "sk-",
+                "min_length": 20,
+                "error_msg": 'OpenAI ключ должен начинаться с "sk-" и быть длиннее 20 символов'
+            },
+            "anthropic": {
+                "prefix": "sk-ant-",
+                "min_length": 20,
+                "error_msg": 'Anthropic ключ должен начинаться с "sk-ant-" и быть длиннее 20 символов'
+            },
+            "openrouter": {
+                "prefix": "sk-or-",
+                "min_length": 20,
+                "error_msg": 'OpenRouter ключ должен начинаться с "sk-or-" и быть длиннее 20 символов'
+            },
+            "groq": {
+                "prefix": "",
+                "min_length": 20,
+                "error_msg": 'Groq ключ должен быть длиннее 20 символов'
+            }
+        }
+        
+        provider_lower = provider.lower()
+        config = provider_configs.get(provider_lower)
+        
+        if not config:
+            return True, ""  # Неизвестный провайдер - пропускаем проверку
+        
+        # Проверяем префикс
+        if config["prefix"] and not api_key.startswith(config["prefix"]):
+            return False, config["error_msg"]
+        
+        # Проверяем длину
+        if len(api_key) < config["min_length"]:
+            return False, config["error_msg"]
+        
+        return True, ""
+
+    @classmethod
+    def validate_api_key_format(cls, api_key: str, provider: str) -> tuple[bool, str]:
+        """Безопасная валидация API ключа"""
+        # Базовые проверки
+        is_valid, error_msg = cls._validate_basic_api_key_checks(api_key)
+        if not is_valid:
+            return False, error_msg
+        
+        # Проверки для конкретного провайдера
+        is_valid, error_msg = cls._validate_provider_specific_format(api_key, provider)
+        if not is_valid:
+            return False, error_msg
         
         return True, ""
 
