@@ -89,8 +89,10 @@ class TestBasicCoverageBoost:
     
     def test_secure_error_handler_import(self):
         """Проверяем импорт secure error handler"""
-        from backend.security.secure_error_handler import create_secure_error_response
-        assert callable(create_secure_error_response)
+        from backend.security.secure_error_handler import SecureErrorHandler, ErrorContext, ErrorSeverity
+        assert hasattr(SecureErrorHandler, '__init__')
+        assert hasattr(ErrorContext, '__init__')
+        assert hasattr(ErrorSeverity, '__members__')
     
     def test_file_upload_security_import(self):
         """Проверяем импорт file upload security"""
@@ -294,27 +296,31 @@ class TestBasicCoverageBoost:
     def test_secure_logging_functions_exist(self):
         """Проверяем, что secure logging функции существуют"""
         from backend.utils.secure_logging import (
-            secure_log, get_logger, configure_logging
+            secure_log, get_secure_logger, secure_debug, secure_info, secure_warning, secure_error, secure_critical
         )
         
         assert callable(secure_log)
-        assert callable(get_logger)
-        assert callable(configure_logging)
+        assert callable(get_secure_logger)
+        assert callable(secure_debug)
+        assert callable(secure_info)
+        assert callable(secure_warning)
+        assert callable(secure_error)
+        assert callable(secure_critical)
     
     def test_uuid_manager_methods_exist(self):
         """Проверяем, что UUIDManager методы существуют"""
         from backend.utils.uuid_manager import UUIDManager
         
         manager = UUIDManager()
-        assert hasattr(manager, 'generate_uuid')
-        assert hasattr(manager, 'generate_short_uuid')
-        assert hasattr(manager, 'validate_uuid')
+        assert hasattr(manager, 'generate_unique_uuid')
+        assert hasattr(manager, 'is_uuid_unique')
+        assert hasattr(manager, 'register_uuid')
     
     def test_circuit_breaker_methods_exist(self):
         """Проверяем, что CircuitBreaker методы существуют"""
         from backend.patterns.circuit_breaker import CircuitBreaker
         
-        breaker = CircuitBreaker()
+        breaker = CircuitBreaker("test_service")
         assert hasattr(breaker, 'call')
         assert hasattr(breaker, 'reset')
         assert hasattr(breaker, 'get_state')
@@ -324,8 +330,8 @@ class TestBasicCoverageBoost:
         from backend.monitoring import monitoring
         
         assert hasattr(monitoring, 'get_health_status')
-        assert hasattr(monitoring, 'log_event')
-        assert hasattr(monitoring, 'get_metrics')
+        assert hasattr(monitoring, 'log_request')
+        assert hasattr(monitoring, 'log_ai_request')
     
     def test_supabase_manager_methods_exist(self):
         """Проверяем, что SupabaseConnectionManager методы существуют"""
@@ -334,17 +340,16 @@ class TestBasicCoverageBoost:
         manager = SupabaseConnectionManager()
         assert hasattr(manager, 'get_client')
         assert hasattr(manager, 'execute_async')
-        assert hasattr(manager, 'health_check')
+        assert hasattr(manager, 'health_check_all')
     
     def test_connection_pool_methods_exist(self):
         """Проверяем, что ConnectionPoolManager методы существуют"""
         from backend.services.connection_pool import ConnectionPoolManager
         
         manager = ConnectionPoolManager()
-        assert hasattr(manager, 'create_pool')
-        assert hasattr(manager, 'get_pool')
-        assert hasattr(manager, 'close_pool')
-        assert hasattr(manager, 'health_check')
+        assert hasattr(manager, 'http_pool')
+        assert hasattr(manager, 'close_all')
+        assert hasattr(manager, 'initialize_all')
     
     def test_ai_service_methods_exist(self):
         """Проверяем, что AI service методы существуют"""
