@@ -100,7 +100,7 @@ build: ## Собрать проект
 
 run: ## Запустить приложение
 	@echo "$(BLUE)🚀 Запуск приложения...$(NC)"
-	$(PYTHON) -m uvicorn backend.main_improved:app --host 0.0.0.0 --port 8000 --reload
+	$(PYTHON) -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 
 dev: ## Запустить в режиме разработки
 	@echo "$(BLUE)🚀 Запуск в режиме разработки...$(NC)"
@@ -211,7 +211,7 @@ metrics: ## Показать метрики
 # Команды для отладки
 debug: ## Запустить в режиме отладки
 	@echo "$(BLUE)🐛 Запуск в режиме отладки...$(NC)"
-	$(PYTHON) -m uvicorn backend.main_improved:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+	$(PYTHON) -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
 
 shell: ## Открыть Python shell
 	@echo "$(BLUE)🐍 Python shell...$(NC)"
