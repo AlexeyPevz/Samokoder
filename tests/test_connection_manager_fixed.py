@@ -17,10 +17,14 @@ class TestConnectionManagerFixed:
         manager = ConnectionManager()
         
         # Настраиваем mock для Redis pool
-        mock_redis_pool = AsyncMock()
-        mock_connection = AsyncMock()
-        mock_redis_pool.acquire.return_value.__aenter__.return_value = mock_connection
-        mock_redis_pool.acquire.return_value.__aexit__.return_value = None
+        mock_redis_pool = MagicMock()
+        mock_connection = MagicMock()
+        
+        # Создаем правильный async context manager
+        mock_context_manager = AsyncMock()
+        mock_context_manager.__aenter__.return_value = mock_connection
+        mock_context_manager.__aexit__.return_value = None
+        mock_redis_pool.acquire.return_value = mock_context_manager
         
         # Настраиваем mock для _pools
         manager._pools = {'redis': mock_redis_pool}
@@ -69,10 +73,14 @@ class TestConnectionManagerFixed:
         manager = ConnectionManager()
         
         # Настраиваем mock для Database pool
-        mock_db_pool = AsyncMock()
-        mock_connection = AsyncMock()
-        mock_db_pool.acquire.return_value.__aenter__.return_value = mock_connection
-        mock_db_pool.acquire.return_value.__aexit__.return_value = None
+        mock_db_pool = MagicMock()
+        mock_connection = MagicMock()
+        
+        # Создаем правильный async context manager
+        mock_context_manager = AsyncMock()
+        mock_context_manager.__aenter__.return_value = mock_connection
+        mock_context_manager.__aexit__.return_value = None
+        mock_db_pool.acquire.return_value = mock_context_manager
         
         # Настраиваем mock для _pools
         manager._pools = {'database': mock_db_pool}

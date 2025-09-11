@@ -1,0 +1,217 @@
+"""
+Простые тесты для Input Validator
+"""
+
+import pytest
+from unittest.mock import patch, MagicMock
+
+class TestInputValidatorSimple:
+    """Простые тесты для Input Validator"""
+    
+    def test_input_validator_class_exists(self):
+        """Проверяем, что класс InputValidator существует"""
+        from backend.security.input_validator import InputValidator
+        
+        # Проверяем, что класс существует
+        assert InputValidator is not None
+        
+        # Проверяем, что можно создать экземпляр
+        validator = InputValidator()
+        assert validator is not None
+    
+    def test_input_validator_methods_exist(self):
+        """Проверяем, что все методы InputValidator существуют"""
+        from backend.security.input_validator import InputValidator
+        
+        validator = InputValidator()
+        
+        # Проверяем, что все методы существуют
+        assert hasattr(validator, 'validate_password_strength')
+        assert hasattr(validator, 'validate_api_key_format')
+        assert hasattr(validator, 'validate_sql_injection')
+        assert hasattr(validator, 'validate_xss')
+        assert hasattr(validator, 'validate_path_traversal')
+    
+    def test_validate_password_strength_function(self):
+        """Тест функции validate_password_strength"""
+        from backend.security.input_validator import InputValidator
+        
+        validator = InputValidator()
+        
+        # Тестируем с сильным паролем
+        result = validator.validate_password_strength("StrongPassword123!")
+        assert result is True
+        
+        # Тестируем со слабым паролем
+        result = validator.validate_password_strength("weak")
+        assert result is False
+    
+    def test_validate_api_key_format_function(self):
+        """Тест функции validate_api_key_format"""
+        from backend.security.input_validator import InputValidator
+        
+        validator = InputValidator()
+        
+        # Тестируем с валидным API ключом
+        result = validator.validate_api_key_format("sk-test1234567890abcdef", "openai")
+        assert result is True
+        
+        # Тестируем с невалидным API ключом
+        result = validator.validate_api_key_format("invalid_key", "openai")
+        assert result is False
+    
+    def test_validate_sql_injection_function(self):
+        """Тест функции validate_sql_injection"""
+        from backend.security.input_validator import InputValidator
+        
+        validator = InputValidator()
+        
+        # Тестируем с безопасным вводом
+        result = validator.validate_sql_injection("safe_input")
+        assert result is True
+        
+        # Тестируем с SQL инъекцией
+        result = validator.validate_sql_injection("'; DROP TABLE users; --")
+        assert result is False
+    
+    def test_validate_xss_function(self):
+        """Тест функции validate_xss"""
+        from backend.security.input_validator import InputValidator
+        
+        validator = InputValidator()
+        
+        # Тестируем с безопасным вводом
+        result = validator.validate_xss("safe_input")
+        assert result is True
+        
+        # Тестируем с XSS атакой
+        result = validator.validate_xss("<script>alert('xss')</script>")
+        assert result is False
+    
+    def test_validate_path_traversal_function(self):
+        """Тест функции validate_path_traversal"""
+        from backend.security.input_validator import InputValidator
+        
+        validator = InputValidator()
+        
+        # Тестируем с безопасным путем
+        result = validator.validate_path_traversal("safe_path.txt")
+        assert result is True
+        
+        # Тестируем с path traversal атакой
+        result = validator.validate_path_traversal("../../../etc/passwd")
+        assert result is False
+    
+    def test_password_strength_validation_cases(self):
+        """Тест валидации силы пароля - различные случаи"""
+        from backend.security.input_validator import InputValidator
+        
+        validator = InputValidator()
+        
+        # Тестируем различные пароли
+        test_cases = [
+            ("StrongPassword123!", True),   # Сильный пароль
+            ("weak", False),                # Слабый пароль
+            ("", False),                    # Пустой пароль
+            ("12345678", False),            # Только цифры
+            ("abcdefgh", False),            # Только буквы
+            ("ABCDEFGH", False),            # Только заглавные
+            ("!@#$%^&*", False),            # Только символы
+            ("Password1", False),           # Без символов
+            ("password1!", False),          # Без заглавных
+            ("PASSWORD1!", False),          # Без строчных
+        ]
+        
+        for password, expected in test_cases:
+            result = validator.validate_password_strength(password)
+            assert result == expected, f"Password '{password}' should be {expected}"
+    
+    def test_api_key_format_validation_cases(self):
+        """Тест валидации формата API ключа - различные случаи"""
+        from backend.security.input_validator import InputValidator
+        
+        validator = InputValidator()
+        
+        # Тестируем различные API ключи
+        test_cases = [
+            ("sk-test1234567890abcdef", "openai", True),   # Валидный OpenAI ключ
+            ("sk-invalid", "openai", False),               # Невалидный OpenAI ключ
+            ("", "openai", False),                         # Пустой ключ
+            ("sk-test1234567890abcdef", "invalid", False), # Невалидный провайдер
+        ]
+        
+        for api_key, provider, expected in test_cases:
+            result = validator.validate_api_key_format(api_key, provider)
+            assert result == expected, f"API key '{api_key}' for provider '{provider}' should be {expected}"
+    
+    def test_sql_injection_detection_cases(self):
+        """Тест обнаружения SQL инъекций - различные случаи"""
+        from backend.security.input_validator import InputValidator
+        
+        validator = InputValidator()
+        
+        # Тестируем различные SQL инъекции
+        test_cases = [
+            ("safe_input", True),                           # Безопасный ввод
+            ("'; DROP TABLE users; --", False),            # Классическая SQL инъекция
+            ("' OR '1'='1", False),                        # OR инъекция
+            ("UNION SELECT * FROM users", False),          # UNION инъекция
+            ("<script>alert('xss')</script>", True),       # XSS (не SQL)
+            ("", True),                                    # Пустой ввод
+        ]
+        
+        for input_text, expected in test_cases:
+            result = validator.validate_sql_injection(input_text)
+            assert result == expected, f"Input '{input_text}' should be {expected}"
+    
+    def test_xss_detection_cases(self):
+        """Тест обнаружения XSS - различные случаи"""
+        from backend.security.input_validator import InputValidator
+        
+        validator = InputValidator()
+        
+        # Тестируем различные XSS атаки
+        test_cases = [
+            ("safe_input", True),                           # Безопасный ввод
+            ("<script>alert('xss')</script>", False),      # Классический XSS
+            ("<img src=x onerror=alert('xss')>", False),   # XSS через img
+            ("javascript:alert('xss')", False),            # XSS через javascript:
+            ("'; DROP TABLE users; --", True),             # SQL (не XSS)
+            ("", True),                                    # Пустой ввод
+        ]
+        
+        for input_text, expected in test_cases:
+            result = validator.validate_xss(input_text)
+            assert result == expected, f"Input '{input_text}' should be {expected}"
+    
+    def test_path_traversal_detection_cases(self):
+        """Тест обнаружения path traversal - различные случаи"""
+        from backend.security.input_validator import InputValidator
+        
+        validator = InputValidator()
+        
+        # Тестируем различные path traversal атаки
+        test_cases = [
+            ("safe_file.txt", True),                       # Безопасный файл
+            ("../../../etc/passwd", False),                # Классический path traversal
+            ("..\\..\\..\\windows\\system32", False),      # Windows path traversal
+            ("/etc/passwd", False),                        # Абсолютный путь
+            ("<script>alert('xss')</script>", True),       # XSS (не path traversal)
+            ("", True),                                    # Пустой ввод
+        ]
+        
+        for input_text, expected in test_cases:
+            result = validator.validate_path_traversal(input_text)
+            assert result == expected, f"Input '{input_text}' should be {expected}"
+    
+    def test_input_validator_imports(self):
+        """Тест импортов Input Validator"""
+        # Проверяем, что все необходимые модули импортируются
+        try:
+            from backend.security.input_validator import InputValidator
+            assert True  # Импорт успешен
+        except ImportError as e:
+            pytest.fail(f"Import failed: {e}")
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

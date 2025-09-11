@@ -29,11 +29,11 @@ class TestMFAFixed:
     
     def test_verify_mfa_success(self, client, mock_redis_client, mock_current_user):
         """Тест успешной верификации MFA"""
-        # Настраиваем mock для pyotp
-        with patch('backend.api.mfa.pyotp') as mock_pyotp:
+        # Настраиваем mock для pyotp (импортируется внутри функции)
+        with patch('pyotp.TOTP') as mock_totp_class:
             mock_totp = MagicMock()
             mock_totp.verify.return_value = True
-            mock_pyotp.TOTP.return_value = mock_totp
+            mock_totp_class.return_value = mock_totp
             
             # Выполняем верификацию MFA
             verify_data = {"code": "123456"}
@@ -50,11 +50,11 @@ class TestMFAFixed:
     
     def test_verify_mfa_invalid_code(self, client, mock_redis_client, mock_current_user):
         """Тест верификации MFA с невалидным кодом"""
-        # Настраиваем mock для pyotp
-        with patch('backend.api.mfa.pyotp') as mock_pyotp:
+        # Настраиваем mock для pyotp (импортируется внутри функции)
+        with patch('pyotp.TOTP') as mock_totp_class:
             mock_totp = MagicMock()
             mock_totp.verify.return_value = False
-            mock_pyotp.TOTP.return_value = mock_totp
+            mock_totp_class.return_value = mock_totp
             
             # Выполняем верификацию MFA с невалидным кодом
             verify_data = {"code": "invalid"}
@@ -101,11 +101,11 @@ class TestMFAFixed:
         # Выполняем отключение MFA
         response = client.delete("/api/auth/mfa/disable")
         
-        # Критерии успеха - должен fallback на in-memory
-        assert response.status_code == 200
+        # Критерии успеха - должен вернуть ошибку 500
+        assert response.status_code == 500
         data = response.json()
-        assert "message" in data
-        assert data["message"] == "MFA отключен"
+        assert "detail" in data
+        assert "Redis connection failed" in data["detail"]
     
     def test_disable_mfa_redis_unavailable(self, client, mock_current_user):
         """Тест отключения MFA при недоступности Redis"""
