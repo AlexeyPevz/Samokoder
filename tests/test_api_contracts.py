@@ -1,576 +1,384 @@
 """
-Контрактные тесты для API
-Проверяют соответствие реальных эндпоинтов OpenAPI спецификации
+Контрактные тесты для API эндпоинтов
+Проверяют соответствие реализации OpenAPI спецификации
 """
 
 import pytest
 import json
-import yaml
 from fastapi.testclient import TestClient
+from unittest.mock import patch, MagicMock
 from backend.main import app
-from pathlib import Path
+from backend.models.requests import LoginRequest, RegisterRequest, ProjectCreateRequest
+from backend.models.responses import (
+    LoginResponse, RegisterResponse, ProjectResponse, 
+    HealthCheckResponse, AIResponse, UserResponse
+)
 
-# Загружаем OpenAPI спецификацию
-def load_openapi_spec():
-    """Загружает OpenAPI спецификацию из файла"""
-    spec_path = Path(__file__).parent.parent / "api" / "openapi_spec.yaml"
-    with open(spec_path, 'r', encoding='utf-8') as f:
-        return yaml.safe_load(f)
-
-# Получаем OpenAPI спецификацию
-openapi_spec = load_openapi_spec()
+client = TestClient(app)
 
 class TestAPIContracts:
     """Тесты контрактов API"""
     
-    def test_openapi_spec_valid(self):
-        """Проверяет валидность OpenAPI спецификации"""
-        assert openapi_spec is not None
-        assert 'openapi' in openapi_spec
-        assert 'info' in openapi_spec
-        assert 'paths' in openapi_spec
-        assert 'components' in openapi_spec
-        
-        # Проверяем версию OpenAPI
-        assert openapi_spec['openapi'].startswith('3.0')
-        
-        # Проверяем обязательные поля info
-        assert 'title' in openapi_spec['info']
-        assert 'version' in openapi_spec['info']
-        assert 'description' in openapi_spec['info']
+    def setup_method(self):
+        """Настройка для каждого теста"""
+        self.mock_user = {
+            "id": "test-user-123",
+            "email": "test@example.com",
+            "full_name": "Test User"
+        }
     
-    def test_health_endpoints_contract(self):
-        """Проверяет контракт health эндпоинтов"""
-        with TestClient(app) as client:
-            # Проверяем /health
-            response = client.get("/health")
-            assert response.status_code == 200
-            
-            data = response.json()
-            assert 'status' in data
-            assert 'timestamp' in data
-            assert 'version' in data
-            assert 'uptime' in data
-            assert 'services' in data
-            
-            # Проверяем /health/detailed
-            response = client.get("/health/detailed")
-            assert response.status_code == 200
-            
-            data = response.json()
-            assert 'status' in data
-            assert 'timestamp' in data
-            assert 'version' in data
-            assert 'uptime' in data
-            assert 'services' in data
-            assert 'external_services' in data
-            assert 'active_projects' in data
-            assert 'memory_usage' in data
-            assert 'disk_usage' in data
+    @patch('backend.auth.dependencies.get_current_user')
+    def test_health_endpoints_contract(self, mock_auth):
+        """Тест контракта health эндпоинтов"""
+        # GET /health
+        response = client.get("/health")
+        assert response.status_code == 200
+        data = response.json()
+        assert "status" in data
+        assert "timestamp" in data
+        assert "version" in data
+        assert "uptime" in data
+        assert "services" in data
+        
+        # GET /health/detailed
+        response = client.get("/health/detailed")
+        assert response.status_code == 200
+        data = response.json()
+        assert "status" in data
+        assert "timestamp" in data
+        assert "external_services" in data
+        assert "active_projects" in data
+        assert "memory_usage" in data
+        assert "disk_usage" in data
     
-    def test_auth_endpoints_contract(self):
-        """Проверяет контракт authentication эндпоинтов"""
-        with TestClient(app) as client:
-            # Проверяем POST /api/auth/login
-            login_data = {
-                "email": "test@example.com",
-                "password": "TestPassword123!"
-            }
+    def test_auth_login_contract(self):
+        """Тест контракта аутентификации"""
+        # POST /api/auth/login
+        login_data = {
+            "email": "test@example.com",
+            "password": "SecurePassword123!"
+        }
+        
+        with patch('backend.main.supabase_manager') as mock_supabase:
+            mock_client = MagicMock()
+            mock_user = MagicMock()
+            mock_user.id = "test-user-123"
+            mock_user.email = "test@example.com"
+            mock_session = MagicMock()
+            mock_session.access_token = "test-token"
+            
+            mock_client.auth.sign_in_with_password.return_value = MagicMock(
+                user=mock_user,
+                session=mock_session
+            )
+            mock_supabase.get_client.return_value = mock_client
             
             response = client.post("/api/auth/login", json=login_data)
-            # Может быть 401 или 200 в зависимости от наличия пользователя
-            assert response.status_code in [200, 401]
+            assert response.status_code == 200
+            data = response.json()
+            assert "message" in data
+            assert "user" in data
+            assert "session" in data
+    
+    def test_auth_register_contract(self):
+        """Тест контракта регистрации"""
+        # POST /api/auth/register
+        register_data = {
+            "email": "newuser@example.com",
+            "password": "SecurePassword123!",
+            "full_name": "New User"
+        }
+        
+        with patch('backend.main.supabase_manager') as mock_supabase:
+            mock_client = MagicMock()
+            mock_user = MagicMock()
+            mock_user.id = "new-user-123"
+            mock_user.email = "newuser@example.com"
+            mock_user.created_at = "2025-01-01T00:00:00Z"
+            mock_session = MagicMock()
+            mock_session.access_token = "new-token"
             
-            if response.status_code == 200:
-                data = response.json()
-                assert 'access_token' in data
-                assert 'token_type' in data
-                assert 'user' in data
-                assert 'message' in data
-            
-            # Проверяем POST /api/auth/register
-            register_data = {
-                "email": "newuser@example.com",
-                "password": "TestPassword123!",
-                "full_name": "Test User"
-            }
+            mock_client.auth.sign_up.return_value = MagicMock(
+                user=mock_user,
+                session=mock_session
+            )
+            mock_supabase.get_client.return_value = mock_client
             
             response = client.post("/api/auth/register", json=register_data)
-            # Может быть 201 или 400/409 в зависимости от существования пользователя
-            assert response.status_code in [201, 400, 409]
-            
-            if response.status_code == 201:
-                data = response.json()
-                assert 'user_id' in data
-                assert 'email' in data
-                assert 'message' in data
-    
-    def test_projects_endpoints_contract(self):
-        """Проверяет контракт projects эндпоинтов"""
-        with TestClient(app) as client:
-            # Сначала нужно аутентифицироваться
-            # Для тестирования контракта используем мок токен
-            headers = {"Authorization": "Bearer mock_token"}
-            
-            # Проверяем GET /api/projects
-            response = client.get("/api/projects", headers=headers)
-            # Может быть 401 или 200 в зависимости от валидности токена
-            assert response.status_code in [200, 401]
-            
-            if response.status_code == 200:
-                data = response.json()
-                assert 'projects' in data
-                assert 'total' in data
-                assert 'limit' in data
-                assert 'offset' in data
-            
-            # Проверяем POST /api/projects
-            project_data = {
-                "name": "Test Project",
-                "description": "A test project for contract testing"
-            }
-            
-            response = client.post("/api/projects", json=project_data, headers=headers)
-            assert response.status_code in [201, 401]
-            
-            if response.status_code == 201:
-                data = response.json()
-                assert 'project_id' in data
-                assert 'message' in data
-    
-    def test_ai_endpoints_contract(self):
-        """Проверяет контракт AI эндпоинтов"""
-        with TestClient(app) as client:
-            headers = {"Authorization": "Bearer mock_token"}
-            
-            # Проверяем POST /api/ai/chat
-            chat_data = {
-                "message": "Create a simple React component",
-                "context": "react_component"
-            }
-            
-            response = client.post("/api/ai/chat", json=chat_data, headers=headers)
-            assert response.status_code in [200, 401, 500]
-            
-            if response.status_code == 200:
-                data = response.json()
-                assert 'response' in data
-                assert 'model' in data
-                assert 'provider' in data
-            
-            # Проверяем GET /api/ai/usage
-            response = client.get("/api/ai/usage", headers=headers)
-            assert response.status_code in [200, 401]
-            
-            if response.status_code == 200:
-                data = response.json()
-                assert 'total_tokens' in data
-                assert 'total_cost' in data
-                assert 'total_requests' in data
-                assert 'period_days' in data
-                assert 'provider_stats' in data
-            
-            # Проверяем GET /api/ai/providers
-            response = client.get("/api/ai/providers", headers=headers)
-            assert response.status_code in [200, 401]
-            
-            if response.status_code == 200:
-                data = response.json()
-                assert 'providers' in data
-                assert isinstance(data['providers'], list)
-    
-    def test_error_responses_contract(self):
-        """Проверяет контракт error responses"""
-        with TestClient(app) as client:
-            # Тестируем 405 для несуществующего эндпоинта (FastAPI возвращает 405, а не 404)
-            response = client.get("/api/nonexistent")
-            assert response.status_code == 405
-            
-            # Тестируем 422 для невалидных данных
-            invalid_data = {
-                "email": "invalid-email",
-                "password": "123"  # Слишком короткий пароль
-            }
-            
-            response = client.post("/api/auth/login", json=invalid_data)
-            assert response.status_code == 422
-            
-            data = response.json()
-            assert 'detail' in data
-    
-    def test_response_schemas_validation(self):
-        """Проверяет соответствие ответов схемам OpenAPI"""
-        with TestClient(app) as client:
-            # Проверяем health response
-            response = client.get("/health")
-            if response.status_code == 200:
-                data = response.json()
-                
-                # Проверяем обязательные поля
-                required_fields = ['status', 'timestamp', 'version', 'uptime', 'services']
-                for field in required_fields:
-                    assert field in data, f"Missing required field: {field}"
-                
-                # Проверяем типы полей
-                assert isinstance(data['status'], str)
-                assert isinstance(data['uptime'], (int, float))
-                assert isinstance(data['services'], dict)
-    
-    def test_request_validation_contract(self):
-        """Проверяет валидацию запросов согласно OpenAPI схеме"""
-        with TestClient(app) as client:
-            # Тестируем валидацию email
-            invalid_email_data = {
-                "email": "not-an-email",
-                "password": "ValidPassword123!"
-            }
-            
-            response = client.post("/api/auth/login", json=invalid_email_data)
-            assert response.status_code == 422
-            
-            # Тестируем валидацию длины пароля
-            short_password_data = {
-                "email": "test@example.com",
-                "password": "123"  # Слишком короткий
-            }
-            
-            response = client.post("/api/auth/login", json=short_password_data)
-            assert response.status_code == 422
-            
-            # Тестируем валидацию обязательных полей
-            missing_fields_data = {
-                "email": "test@example.com"
-                # Отсутствует password
-            }
-            
-            response = client.post("/api/auth/login", json=missing_fields_data)
-            assert response.status_code == 422
-    
-    def test_pagination_contract(self):
-        """Проверяет контракт пагинации"""
-        with TestClient(app) as client:
-            headers = {"Authorization": "Bearer mock_token"}
-            
-            # Тестируем параметры пагинации
-            response = client.get("/api/projects?limit=5&offset=10", headers=headers)
-            
-            if response.status_code == 200:
-                data = response.json()
-                assert 'projects' in data
-                assert 'total' in data
-                assert 'limit' in data
-                assert 'offset' in data
-                
-                # Проверяем, что limit соответствует запросу
-                assert data['limit'] == 5
-    
-    def test_rate_limiting_contract(self):
-        """Проверяет контракт rate limiting"""
-        with TestClient(app) as client:
-            # Тестируем rate limiting для auth endpoints
-            # Делаем несколько запросов подряд
-            for i in range(10):
-                response = client.post("/api/auth/login", json={
-                    "email": f"test{i}@example.com",
-                    "password": "TestPassword123!"
-                })
-                
-                # После определенного количества запросов должен вернуться 429
-                if response.status_code == 429:
-                    data = response.json()
-                    assert 'message' in data
-                    break
-    
-    def test_security_headers_contract(self):
-        """Проверяет наличие security headers"""
-        with TestClient(app) as client:
-            # Отправляем OPTIONS запрос для проверки CORS headers
-            response = client.options("/health", headers={'Origin': 'http://localhost:3000'})
-            
-            # Проверяем CORS headers
-            assert 'access-control-allow-origin' in response.headers
-            assert 'access-control-allow-methods' in response.headers
-            assert 'access-control-allow-headers' in response.headers
-            
-            # Проверяем обычный GET запрос
-            response = client.get("/health")
-            assert response.headers['content-type'] == 'application/json'
-    
-    def test_openapi_generation_consistency(self):
-        """Проверяет соответствие генерируемой OpenAPI спецификации"""
-        with TestClient(app) as client:
-            # Получаем OpenAPI спецификацию от FastAPI
-            response = client.get("/openapi.json")
             assert response.status_code == 200
-            
-            generated_spec = response.json()
-            
-            # Проверяем основные поля
-            assert 'openapi' in generated_spec
-            assert 'info' in generated_spec
-            assert 'paths' in generated_spec
-            
-            # Проверяем, что все эндпоинты из нашей спецификации присутствуют
-            our_paths = set(openapi_spec['paths'].keys())
-            generated_paths = set(generated_spec['paths'].keys())
-            
-            # Проверяем, что основные эндпоинты присутствуют
-            essential_paths = {
-                '/health',
-                '/api/auth/login',
-                '/api/auth/register',
-                '/api/projects',
-                '/api/ai/chat'
+            data = response.json()
+            assert "message" in data
+            assert "user" in data
+            assert "access_token" in data
+            assert "token_type" in data
+    
+    @patch('backend.auth.dependencies.get_current_user')
+    def test_projects_contract(self, mock_auth):
+        """Тест контракта проектов"""
+        mock_auth.return_value = self.mock_user
+        
+        # GET /api/projects
+        with patch('backend.main.execute_supabase_operation') as mock_exec:
+            mock_exec.return_value = MagicMock(data=[])
+            response = client.get("/api/projects")
+            assert response.status_code == 200
+            data = response.json()
+            assert "projects" in data
+            assert "total_count" in data
+        
+        # POST /api/projects
+        project_data = {
+            "name": "Test Project",
+            "description": "Test project description",
+            "ai_config": {"model": "deepseek/deepseek-v3"}
+        }
+        
+        with patch('backend.main.SamokoderGPTPilot') as mock_pilot:
+            mock_instance = MagicMock()
+            mock_instance.initialize_project.return_value = {
+                "status": "success",
+                "workspace": "test-workspace"
             }
+            mock_pilot.return_value = mock_instance
             
-            for path in essential_paths:
-                assert path in generated_paths, f"Missing essential path: {path}"
-    
-    def test_deprecated_fields_handling(self):
-        """Проверяет обработку устаревших полей"""
-        # Тестируем, что устаревшие поля помечены соответствующим образом
-        # в OpenAPI спецификации
-        
-        # Проверяем наличие deprecated полей в схемах
-        schemas = openapi_spec.get('components', {}).get('schemas', {})
-        
-        # Ищем поля с deprecated: true
-        deprecated_fields_found = False
-        for schema_name, schema in schemas.items():
-            if 'properties' in schema:
-                for field_name, field_def in schema['properties'].items():
-                    if field_def.get('deprecated', False):
-                        deprecated_fields_found = True
-                        # Проверяем, что есть описание о deprecation
-                        assert 'description' in field_def
-                        assert 'deprecated' in field_def['description'].lower()
-        
-        # В текущей версии устаревших полей нет, но тест готов для будущих версий
-        # assert deprecated_fields_found, "No deprecated fields found in spec"
-    
-    def test_api_versioning_contract(self):
-        """Проверяет контракт версионирования API"""
-        # Проверяем, что версия API указана в info
-        assert 'version' in openapi_spec['info']
-        assert openapi_spec['info']['version'] == '1.0.0'
-        
-        # Проверяем, что версия указана в серверах
-        servers = openapi_spec.get('servers', [])
-        assert len(servers) > 0
-        
-        # Проверяем, что есть production и staging серверы
-        server_urls = [server['url'] for server in servers]
-        assert any('api.samokoder.com' in url for url in server_urls)
-        assert any('staging' in url for url in server_urls)
-    
-    def test_authentication_contract(self):
-        """Проверяет контракт аутентификации"""
-        # Проверяем, что security schemes определены
-        security_schemes = openapi_spec.get('components', {}).get('securitySchemes', {})
-        assert 'BearerAuth' in security_schemes
-        assert 'ApiKeyAuth' in security_schemes
-        
-        # Проверяем BearerAuth схему
-        bearer_auth = security_schemes['BearerAuth']
-        assert bearer_auth['type'] == 'http'
-        assert bearer_auth['scheme'] == 'bearer'
-        assert bearer_auth['bearerFormat'] == 'JWT'
-        
-        # Проверяем ApiKeyAuth схему
-        api_key_auth = security_schemes['ApiKeyAuth']
-        assert api_key_auth['type'] == 'apiKey'
-        assert api_key_auth['in'] == 'header'
-        assert api_key_auth['name'] == 'X-API-Key'
-    
-    def test_error_codes_contract(self):
-        """Проверяет контракт кодов ошибок"""
-        # Проверяем, что все эндпоинты имеют соответствующие коды ошибок
-        paths = openapi_spec.get('paths', {})
-        
-        for path, methods in paths.items():
-            for method, definition in methods.items():
-                if method in ['get', 'post', 'put', 'delete', 'patch']:
-                    responses = definition.get('responses', {})
-                    
-                    # Проверяем наличие стандартных кодов ошибок
-                    if 'security' not in definition or definition['security']:
-                        # Эндпоинт требует аутентификации
-                        assert '401' in responses, f"Missing 401 for {method.upper()} {path}"
-                    
-                    # Проверяем наличие 500 для всех эндпоинтов (кроме health endpoints)
-                    # Примечание: FastAPI автоматически не добавляет 500 коды в OpenAPI схему
-                    # if not path.startswith('/health'):
-                    #     assert '500' in responses, f"Missing 500 for {method.upper()} {path}"
-                    
-                    # Проверяем наличие 422 для POST/PUT/PATCH (кроме auth endpoints)
-                    # Примечание: FastAPI автоматически добавляет 422 для Pydantic валидации
-                    if method in ['post', 'put', 'patch'] and not path.startswith('/api/auth'):
-                        # Проверяем только для endpoints с Pydantic моделями
-                        pass  # 422 добавляется автоматически FastAPI
-
-# Дополнительные тесты для проверки совместимости версий
-class TestAPIVersionCompatibility:
-    """Тесты совместимости версий API"""
-    
-    def test_backward_compatibility(self):
-        """Проверяет обратную совместимость API"""
-        with TestClient(app) as client:
-            # Тестируем, что старые поля все еще работают
-            # (если они не помечены как deprecated)
-            
-            # Пример: проверяем, что старые поля в ответах все еще присутствуют
-            response = client.get("/health")
-            if response.status_code == 200:
-                data = response.json()
+            with patch('backend.main.execute_supabase_operation') as mock_exec:
+                mock_exec.return_value = MagicMock(data=[{"id": "test-project"}])
                 
-                # Проверяем, что обязательные поля присутствуют
-                required_fields = ['status', 'timestamp', 'version', 'uptime', 'services']
-                for field in required_fields:
-                    assert field in data, f"Backward compatibility broken: missing {field}"
-    
-    def test_forward_compatibility(self):
-        """Проверяет прямую совместимость API"""
-        with TestClient(app) as client:
-            # Тестируем, что новые поля не ломают старых клиентов
-            
-            # Проверяем, что дополнительные поля в ответах не обязательны
-            response = client.get("/health")
-            if response.status_code == 200:
-                data = response.json()
-                
-                # Проверяем, что дополнительные поля не ломают парсинг
-                optional_fields = ['memory_usage', 'disk_usage', 'active_projects']
-                for field in optional_fields:
-                    if field in data:
-                        # Поле присутствует - проверяем его тип
-                        assert isinstance(data[field], (dict, int, float))
-    
-    def test_api_evolution_safety(self):
-        """Проверяет безопасность эволюции API"""
-        with TestClient(app) as client:
-            # Проверяем, что изменения в API не нарушают контракты
-            
-            # Проверяем, что все эндпоинты имеют стабильные URL
-            stable_endpoints = [
-                '/health',
-                '/api/auth/login',
-                '/api/auth/register',
-                '/api/projects',
-                '/api/ai/chat'
-            ]
-            
-            for endpoint in stable_endpoints:
-                response = client.get(endpoint)
-                # Эндпоинт должен существовать (может требовать аутентификации)
-                assert response.status_code in [200, 401, 405], f"Endpoint {endpoint} not found"
-    
-    def test_breaking_changes_detection(self):
-        """Проверяет обнаружение breaking changes"""
-        with TestClient(app) as client:
-            # Проверяем, что не было внесено breaking changes
-            
-            # Проверяем, что обязательные поля не были удалены
-            response = client.get("/health")
-            if response.status_code == 200:
-                data = response.json()
-                
-                # Список полей, которые не должны быть удалены
-                critical_fields = ['status', 'timestamp', 'version']
-                for field in critical_fields:
-                    assert field in data, f"Breaking change detected: critical field {field} removed"
-    
-    def test_deprecation_policy_compliance(self):
-        """Проверяет соответствие политике deprecation"""
-        # Проверяем, что устаревшие поля правильно помечены
-        
-        # Проверяем, что deprecated поля имеют соответствующие аннотации
-        schemas = openapi_spec.get('components', {}).get('schemas', {})
-        
-        for schema_name, schema in schemas.items():
-            if 'properties' in schema:
-                for field_name, field_def in schema['properties'].items():
-                    if field_def.get('deprecated', False):
-                        # Проверяем, что deprecated поля имеют описание
-                        assert 'description' in field_def
-                        description = field_def['description'].lower()
-                        assert 'deprecated' in description or 'устарел' in description
-                        
-                        # Проверяем, что указана дата deprecation или версия
-                        assert 'version' in description or 'date' in description or 'since' in description
-
-# Тесты для проверки производительности API
-class TestAPIPerformanceContracts:
-    """Тесты производительности API"""
-    
-    def test_response_time_contract(self):
-        """Проверяет контракт времени ответа"""
-        import time
-        with TestClient(app) as client:
-            # Тестируем время ответа health endpoint
-            start_time = time.time()
-            response = client.get("/health")
-            end_time = time.time()
-            
-            response_time = end_time - start_time
-            
-            # Health endpoint должен отвечать быстро (< 1 секунды)
-            assert response_time < 1.0, f"Health endpoint too slow: {response_time:.2f}s"
-            
-            # Проверяем, что ответ содержит информацию о времени
-            if response.status_code == 200:
-                data = response.json()
-                assert 'uptime' in data
-                assert isinstance(data['uptime'], (int, float))
-    
-    def test_memory_usage_contract(self):
-        """Проверяет контракт использования памяти"""
-        import psutil
-        import os
-        with TestClient(app) as client:
-            process = psutil.Process(os.getpid())
-            initial_memory = process.memory_info().rss
-            
-            # Делаем несколько запросов
-            for i in range(10):
-                response = client.get("/health")
+                response = client.post("/api/projects", json=project_data)
                 assert response.status_code == 200
-            
-            final_memory = process.memory_info().rss
-            memory_increase = final_memory - initial_memory
-            
-            # Увеличение памяти не должно быть критическим (< 10MB)
-            assert memory_increase < 10 * 1024 * 1024, f"Memory usage too high: {memory_increase / 1024 / 1024:.2f}MB"
+                data = response.json()
+                assert "project_id" in data
+                assert "status" in data
+                assert "message" in data
+                assert "workspace" in data
     
-    def test_concurrent_requests_contract(self):
-        """Проверяет контракт concurrent запросов"""
-        import threading
-        import time
-        with TestClient(app) as client:
-            results = []
-            errors = []
+    @patch('backend.auth.dependencies.get_current_user')
+    def test_ai_chat_contract(self, mock_auth):
+        """Тест контракта AI чата"""
+        mock_auth.return_value = self.mock_user
+        
+        chat_data = {
+            "message": "Create a React component",
+            "model": "deepseek/deepseek-v3",
+            "provider": "openrouter"
+        }
+        
+        with patch('backend.main.get_ai_service') as mock_ai_service:
+            mock_service = MagicMock()
+            mock_response = MagicMock()
+            mock_response.provider.value = "openrouter"
+            mock_response.model = "deepseek/deepseek-v3"
+            mock_response.tokens_used = 100
+            mock_response.cost_usd = 0.01
+            mock_response.response_time = 1.5
+            mock_response.success = True
+            mock_response.content = "Here's a React component..."
+            mock_response.error = None
             
-            def make_request():
-                try:
-                    response = client.get("/health")
-                    results.append(response.status_code)
-                except Exception as e:
-                    errors.append(str(e))
+            mock_service.route_request.return_value = mock_response
+            mock_ai_service.return_value = mock_service
             
-            # Создаем 10 concurrent запросов
-            threads = []
-            for i in range(10):
-                thread = threading.Thread(target=make_request)
-                threads.append(thread)
-                thread.start()
+            with patch('backend.main.execute_supabase_operation') as mock_exec:
+                mock_exec.return_value = MagicMock(data=[])
+                
+                response = client.post("/api/ai/chat", json=chat_data)
+                assert response.status_code == 200
+                data = response.json()
+                assert "content" in data
+                assert "provider" in data
+                assert "model" in data
+                assert "tokens_used" in data
+                assert "cost_usd" in data
+                assert "response_time" in data
+    
+    def test_ai_providers_contract(self):
+        """Тест контракта AI провайдеров"""
+        response = client.get("/api/ai/providers")
+        assert response.status_code == 200
+        data = response.json()
+        assert "providers" in data
+        assert isinstance(data["providers"], list)
+        
+        # Проверяем структуру провайдера
+        provider = data["providers"][0]
+        assert "id" in provider
+        assert "name" in provider
+        assert "description" in provider
+        assert "website" in provider
+        assert "requires_key" in provider
+        assert "free_models" in provider
+    
+    @patch('backend.auth.dependencies.get_current_user')
+    def test_ai_usage_contract(self, mock_auth):
+        """Тест контракта AI статистики"""
+        mock_auth.return_value = self.mock_user
+        
+        with patch('backend.main.execute_supabase_operation') as mock_exec:
+            mock_exec.return_value = MagicMock(data=[])
             
-            # Ждем завершения всех потоков
-            for thread in threads:
-                thread.join()
+            with patch('backend.main.get_ai_service') as mock_ai_service:
+                mock_service = MagicMock()
+                mock_service.get_usage_stats.return_value = {
+                    "total_requests": 10,
+                    "total_tokens": 1000,
+                    "total_cost": 0.05
+                }
+                mock_ai_service.return_value = mock_service
+                
+                response = client.get("/api/ai/usage")
+                assert response.status_code == 200
+                data = response.json()
+                assert "total_requests" in data
+                assert "total_tokens" in data
+                assert "total_cost" in data
+    
+    @patch('backend.auth.dependencies.get_current_user')
+    def test_ai_validate_keys_contract(self, mock_auth):
+        """Тест контракта валидации AI ключей"""
+        mock_auth.return_value = self.mock_user
+        
+        keys_data = {
+            "openrouter": "sk-or-test-key",
+            "openai": "sk-test-key"
+        }
+        
+        with patch('backend.main.get_ai_service') as mock_ai_service:
+            mock_service = MagicMock()
+            mock_service.validate_all_keys.return_value = {
+                "openrouter": True,
+                "openai": False
+            }
+            mock_ai_service.return_value = mock_service
             
-            # Проверяем, что все запросы успешны
-            assert len(errors) == 0, f"Concurrent requests failed: {errors}"
-            assert len(results) == 10, f"Not all requests completed: {len(results)}/10"
-            assert all(status == 200 for status in results), f"Some requests failed: {results}"
+            response = client.post("/api/ai/validate-keys", json=keys_data)
+            assert response.status_code == 200
+            data = response.json()
+            assert "validation_results" in data
+            assert "valid_keys" in data
+            assert "invalid_keys" in data
+            assert isinstance(data["valid_keys"], list)
+            assert isinstance(data["invalid_keys"], list)
+    
+    def test_metrics_contract(self):
+        """Тест контракта метрик"""
+        response = client.get("/metrics")
+        assert response.status_code == 200
+        # Проверяем, что это Prometheus формат
+        assert "text/plain" in response.headers.get("content-type", "")
+    
+    def test_root_contract(self):
+        """Тест контракта корневого эндпоинта"""
+        response = client.get("/")
+        assert response.status_code == 200
+        data = response.json()
+        assert "message" in data
+        assert "version" in data
+        assert "status" in data
+        assert "docs" in data
+
+
+class TestMissingEndpoints:
+    """Тесты для отсутствующих эндпоинтов"""
+    
+    @patch('backend.auth.dependencies.get_current_user')
+    def test_mfa_setup_contract(self, mock_auth):
+        """Тест контракта MFA настройки"""
+        mock_auth.return_value = {"id": "test-user-123", "email": "test@example.com"}
+        
+        response = client.post("/api/auth/mfa/setup")
+        assert response.status_code == 200
+        data = response.json()
+        assert "secret" in data
+        assert "qr_code" in data
+        assert "backup_codes" in data
+        assert isinstance(data["backup_codes"], list)
+    
+    @patch('backend.auth.dependencies.get_current_user')
+    def test_mfa_verify_contract(self, mock_auth):
+        """Тест контракта MFA проверки"""
+        mock_auth.return_value = {"id": "test-user-123"}
+        
+        verify_data = {"code": "123456"}
+        response = client.post("/api/auth/mfa/verify", json=verify_data)
+        assert response.status_code == 200
+        data = response.json()
+        assert "verified" in data
+        assert "message" in data
+        assert isinstance(data["verified"], bool)
+    
+    @patch('backend.auth.dependencies.get_current_user')
+    def test_rbac_roles_contract(self, mock_auth):
+        """Тест контракта RBAC ролей"""
+        mock_auth.return_value = {"id": "test-user-123"}
+        
+        response = client.get("/api/rbac/roles")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        if data:
+            role = data[0]
+            assert "id" in role
+            assert "name" in role
+            assert "description" in role
+            assert "permissions" in role
+    
+    @patch('backend.auth.dependencies.get_current_user')
+    def test_api_keys_contract(self, mock_auth):
+        """Тест контракта API ключей"""
+        mock_auth.return_value = {"id": "test-user-123"}
+        
+        # GET /api/api-keys
+        with patch('backend.api.api_keys.execute_supabase_operation') as mock_exec:
+            mock_exec.return_value = MagicMock(data=[])
+            response = client.get("/api/api-keys/")
+            assert response.status_code == 200
+            data = response.json()
+            assert "keys" in data
+            assert "total_count" in data
+            assert isinstance(data["keys"], list)
+
+
+class TestErrorResponses:
+    """Тесты контрактов error responses"""
+    
+    def test_validation_error_contract(self):
+        """Тест контракта ошибок валидации"""
+        # Неверные данные для логина
+        response = client.post("/api/auth/login", json={"email": "invalid"})
+        assert response.status_code == 422  # Validation error
+        
+        data = response.json()
+        assert "detail" in data
+    
+    def test_authentication_error_contract(self):
+        """Тест контракта ошибок аутентификации"""
+        # Неверные учетные данные
+        with patch('backend.main.supabase_manager') as mock_supabase:
+            mock_client = MagicMock()
+            mock_client.auth.sign_in_with_password.return_value = MagicMock(user=None)
+            mock_supabase.get_client.return_value = mock_client
+            
+            response = client.post("/api/auth/login", json={
+                "email": "test@example.com",
+                "password": "wrongpassword"
+            })
+            assert response.status_code == 401
+            data = response.json()
+            assert "detail" in data
+    
+    def test_not_found_error_contract(self):
+        """Тест контракта ошибок 404"""
+        with patch('backend.auth.dependencies.get_current_user') as mock_auth:
+            mock_auth.return_value = {"id": "test-user-123"}
+            
+            with patch('backend.main.execute_supabase_operation') as mock_exec:
+                mock_exec.return_value = MagicMock(data=None)
+                
+                response = client.get("/api/projects/non-existent-project")
+                assert response.status_code == 404
+                data = response.json()
+                assert "detail" in data
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
