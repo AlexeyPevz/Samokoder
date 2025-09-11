@@ -3,9 +3,8 @@ from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import json
 import uuid
-import os
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from config.settings import settings
 from backend.services.gpt_pilot_wrapper_v2 import SamokoderGPTPilot
@@ -20,32 +19,12 @@ from backend.core.exceptions import (
     SamokoderException, AuthenticationError, AuthorizationError, ValidationError,
     NotFoundError, ConflictError, RateLimitError, AIServiceError, DatabaseError,
     ExternalServiceError, ConfigurationError, ConnectionError, TimeoutError,
-    EncryptionError, ProjectError, FileSystemError, NetworkError, CacheError
+    EncryptionError, ProjectError, FileSystemError, NetworkError, CacheError,
+    MonitoringError
 )
 
-# Настройка структурированного логирования
-import structlog
-
-# Настройка structlog
-structlog.configure(
-    processors=[
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer()
-    ],
-    context_class=dict,
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    wrapper_class=structlog.stdlib.BoundLogger,
-    cache_logger_on_first_use=True,
-)
-
-logger = structlog.get_logger(__name__)
+# Импортируем настроенный логгер из monitoring
+from backend.monitoring import logger
 
 # Создаем FastAPI приложение
 app = FastAPI(
@@ -163,13 +142,13 @@ async def startup_event():
         await project_state_manager.initialize()
         logger.info("All managers initialized")
     except ConfigurationError as e:
-        logger.error(f"Configuration error during initialization: {e}")
+        logger.error("configuration_error_during_initialization", error=str(e), error_type=type(e).__name__)
         raise
     except ConnectionError as e:
-        logger.error(f"Connection error during initialization: {e}")
+        logger.error("connection_error_during_initialization", error=str(e), error_type=type(e).__name__)
         raise
     except Exception as e:
-        logger.error(f"Unexpected error during initialization: {e}")
+        logger.error("unexpected_error_during_initialization", error=str(e), error_type=type(e).__name__)
         raise ConfigurationError(f"Failed to initialize managers: {e}")
 
 # === БАЗОВЫЕ ЭНДПОИНТЫ ===
@@ -266,7 +245,8 @@ async def login(credentials: LoginRequest):
         password = credentials.password
         
         # Если Supabase недоступен или URL содержит example, используем mock аутентификацию
-        if not supabase or settings.supabase_url.endswith("example.supabase.co"):
+        supabase_client = supabase_manager.get_client("anon")
+        if not supabase_client or settings.supabase_url.endswith("example.supabase.co"):
             logger.warning("supabase_unavailable", fallback="mock_auth")
             return {
                 "message": "Успешный вход (mock режим)",
@@ -281,7 +261,7 @@ async def login(credentials: LoginRequest):
                 }
             }
         
-        response = supabase.auth.sign_in_with_password({
+        response = supabase_client.auth.sign_in_with_password({
             "email": email,
             "password": password
         })
@@ -330,7 +310,8 @@ async def register(user_data: dict):
             raise HTTPException(status_code=400, detail="Поля не могут быть пустыми")
         
         # Если Supabase недоступен или URL содержит example, используем mock регистрацию
-        if not supabase or settings.supabase_url.endswith("example.supabase.co"):
+        supabase_client = supabase_manager.get_client("anon")
+        if not supabase_client or settings.supabase_url.endswith("example.supabase.co"):
             logger.warning("supabase_unavailable", fallback="mock_register")
             return {
                 "message": "Пользователь успешно зарегистрирован (mock режим)",
@@ -345,7 +326,7 @@ async def register(user_data: dict):
             }
         
         # Реальная регистрация через Supabase
-        response = supabase.auth.sign_up({
+        response = supabase_client.auth.sign_up({
             "email": email,
             "password": password,
             "options": {
@@ -381,7 +362,9 @@ async def register(user_data: dict):
 async def logout(current_user: dict = Depends(get_current_user)):
     """Выход из системы"""
     try:
-        supabase.auth.sign_out()
+        supabase_client = supabase_manager.get_client("anon")
+        if supabase_client:
+            supabase_client.auth.sign_out()
         logger.info("user_logout_success", user_email=current_user.get('email'))
         return {"message": "Успешный выход"}
     except Exception as e:
@@ -403,7 +386,8 @@ async def get_projects(current_user: dict = Depends(get_current_user)):
     """Получить список проектов пользователя"""
     try:
         # В тестовом режиме возвращаем mock данные
-        if supabase is None:
+        supabase_client = supabase_manager.get_client("anon")
+        if supabase_client is None:
             return {
                 "projects": [],
                 "total_count": 0
@@ -461,7 +445,8 @@ async def create_project(
     try:
         # Получаем API ключи пользователя
         user_api_keys = {}
-        if supabase:
+        supabase_client = supabase_manager.get_client("anon")
+        if supabase_client:
             from backend.services.encryption_service import get_encryption_service
             encryption_service = get_encryption_service()
             
@@ -481,7 +466,7 @@ async def create_project(
                         )
                         user_api_keys[provider_name] = decrypted_key
                     except Exception as e:
-                        logger.warning(f"Не удалось расшифровать API ключ для {provider_name}: {e}")
+                        logger.warning("failed_to_decrypt_api_key", provider=provider_name, error=str(e))
                         continue
         
         # Создаем обертку GPT-Pilot
@@ -497,7 +482,7 @@ async def create_project(
             raise HTTPException(status_code=400, detail=init_result["message"])
         
         # Сохраняем в базу данных
-        if supabase:
+        if supabase_client:
             project_record = {
                 "id": project_id,
                 "user_id": user_id,
@@ -555,7 +540,8 @@ async def get_project(
     """Получить детали проекта"""
     
     try:
-        if supabase:
+        supabase_client = supabase_manager.get_client("anon")
+        if supabase_client:
             response = await execute_supabase_operation(
                 lambda client: client.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"]).single().execute(),
                 "anon"
@@ -601,7 +587,8 @@ async def delete_project(
     """Удалить проект"""
     
     try:
-        if supabase:
+        supabase_client = supabase_manager.get_client("anon")
+        if supabase_client:
             # Проверяем, что проект принадлежит пользователю
             project_response = await execute_supabase_operation(
                 lambda client: client.table("projects").select("*").eq("id", project_id).eq("user_id", current_user["id"]).single().execute(),
@@ -888,7 +875,8 @@ async def ai_chat(
     try:
         # Получаем API ключи пользователя
         user_api_keys = {}
-        if supabase:
+        supabase_client = supabase_manager.get_client("anon")
+        if supabase_client:
             from backend.services.encryption_service import get_encryption_service
             encryption_service = get_encryption_service()
             
@@ -908,7 +896,7 @@ async def ai_chat(
                         )
                         user_api_keys[provider_name] = decrypted_key
                     except Exception as e:
-                        logger.warning(f"Не удалось расшифровать API ключ для {provider_name}: {e}")
+                        logger.warning("failed_to_decrypt_api_key", provider=provider_name, error=str(e))
                         continue
         else:
             # Mock режим - используем тестовые ключи
@@ -1067,7 +1055,8 @@ async def load_project_to_memory(project_id: str, user_id: str):
     """Загружает проект в память из базы данных"""
     
     try:
-        if not supabase:
+        supabase_client = supabase_manager.get_client("anon")
+        if not supabase_client:
             # Mock режим - создаем пустой проект
             user_api_keys = {
                 "openrouter": "mock_openrouter_key",
@@ -1148,7 +1137,7 @@ async def shutdown_event():
         await connection_manager.close()
         logger.info("Application shutdown completed")
     except Exception as e:
-        logger.error(f"Error during shutdown: {e}")
+        logger.error("error_during_shutdown", error=str(e), error_type=type(e).__name__)
 
 if __name__ == "__main__":
     import uvicorn
