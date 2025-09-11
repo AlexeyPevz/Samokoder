@@ -166,10 +166,10 @@ async def metrics():
 @app.get("/health/detailed")
 async def detailed_health_check():
     """Детальная проверка здоровья всех компонентов"""
-    from backend.monitoring import check_external_services_health
+    from backend.services.health_checker import health_checker
     
     health_status = monitoring.get_health_status()
-    external_services = await check_external_services_health()
+    external_services = await health_checker.check_all_services()
     
     return {
         **health_status,
@@ -987,10 +987,18 @@ async def log_requests(request: Request, call_next):
     
     return response
 
+# Graceful shutdown
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Обработка graceful shutdown"""
+    from backend.services.health_checker import health_checker
+    await health_checker.close()
+    logger.info("Application shutdown completed")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        "backend.main_fixed:app",
+        "backend.main:app",
         host=settings.host,
         port=settings.port,
         reload=settings.debug

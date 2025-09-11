@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any
 from uuid import UUID
 from backend.contracts.database import DatabaseServiceProtocol
 from backend.services.connection_pool import connection_pool_manager
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,11 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
             self._supabase = connection_pool_manager.get_supabase_client()
         return self._supabase
     
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+        retry=retry_if_exception_type((ConnectionError, TimeoutError))
+    )
     async def get_user(self, user_id: UUID) -> Optional[Dict[str, Any]]:
         """Get user by ID"""
         try:
@@ -31,6 +37,11 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
             logger.error(f"Failed to get user {user_id}: {e}")
             return None
     
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+        retry=retry_if_exception_type((ConnectionError, TimeoutError))
+    )
     async def create_user(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create new user"""
         try:
@@ -41,6 +52,11 @@ class DatabaseServiceImpl(DatabaseServiceProtocol):
             logger.error(f"Failed to create user: {e}")
             raise
     
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+        retry=retry_if_exception_type((ConnectionError, TimeoutError))
+    )
     async def update_user(self, user_id: UUID, user_data: Dict[str, Any]) -> Dict[str, Any]:
         """Update user"""
         try:
