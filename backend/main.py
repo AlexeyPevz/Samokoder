@@ -12,6 +12,7 @@ from backend.services.gpt_pilot_wrapper_v2 import SamokoderGPTPilot
 from backend.services.ai_service import get_ai_service
 from backend.auth.dependencies import get_current_user
 from backend.monitoring import monitoring, monitoring_middleware, get_metrics_response
+from backend.models.requests import LoginRequest
 
 # Настройка структурированного логирования
 import structlog
@@ -121,7 +122,7 @@ async def root():
         "docs": "/docs"
     }
 
-@app.get("/health")
+@app.get("/health", responses={500: {"description": "Internal server error"}})
 async def health_check():
     """
     Проверка здоровья сервиса.
@@ -129,7 +130,11 @@ async def health_check():
     Returns:
         dict: Статус здоровья всех компонентов системы
     """
-    return monitoring.get_health_status()
+    try:
+        return monitoring.get_health_status()
+    except Exception as e:
+        logger.error("health_check_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
 
 @app.get("/metrics")
 async def metrics():
@@ -160,21 +165,12 @@ async def detailed_health_check():
 # === АУТЕНТИФИКАЦИЯ ===
 
 @app.post("/api/auth/login")
-async def login(credentials: dict):
+async def login(credentials: LoginRequest):
     """Вход через Supabase Auth (или mock для тестирования)"""
     try:
-        # Строгая проверка входных данных
-        if not credentials:
-            raise HTTPException(status_code=400, detail="Данные для входа обязательны")
-        
-        email = credentials.get("email")
-        password = credentials.get("password")
-        
-        if not email or not password or not isinstance(email, str) or not isinstance(password, str):
-            raise HTTPException(status_code=400, detail="Email и пароль обязательны и должны быть строками")
-        
-        if not email.strip() or not password.strip():
-            raise HTTPException(status_code=400, detail="Email и пароль не могут быть пустыми")
+        # Pydantic автоматически валидирует данные и возвращает 422 при ошибке валидации
+        email = credentials.email
+        password = credentials.password
         
         # Если Supabase недоступен или URL содержит example, используем mock аутентификацию
         if not supabase or settings.supabase_url.endswith("example.supabase.co"):
@@ -210,6 +206,75 @@ async def login(credentials: dict):
     except Exception as e:
         logger.error("login_error", error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=401, detail=f"Ошибка входа: {str(e)}")
+
+@app.post("/api/auth/register")
+async def register(user_data: dict):
+    """Регистрация нового пользователя"""
+    try:
+        # Строгая проверка входных данных
+        if not user_data:
+            raise HTTPException(status_code=400, detail="Данные для регистрации обязательны")
+        
+        email = user_data.get("email")
+        password = user_data.get("password")
+        full_name = user_data.get("full_name")
+        
+        if not email or not password or not full_name:
+            raise HTTPException(status_code=400, detail="Email, пароль и имя обязательны")
+        
+        if not isinstance(email, str) or not isinstance(password, str) or not isinstance(full_name, str):
+            raise HTTPException(status_code=400, detail="Все поля должны быть строками")
+        
+        if not email.strip() or not password.strip() or not full_name.strip():
+            raise HTTPException(status_code=400, detail="Поля не могут быть пустыми")
+        
+        # Если Supabase недоступен или URL содержит example, используем mock регистрацию
+        if not supabase or settings.supabase_url.endswith("example.supabase.co"):
+            logger.warning("supabase_unavailable", fallback="mock_register")
+            return {
+                "message": "Пользователь успешно зарегистрирован (mock режим)",
+                "user": {
+                    "id": f"mock_user_{email}",
+                    "email": email,
+                    "full_name": full_name,
+                    "created_at": "2025-01-01T00:00:00Z"
+                },
+                "access_token": f"mock_token_{email}",
+                "token_type": "bearer"
+            }
+        
+        # Реальная регистрация через Supabase
+        response = supabase.auth.sign_up({
+            "email": email,
+            "password": password,
+            "options": {
+                "data": {
+                    "full_name": full_name
+                }
+            }
+        })
+        
+        if response.user:
+            logger.info("user_register_success", user_email=email)
+            return {
+                "message": "Пользователь успешно зарегистрирован",
+                "user": {
+                    "id": response.user.id,
+                    "email": response.user.email,
+                    "full_name": full_name,
+                    "created_at": response.user.created_at
+                },
+                "access_token": response.session.access_token if response.session else None,
+                "token_type": "bearer"
+            }
+        else:
+            raise HTTPException(status_code=400, detail="Ошибка регистрации")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("register_error", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=400, detail=f"Ошибка регистрации: {str(e)}")
 
 @app.post("/api/auth/logout")
 async def logout(current_user: dict = Depends(get_current_user)):
