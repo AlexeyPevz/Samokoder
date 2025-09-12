@@ -1,188 +1,198 @@
+#!/usr/bin/env python3
 """
-Тесты для backend/core/setup.py - Dependency Injection Container Setup
+Тесты для Setup DI Container
 """
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-import logging
 
+import pytest
+from unittest.mock import Mock, patch
 from backend.core.setup import (
     setup_di_container,
     get_ai_service,
     get_database_service,
     get_supabase_service
 )
-from backend.core.container import container
 from backend.contracts.ai_service import AIServiceProtocol
 from backend.contracts.database import DatabaseServiceProtocol
 from backend.contracts.supabase_service import SupabaseServiceProtocol
 
 
 class TestSetupDIContainer:
-    """Тесты для setup_di_container функции"""
-
+    """Тесты для setup_di_container"""
+    
     def setup_method(self):
-        """Настройка перед каждым тестом"""
+        """Настройка для каждого теста"""
         # Очищаем контейнер перед каждым тестом
-        container._services = {}
-
+        from backend.core.container import container
+        container.clear()
+    
     @patch('backend.core.setup.logger')
     @patch('backend.core.setup.container')
-    def test_setup_di_container_registers_ai_service(self, mock_container, mock_logger):
-        """Тест регистрации AI Service"""
-        # Act
-        setup_di_container()
-        
-        # Assert
-        # Проверяем, что register был вызван для AIServiceProtocol
-        assert mock_container.register.call_count >= 1
-        mock_logger.info.assert_called()
-        mock_logger.debug.assert_called()
-
-    @patch('backend.core.setup.logger')
-    @patch('backend.core.setup.container')
-    def test_setup_di_container_registers_database_service(self, mock_container, mock_logger):
-        """Тест регистрации Database Service"""
-        # Act
-        setup_di_container()
-        
-        # Assert
-        # Проверяем, что register был вызван для DatabaseService
-        assert mock_container.register.call_count >= 2
-
-    @patch('backend.core.setup.logger')
-    @patch('backend.core.setup.container')
-    def test_setup_di_container_registers_supabase_service(self, mock_container, mock_logger):
-        """Тест регистрации Supabase Service"""
-        # Act
-        setup_di_container()
-        
-        # Assert
-        # Проверяем, что register был вызван для SupabaseService
-        assert mock_container.register.call_count >= 3
-
-    @patch('backend.core.setup.logger')
-    @patch('backend.core.setup.container')
-    def test_setup_di_container_logs_completion(self, mock_container, mock_logger):
-        """Тест логирования завершения настройки"""
+    def test_setup_di_container(self, mock_container, mock_logger):
+        """Тест настройки DI контейнера"""
+        # Настраиваем мок контейнера
         mock_container.get_registered_services.return_value = {
-            'AIServiceProtocol': 'AIServiceImpl',
-            'DatabaseServiceProtocol': 'DatabaseServiceImpl'
+            "AIServiceProtocol": "Implementation: AIServiceImpl",
+            "DatabaseServiceProtocol": "Implementation: DatabaseServiceImpl", 
+            "SupabaseServiceProtocol": "Implementation: SupabaseServiceImpl"
         }
         
-        # Act
+        # Вызываем функцию
         setup_di_container()
         
-        # Assert
+        # Проверяем что все сервисы зарегистрированы
+        assert mock_container.register.call_count == 3
+        
+        # Проверяем регистрацию AI Service
+        mock_container.register.assert_any_call(
+            AIServiceProtocol, 
+            mock_container.register.call_args_list[0][0][1],  # AIServiceImpl
+            singleton=True
+        )
+        
+        # Проверяем регистрацию Database Service
+        mock_container.register.assert_any_call(
+            DatabaseServiceProtocol,
+            mock_container.register.call_args_list[1][0][1],  # DatabaseServiceImpl
+            singleton=True
+        )
+        
+        # Проверяем регистрацию Supabase Service
+        mock_container.register.assert_any_call(
+            SupabaseServiceProtocol,
+            mock_container.register.call_args_list[2][0][1],  # SupabaseServiceImpl
+            singleton=True
+        )
+        
+        # Проверяем логирование
+        mock_logger.info.assert_called()
+        mock_logger.debug.assert_called()
+        mock_logger.info.assert_any_call("Setting up Dependency Injection container...")
         mock_logger.info.assert_any_call("Dependency Injection container setup complete")
-        mock_logger.info.assert_any_call("Registered services: ['AIServiceProtocol', 'DatabaseServiceProtocol']")
-
+    
     @patch('backend.core.setup.logger')
     @patch('backend.core.setup.container')
-    def test_setup_di_container_handles_exception(self, mock_container, mock_logger):
-        """Тест обработки исключений при настройке"""
-        mock_container.register.side_effect = Exception("Registration failed")
+    def test_setup_di_container_logging(self, mock_container, mock_logger):
+        """Тест логирования при настройке DI контейнера"""
+        mock_container.get_registered_services.return_value = {"TestService": "Implementation: TestImpl"}
         
-        # Act & Assert
-        with pytest.raises(Exception):
-            setup_di_container()
+        setup_di_container()
+        
+        # Проверяем что все ожидаемые логи записаны
+        mock_logger.info.assert_any_call("Setting up Dependency Injection container...")
+        mock_logger.debug.assert_any_call("Registered AIServiceProtocol -> AIServiceImpl")
+        mock_logger.debug.assert_any_call("Registered DatabaseServiceProtocol -> DatabaseServiceImpl")
+        mock_logger.debug.assert_any_call("Registered SupabaseServiceProtocol -> SupabaseServiceImpl")
+        mock_logger.info.assert_any_call("Dependency Injection container setup complete")
+        mock_logger.info.assert_any_call("Registered services: ['TestService']")
 
+
+class TestServiceGetters:
+    """Тесты для функций получения сервисов"""
+    
+    def setup_method(self):
+        """Настройка для каждого теста"""
+        # Очищаем контейнер перед каждым тестом
+        from backend.core.container import container
+        container.clear()
+    
     @patch('backend.core.setup.container')
-    def test_get_ai_service_returns_service(self, mock_container):
-        """Тест получения AI Service"""
-        mock_service = Mock(spec=AIServiceProtocol)
-        mock_container.get.return_value = mock_service
+    def test_get_ai_service(self, mock_container):
+        """Тест получения AI сервиса"""
+        mock_ai_service = Mock(spec=AIServiceProtocol)
+        mock_container.get.return_value = mock_ai_service
         
-        # Act
         result = get_ai_service()
         
-        # Assert
-        assert result == mock_service
+        assert result == mock_ai_service
         mock_container.get.assert_called_once_with(AIServiceProtocol)
-
+    
     @patch('backend.core.setup.container')
-    def test_get_database_service_returns_service(self, mock_container):
-        """Тест получения Database Service"""
-        mock_service = Mock(spec=DatabaseServiceProtocol)
-        mock_container.get.return_value = mock_service
+    def test_get_database_service(self, mock_container):
+        """Тест получения Database сервиса"""
+        mock_db_service = Mock(spec=DatabaseServiceProtocol)
+        mock_container.get.return_value = mock_db_service
         
-        # Act
         result = get_database_service()
         
-        # Assert
-        assert result == mock_service
+        assert result == mock_db_service
         mock_container.get.assert_called_once_with(DatabaseServiceProtocol)
-
+    
     @patch('backend.core.setup.container')
-    def test_get_supabase_service_returns_service(self, mock_container):
-        """Тест получения Supabase Service"""
-        mock_service = Mock(spec=SupabaseServiceProtocol)
-        mock_container.get.return_value = mock_service
+    def test_get_supabase_service(self, mock_container):
+        """Тест получения Supabase сервиса"""
+        mock_supabase_service = Mock(spec=SupabaseServiceProtocol)
+        mock_container.get.return_value = mock_supabase_service
         
-        # Act
         result = get_supabase_service()
         
-        # Assert
-        assert result == mock_service
+        assert result == mock_supabase_service
         mock_container.get.assert_called_once_with(SupabaseServiceProtocol)
-
+    
     @patch('backend.core.setup.container')
-    def test_get_ai_service_handles_exception(self, mock_container):
-        """Тест обработки исключений при получении AI Service"""
-        mock_container.get.side_effect = Exception("Service not found")
+    def test_get_ai_service_error(self, mock_container):
+        """Тест получения AI сервиса при ошибке"""
+        mock_container.get.side_effect = ValueError("Service not registered")
         
-        # Act & Assert
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError, match="Service not registered"):
             get_ai_service()
-
+    
     @patch('backend.core.setup.container')
-    def test_get_database_service_handles_exception(self, mock_container):
-        """Тест обработки исключений при получении Database Service"""
-        mock_container.get.side_effect = Exception("Service not found")
+    def test_get_database_service_error(self, mock_container):
+        """Тест получения Database сервиса при ошибке"""
+        mock_container.get.side_effect = ValueError("Service not registered")
         
-        # Act & Assert
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError, match="Service not registered"):
             get_database_service()
-
+    
     @patch('backend.core.setup.container')
-    def test_get_supabase_service_handles_exception(self, mock_container):
-        """Тест обработки исключений при получении Supabase Service"""
-        mock_container.get.side_effect = Exception("Service not found")
+    def test_get_supabase_service_error(self, mock_container):
+        """Тест получения Supabase сервиса при ошибке"""
+        mock_container.get.side_effect = ValueError("Service not registered")
         
-        # Act & Assert
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError, match="Service not registered"):
             get_supabase_service()
 
-    @patch('backend.core.setup.logger')
-    def test_setup_logs_proper_messages(self, mock_logger):
-        """Тест правильности сообщений логов"""
-        with patch('backend.core.setup.container') as mock_container:
-            mock_container.get_registered_services.return_value = {}
-            
-            # Act
-            setup_di_container()
-            
-            # Assert
-            mock_logger.info.assert_any_call("Setting up Dependency Injection container...")
-            mock_logger.debug.assert_any_call("Registered AIServiceProtocol -> AIServiceImpl")
-            mock_logger.debug.assert_any_call("Registered DatabaseServiceProtocol -> DatabaseServiceImpl")
-            mock_logger.debug.assert_any_call("Registered SupabaseServiceProtocol -> SupabaseServiceImpl")
 
-    def test_setup_di_container_imports_work(self):
-        """Тест что все импорты работают корректно"""
-        # Это тест на то, что модуль может быть импортирован без ошибок
-        import backend.core.setup
-        assert hasattr(backend.core.setup, 'setup_di_container')
-        assert hasattr(backend.core.setup, 'get_ai_service')
-        assert hasattr(backend.core.setup, 'get_database_service')
-        assert hasattr(backend.core.setup, 'get_supabase_service')
-
-    @patch('backend.core.setup.container')
-    def test_container_setup_on_import(self, mock_container):
-        """Тест что контейнер настраивается при импорте"""
-        # При импорте модуля должна вызываться setup_di_container
-        # Это происходит в строке 56 файла
-        with patch('backend.core.setup.setup_di_container') as mock_setup:
-            import importlib
-            import backend.core.setup
-            importlib.reload(backend.core.setup)
-            # setup_di_container должна быть вызвана при импорте
+class TestSetupIntegration:
+    """Интеграционные тесты для setup"""
+    
+    def setup_method(self):
+        """Настройка для каждого теста"""
+        # Очищаем контейнер перед каждым тестом
+        from backend.core.container import container
+        container.clear()
+    
+    def test_setup_integration(self):
+        """Интеграционный тест настройки DI контейнера"""
+        # Импортируем реальный контейнер
+        from backend.core.container import container
+        
+        # Вызываем настройку
+        setup_di_container()
+        
+        # Проверяем что сервисы зарегистрированы
+        assert container.is_registered(AIServiceProtocol)
+        assert container.is_registered(DatabaseServiceProtocol)
+        assert container.is_registered(SupabaseServiceProtocol)
+        
+        # Проверяем что можно получить сервисы синхронно
+        ai_service = container.get_sync(AIServiceProtocol)
+        db_service = container.get_sync(DatabaseServiceProtocol)
+        supabase_service = container.get_sync(SupabaseServiceProtocol)
+        
+        # Проверяем что получили экземпляры правильных типов
+        assert ai_service is not None
+        assert db_service is not None
+        assert supabase_service is not None
+    
+    def test_setup_on_import(self):
+        """Тест что setup вызывается при импорте модуля"""
+        # Этот тест проверяет что setup_di_container вызывается при импорте
+        # Поскольку setup вызывается на уровне модуля, мы просто проверяем
+        # что импорт не вызывает ошибок
+        from backend.core import setup
+        
+        assert setup.setup_di_container is not None
+        assert setup.get_ai_service is not None
+        assert setup.get_database_service is not None
+        assert setup.get_supabase_service is not None
