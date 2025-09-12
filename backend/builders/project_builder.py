@@ -163,12 +163,8 @@ class ProjectBuilder:
         
         return True
 
-# Глобальный экземпляр строителя
-_project_builder: Optional[ProjectBuilder] = None
-
 def get_project_builder() -> ProjectBuilder:
-    """Получить экземпляр строителя проектов"""
-    global _project_builder
-    if _project_builder is None:
-        _project_builder = ProjectBuilder()
-    return _project_builder
+    """Получить билдер проектов (использует DI контейнер)"""
+    from backend.core.dependency_injection import get_container
+    container = get_container()
+    return container.get(ProjectBuilder)

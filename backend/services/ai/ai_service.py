@@ -16,10 +16,11 @@ from backend.core.exceptions import (
     AIServiceError, NetworkError, TimeoutError, 
     ValidationError, ConfigurationError
 )
+from backend.interfaces.ai import IAIService
 
 logger = logging.getLogger(__name__)
 
-class AIService:
+class AIService(IAIService):
     """Основной сервис для работы с AI провайдерами"""
     
     def __init__(self):

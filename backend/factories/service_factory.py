@@ -89,12 +89,6 @@ class ConcreteServiceFactory(ServiceFactory):
         self._service_instances.clear()
         logger.info("All service instances cleared")
 
-# Глобальная фабрика сервисов
-_service_factory: Optional[ConcreteServiceFactory] = None
-
 def get_service_factory() -> ConcreteServiceFactory:
-    """Получить глобальную фабрику сервисов"""
-    global _service_factory
-    if _service_factory is None:
-        _service_factory = ConcreteServiceFactory()
-    return _service_factory
+    """Получить фабрику сервисов (использует DI контейнер)"""
+    return ConcreteServiceFactory()

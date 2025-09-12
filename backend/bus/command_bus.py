@@ -137,12 +137,8 @@ class CommandBus:
             except Exception as e:
                 logger.error(f"Error processing command: {e}")
 
-# Глобальная шина команд
-_command_bus: Optional[CommandBus] = None
-
 def get_command_bus() -> CommandBus:
-    """Получить глобальную шину команд"""
-    global _command_bus
-    if _command_bus is None:
-        _command_bus = CommandBus()
-    return _command_bus
+    """Получить шину команд (использует DI контейнер)"""
+    from backend.core.dependency_injection import get_container
+    container = get_container()
+    return container.get(CommandBus)

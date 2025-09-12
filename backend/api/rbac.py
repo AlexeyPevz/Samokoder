@@ -7,20 +7,21 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from backend.auth.dependencies import get_current_user
 from backend.models.requests import RoleCreateRequest, PermissionAssignRequest
 from backend.models.responses import RoleResponse, PermissionResponse
-from backend.services.rbac_service import get_rbac_service
+from backend.adapters.adapter_factory import get_adapter_factory
 from typing import Dict, List
 import uuid
 
 router = APIRouter()
 
-# Инициализация сервиса
-rbac_service = get_rbac_service()
+# Получение адаптера безопасности
+adapter_factory = get_adapter_factory()
+security_adapter = adapter_factory.get_security_adapter()
 
 @router.get("/roles", response_model=List[RoleResponse])
 async def get_roles(current_user: dict = Depends(get_current_user)):
     """Получить список всех ролей"""
     try:
-        roles = rbac_service.get_all_roles()
+        roles = security_adapter.rbac_service.get_all_roles()
         return [RoleResponse(
             id=role.id,
             name=role.name,

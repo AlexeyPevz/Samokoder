@@ -130,12 +130,8 @@ class EventBus:
         except Exception as e:
             logger.error(f"Error in event handler: {e}")
 
-# Глобальная шина событий
-_event_bus: Optional[EventBus] = None
-
 def get_event_bus() -> EventBus:
-    """Получить глобальную шину событий"""
-    global _event_bus
-    if _event_bus is None:
-        _event_bus = EventBus()
-    return _event_bus
+    """Получить шину событий (использует DI контейнер)"""
+    from backend.core.dependency_injection import get_container
+    container = get_container()
+    return container.get(EventBus)

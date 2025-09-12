@@ -16,10 +16,11 @@ from typing import Dict, Optional
 router = APIRouter()
 
 # Импорт MFA сервиса
-from backend.services.mfa_service import get_mfa_service
+from backend.adapters.adapter_factory import get_adapter_factory
 
-# Инициализация сервиса
-mfa_service = get_mfa_service()
+# Получение адаптера безопасности
+adapter_factory = get_adapter_factory()
+security_adapter = adapter_factory.get_security_adapter()
 
 @router.post("/setup", response_model=MFASetupResponse)
 async def setup_mfa(
@@ -30,14 +31,11 @@ async def setup_mfa(
         user_id = current_user["id"]
         
         # Генерируем секрет для TOTP
-        secret = mfa_service.generate_secret()
-        mfa_service.store_mfa_secret(user_id, secret)
-        
-        # Создаем QR код
-        qr_code = mfa_service.generate_qr_code(current_user['email'], secret)
-        
-        # Генерируем резервные коды
-        backup_codes = mfa_service.generate_backup_codes()
+        # Настраиваем MFA для пользователя
+        mfa_data = security_adapter.setup_mfa_for_user(user_id)
+        secret = mfa_data["secret"]
+        qr_code = mfa_data["qr_code"]
+        backup_codes = mfa_data["backup_codes"]
         
         return MFASetupResponse(
             secret=secret,

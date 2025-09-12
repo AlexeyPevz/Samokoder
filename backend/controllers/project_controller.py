@@ -169,12 +169,8 @@ class ProjectController:
             logger.error(f"Error getting project state {project_id}: {e}")
             return {}
 
-# Глобальный экземпляр контроллера
-_project_controller: Optional[ProjectController] = None
-
 def get_project_controller() -> ProjectController:
-    """Получить экземпляр контроллера проектов"""
-    global _project_controller
-    if _project_controller is None:
-        _project_controller = ProjectController()
-    return _project_controller
+    """Получить контроллер проектов (использует DI контейнер)"""
+    from backend.core.dependency_injection import get_container
+    container = get_container()
+    return container.get(ProjectController)

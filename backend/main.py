@@ -11,9 +11,8 @@ from typing import Dict, Optional
 
 from config.settings import settings
 from backend.services.gpt_pilot_wrapper_v2 import SamokoderGPTPilot
-from backend.services.ai_service import get_ai_service
+from backend.adapters.adapter_factory import get_adapter_factory
 from backend.auth.dependencies import get_current_user
-from backend.monitoring import monitoring, monitoring_middleware, get_metrics_response
 from backend.models.requests import LoginRequest, ChatRequest, RegisterRequest
 from backend.models.responses import SubscriptionTier, RegisterResponse
 from backend.services.connection_manager import connection_manager
@@ -39,6 +38,12 @@ app = FastAPI(
 
 # Глобальный обработчик ошибок
 secure_error_handler = SecureErrorHandler()
+
+# Инициализация адаптеров новой архитектуры
+adapter_factory = get_adapter_factory()
+ai_adapter = adapter_factory.get_ai_adapter()
+monitoring_adapter = adapter_factory.get_monitoring_adapter()
+security_adapter = adapter_factory.get_security_adapter()
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -231,10 +236,15 @@ async def health_check():
         dict: Статус здоровья всех компонентов системы
     """
     try:
-        return monitoring.get_health_status()
-    except MonitoringError as e:
-        logger.error(f"monitoring_error: {str(e)}")
-        raise HTTPException(status_code=503, detail="Monitoring service unavailable")
+        # Используем новый мониторинг через адаптер
+        health_status = monitoring_adapter.get_system_health()
+        return {
+            "status": "healthy" if health_status["healthy"] else "unhealthy",
+            "timestamp": datetime.now().isoformat(),
+            "version": "1.0.0",
+            "architecture": "hybrid",  # Старый API с новой архитектурой
+            "details": health_status
+        }
     except Exception as e:
         logger.error(f"health_check_error: {str(e)}")
         raise HTTPException(status_code=500, detail="Health check failed")

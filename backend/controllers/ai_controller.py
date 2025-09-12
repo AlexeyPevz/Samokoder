@@ -94,12 +94,8 @@ class AIController:
             }
         }
 
-# Глобальный экземпляр контроллера
-_ai_controller: Optional[AIController] = None
-
 def get_ai_controller() -> AIController:
-    """Получить экземпляр AI контроллера"""
-    global _ai_controller
-    if _ai_controller is None:
-        _ai_controller = AIController()
-    return _ai_controller
+    """Получить контроллер AI (использует DI контейнер)"""
+    from backend.core.dependency_injection import get_container
+    container = get_container()
+    return container.get(AIController)
