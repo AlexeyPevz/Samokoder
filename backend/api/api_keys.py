@@ -31,7 +31,6 @@ async def create_api_key(
     """Создать новый API ключ"""
     try:
         # Получаем Supabase клиент через connection manager
-        from backend.services.connection_manager import connection_manager
         
         supabase = connection_manager.get_pool('supabase')
         if not supabase:
@@ -77,7 +76,7 @@ async def create_api_key(
             key_name=request.key_name,
             key_last_4=key_last_4,
             is_active=True,
-            created_at=response.data[0]["created_at"]
+            created_at=str(response.data[0]["created_at"])
         )
         
     except HTTPException:
@@ -114,7 +113,6 @@ async def get_api_keys(
     """Получить список API ключей пользователя"""
     try:
         # Получаем Supabase клиент через connection manager
-        from backend.services.connection_manager import connection_manager
         
         supabase = connection_manager.get_pool('supabase')
         if not supabase:
@@ -139,7 +137,7 @@ async def get_api_keys(
                 key_name=row["key_name"],
                 key_last_4=row["api_key_last_4"],
                 is_active=row["is_active"],
-                created_at=row["created_at"]
+                created_at=str(row["created_at"])
             ))
         
         return APIKeyListResponse(keys=keys, total_count=len(keys))
@@ -171,7 +169,6 @@ async def get_api_key(
     """Получить конкретный API ключ"""
     try:
         # Получаем Supabase клиент через connection manager
-        from backend.services.connection_manager import connection_manager
         
         supabase = connection_manager.get_pool('supabase')
         if not supabase:
@@ -201,7 +198,7 @@ async def get_api_key(
             key_name=row["key_name"],
             key_last_4=row["api_key_last_4"],
             is_active=row["is_active"],
-            created_at=row["created_at"]
+            created_at=str(row["created_at"])
         )
         
     except HTTPException:
@@ -233,7 +230,6 @@ async def toggle_api_key(
     """Включить/выключить API ключ"""
     try:
         # Получаем Supabase клиент через connection manager
-        from backend.services.connection_manager import connection_manager
         
         supabase = connection_manager.get_pool('supabase')
         if not supabase:
@@ -301,7 +297,6 @@ async def delete_api_key(
     """Удалить API ключ"""
     try:
         # Получаем Supabase клиент через connection manager
-        from backend.services.connection_manager import connection_manager
         
         supabase = connection_manager.get_pool('supabase')
         if not supabase:
