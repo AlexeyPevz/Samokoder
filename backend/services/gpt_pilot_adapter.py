@@ -6,7 +6,6 @@
 
 import asyncio
 import os
-import sys
 import json
 import uuid
 from pathlib import Path
@@ -14,20 +13,8 @@ from typing import Dict, List, Optional, AsyncGenerator, Any
 from datetime import datetime
 import logging
 
-# Добавляем путь к GPT-Pilot в sys.path
-sys.path.append(str(Path(__file__).parent.parent.parent / "samokoder-core"))
-
-# Импорты GPT-Pilot
-from core.db.models.project import Project
-from core.db.models.branch import Branch
-from core.config.user_settings import UserSettings
-from core.agents.orchestrator import Orchestrator
-from core.llm.openai_client import OpenAIClient
-from core.llm.anthropic_client import AnthropicClient
-from core.llm.groq_client import GroqClient
-from core.db.session import get_session
-from core.state.state_manager import StateManager
-from core.disk.vfs import VFS
+# Правильные импорты GPT-Pilot через модуль интеграции
+from backend.integrations.gpt_pilot.imports import get_gpt_pilot_modules, is_gpt_pilot_available
 
 logger = logging.getLogger(__name__)
 
@@ -42,19 +29,24 @@ class SamokoderGPTPilotAdapter:
         self.user_id = user_id
         self.user_api_keys = user_api_keys
         
+        # Проверяем доступность GPT-Pilot
+        self.gpt_pilot_modules = get_gpt_pilot_modules()
+        if not is_gpt_pilot_available():
+            raise RuntimeError(f"GPT-Pilot not available: {self.gpt_pilot_modules.get('error', 'Unknown error')}")
+        
         # Настраиваем рабочую директорию
         self.workspace = Path(f"workspaces/{user_id}/{project_id}")
         self.workspace.mkdir(parents=True, exist_ok=True)
         
-        # Компоненты GPT-Pilot
-        self.project: Optional[Project] = None
-        self.branch: Optional[Branch] = None
-        self.orchestrator: Optional[Orchestrator] = None
-        self.state_manager: Optional[StateManager] = None
-        self.vfs: Optional[VFS] = None
+        # Компоненты GPT-Pilot (типизированные)
+        self.project: Optional[Any] = None
+        self.branch: Optional[Any] = None
+        self.orchestrator: Optional[Any] = None
+        self.state_manager: Optional[Any] = None
+        self.vfs: Optional[Any] = None
         
         # Настройки
-        self.user_settings: Optional[UserSettings] = None
+        self.user_settings: Optional[Any] = None
         
         # Настройки API
         self.setup_api_config()
@@ -96,11 +88,22 @@ class SamokoderGPTPilotAdapter:
     async def initialize_project(self, app_name: str, app_description: str) -> Dict[str, Any]:
         """Инициализирует проект в GPT-Pilot"""
         try:
+            # Получаем классы из модулей
+            UserSettings = self.gpt_pilot_modules['UserSettings']
+            VFS = self.gpt_pilot_modules['VFS']
+            
             # Создаем настройки пользователя
             self.user_settings = UserSettings()
             
             # Создаем VFS для работы с файлами
             self.vfs = VFS(self.workspace)
+            
+            # Получаем классы из модулей
+            get_session = self.gpt_pilot_modules['get_session']
+            Project = self.gpt_pilot_modules['Project']
+            Branch = self.gpt_pilot_modules['Branch']
+            StateManager = self.gpt_pilot_modules['StateManager']
+            Orchestrator = self.gpt_pilot_modules['Orchestrator']
             
             # Создаем проект в GPT-Pilot
             async with get_session() as session:

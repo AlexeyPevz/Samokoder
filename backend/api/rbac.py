@@ -7,84 +7,26 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from backend.auth.dependencies import get_current_user
 from backend.models.requests import RoleCreateRequest, PermissionAssignRequest
 from backend.models.responses import RoleResponse, PermissionResponse
+from backend.services.rbac_service import get_rbac_service
 from typing import Dict, List
 import uuid
 
 router = APIRouter()
 
-# Временное хранилище ролей и разрешений (в продакшене использовать базу данных)
-roles: Dict[str, Dict] = {}
-permissions: Dict[str, Dict] = {}
-user_roles: Dict[str, List[str]] = {}
-
-# Предопределенные роли
-DEFAULT_ROLES = {
-    "admin": {
-        "id": "admin",
-        "name": "Administrator",
-        "description": "Полный доступ ко всем функциям",
-        "permissions": ["*"]  # Все разрешения
-    },
-    "user": {
-        "id": "user", 
-        "name": "User",
-        "description": "Обычный пользователь",
-        "permissions": ["basic_chat", "view_files", "create_projects"]
-    },
-    "developer": {
-        "id": "developer",
-        "name": "Developer", 
-        "description": "Разработчик",
-        "permissions": ["basic_chat", "view_files", "create_projects", "export_projects", "advanced_agents"]
-    }
-}
-
-# Предопределенные разрешения
-DEFAULT_PERMISSIONS = {
-    "basic_chat": "Базовый чат с AI",
-    "view_files": "Просмотр файлов проекта",
-    "create_projects": "Создание проектов",
-    "export_projects": "Экспорт проектов",
-    "advanced_agents": "Использование продвинутых агентов",
-    "custom_models": "Использование пользовательских моделей",
-    "team_collaboration": "Командная работа",
-    "priority_support": "Приоритетная поддержка",
-    "admin_panel": "Доступ к панели администратора"
-}
-
-# Инициализация по умолчанию
-def init_default_roles():
-    """Инициализация ролей и разрешений по умолчанию"""
-    global roles, permissions
-    
-    # Добавляем предопределенные роли
-    for role_id, role_data in DEFAULT_ROLES.items():
-        roles[role_id] = role_data
-    
-    # Добавляем предопределенные разрешения
-    for perm_id, perm_desc in DEFAULT_PERMISSIONS.items():
-        permissions[perm_id] = {
-            "id": perm_id,
-            "name": perm_id.replace("_", " ").title(),
-            "description": perm_desc
-        }
-
-# Инициализируем при импорте
-init_default_roles()
+# Инициализация сервиса
+rbac_service = get_rbac_service()
 
 @router.get("/roles", response_model=List[RoleResponse])
 async def get_roles(current_user: dict = Depends(get_current_user)):
     """Получить список всех ролей"""
     try:
-        role_list = []
-        for role_id, role_data in roles.items():
-            role_list.append(RoleResponse(
-                id=role_data["id"],
-                name=role_data["name"],
-                description=role_data["description"],
-                permissions=role_data["permissions"]
-            ))
-        return role_list
+        roles = rbac_service.get_all_roles()
+        return [RoleResponse(
+            id=role.id,
+            name=role.name,
+            description=role.description,
+            permissions=role.permissions
+        ) for role in roles]
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
