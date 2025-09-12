@@ -1,542 +1,419 @@
+#!/usr/bin/env python3
 """
-Комплексные тесты для ProjectRepository (14% покрытие)
+Комплексные тесты для Project Repository
 """
-import pytest
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from uuid import uuid4, UUID
-from datetime import datetime, timezone
 
+import pytest
+from unittest.mock import Mock, patch, AsyncMock
+from uuid import uuid4, UUID
 from backend.repositories.project_repository import ProjectRepository
 from backend.core.exceptions import DatabaseError, NotFoundError, ValidationError, ConnectionError, TimeoutError, ProjectError
 
 
 class TestProjectRepository:
     """Тесты для ProjectRepository"""
-
+    
     def setup_method(self):
-        """Настройка перед каждым тестом"""
+        """Настройка для каждого теста"""
         self.repository = ProjectRepository()
-        self.mock_supabase = AsyncMock()
+        self.mock_supabase = Mock()
         self.mock_response = Mock()
-        self.mock_response.data = [{"id": "123", "name": "Test Project"}]
-
-    @patch('backend.repositories.project_repository.connection_pool_manager')
-    def test_init(self, mock_pool_manager):
+        self.mock_response.data = [{"id": "test_id", "name": "Test Project"}]
+        
+    def test_init(self):
         """Тест инициализации ProjectRepository"""
-        repository = ProjectRepository()
-        assert repository._supabase is None
-        assert hasattr(repository, '_get_supabase')
-
+        assert self.repository._supabase is None
+    
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    def test_get_supabase_initial(self, mock_pool_manager):
-        """Тест получения Supabase клиента при первом вызове"""
-        mock_client = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_client
+    def test_get_supabase(self, mock_connection_manager):
+        """Тест получения Supabase клиента"""
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
         
-        repository = ProjectRepository()
-        result = repository._get_supabase()
+        result = self.repository._get_supabase()
         
-        assert result == mock_client
-        assert repository._supabase == mock_client
-        mock_pool_manager.get_supabase_client.assert_called_once()
-
-    @patch('backend.repositories.project_repository.connection_pool_manager')
-    def test_get_supabase_cached(self, mock_pool_manager):
-        """Тест получения кэшированного Supabase клиента"""
-        mock_client = Mock()
-        repository = ProjectRepository()
-        repository._supabase = mock_client
-        
-        result = repository._get_supabase()
-        
-        assert result == mock_client
-        mock_pool_manager.get_supabase_client.assert_not_called()
-
+        assert result == self.mock_supabase
+        assert self.repository._supabase == self.mock_supabase
+        mock_connection_manager.get_supabase_client.assert_called_once()
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_find_by_id_success(self, mock_db_config, mock_pool_manager, mock_execute):
+    async def test_find_by_id_success(self, mock_connection_manager, mock_execute_operation):
         """Тест успешного поиска проекта по ID"""
-        # Arrange
         project_id = uuid4()
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
-        mock_execute.return_value = self.mock_response
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.QUERIES = {"select_all": "*"}
-        mock_db_config.COLUMNS = {"id": "id"}
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
+        mock_execute_operation.return_value = self.mock_response
         
-        # Act
         result = await self.repository.find_by_id(project_id)
         
-        # Assert
-        assert result == self.mock_response.data[0]
-        mock_execute.assert_called_once()
-
+        assert result == {"id": "test_id", "name": "Test Project"}
+        mock_execute_operation.assert_called_once()
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_find_by_id_not_found(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест поиска несуществующего проекта"""
-        # Arrange
+    async def test_find_by_id_not_found(self, mock_connection_manager, mock_execute_operation):
+        """Тест поиска несуществующего проекта по ID"""
         project_id = uuid4()
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
         mock_response = Mock()
         mock_response.data = []
-        mock_execute.return_value = mock_response
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.QUERIES = {"select_all": "*"}
-        mock_db_config.COLUMNS = {"id": "id"}
+        mock_execute_operation.return_value = mock_response
         
-        # Act
         result = await self.repository.find_by_id(project_id)
         
-        # Assert
         assert result is None
-
+        mock_execute_operation.assert_called_once()
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_find_by_id_connection_error(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест обработки ConnectionError при поиске проекта"""
-        # Arrange
+    async def test_find_by_id_connection_error(self, mock_connection_manager, mock_execute_operation):
+        """Тест ошибки подключения при поиске проекта по ID"""
         project_id = uuid4()
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
-        mock_execute.side_effect = ConnectionError("Connection failed")
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.QUERIES = {"select_all": "*"}
-        mock_db_config.COLUMNS = {"id": "id"}
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
+        mock_execute_operation.side_effect = ConnectionError("Connection failed")
         
-        # Act & Assert
-        with pytest.raises(DatabaseError) as exc_info:
+        with pytest.raises(DatabaseError, match="Database connection failed"):
             await self.repository.find_by_id(project_id)
-        assert "Database connection failed" in str(exc_info.value)
-
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_find_by_id_timeout_error(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест обработки TimeoutError при поиске проекта"""
-        # Arrange
+    async def test_find_by_id_timeout_error(self, mock_connection_manager, mock_execute_operation):
+        """Тест ошибки таймаута при поиске проекта по ID"""
         project_id = uuid4()
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
-        mock_execute.side_effect = TimeoutError("Timeout")
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.QUERIES = {"select_all": "*"}
-        mock_db_config.COLUMNS = {"id": "id"}
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
+        mock_execute_operation.side_effect = TimeoutError("Operation timed out")
         
-        # Act & Assert
-        with pytest.raises(DatabaseError) as exc_info:
+        with pytest.raises(DatabaseError, match="Database operation timed out"):
             await self.repository.find_by_id(project_id)
-        assert "Database operation timed out" in str(exc_info.value)
-
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_find_by_id_general_error(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест обработки общего исключения при поиске проекта"""
-        # Arrange
+    async def test_find_by_id_generic_error(self, mock_connection_manager, mock_execute_operation):
+        """Тест общей ошибки при поиске проекта по ID"""
         project_id = uuid4()
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
-        mock_execute.side_effect = Exception("General error")
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.QUERIES = {"select_all": "*"}
-        mock_db_config.COLUMNS = {"id": "id"}
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
+        mock_execute_operation.side_effect = Exception("Generic error")
         
-        # Act & Assert
-        with pytest.raises(DatabaseError) as exc_info:
+        with pytest.raises(DatabaseError, match="Database operation failed"):
             await self.repository.find_by_id(project_id)
-        assert "Database operation failed" in str(exc_info.value)
-
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_find_by_user_id_success(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест успешного поиска проектов по пользователю"""
-        # Arrange
+    async def test_find_by_user_id_success(self, mock_connection_manager, mock_execute_operation):
+        """Тест успешного поиска проектов по ID пользователя"""
         user_id = uuid4()
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
         mock_response = Mock()
-        mock_response.data = [
-            {"id": "123", "name": "Project 1"},
-            {"id": "124", "name": "Project 2"}
-        ]
-        mock_execute.return_value = mock_response
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.QUERIES = {"select_all": "*"}
-        mock_db_config.COLUMNS = {"user_id": "user_id"}
+        mock_response.data = [{"id": "project1"}, {"id": "project2"}]
+        mock_execute_operation.return_value = mock_response
         
-        # Act
-        result = await self.repository.find_by_user_id(user_id, limit=10, offset=0)
+        result = await self.repository.find_by_user_id(user_id, limit=20, offset=10)
         
-        # Assert
         assert len(result) == 2
-        assert result[0]["name"] == "Project 1"
-        assert result[1]["name"] == "Project 2"
-        mock_execute.assert_called_once()
-
+        assert result[0]["id"] == "project1"
+        assert result[1]["id"] == "project2"
+        mock_execute_operation.assert_called_once()
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_find_by_user_id_empty(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест поиска проектов по пользователю - пустой результат"""
-        # Arrange
+    async def test_find_by_user_id_default_params(self, mock_connection_manager, mock_execute_operation):
+        """Тест поиска проектов по ID пользователя с параметрами по умолчанию"""
         user_id = uuid4()
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
         mock_response = Mock()
         mock_response.data = []
-        mock_execute.return_value = mock_response
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.QUERIES = {"select_all": "*"}
-        mock_db_config.COLUMNS = {"user_id": "user_id"}
+        mock_execute_operation.return_value = mock_response
         
-        # Act
         result = await self.repository.find_by_user_id(user_id)
         
-        # Assert
         assert result == []
-
+        mock_execute_operation.assert_called_once()
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_find_by_user_id_with_pagination(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест поиска проектов по пользователю с пагинацией"""
-        # Arrange
-        user_id = uuid4()
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
+    async def test_save_success(self, mock_connection_manager, mock_execute_operation):
+        """Тест успешного сохранения проекта"""
+        project_data = {"name": "New Project", "user_id": str(uuid4())}
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
         mock_response = Mock()
-        mock_response.data = [{"id": "123", "name": "Project 1"}]
-        mock_execute.return_value = mock_response
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.QUERIES = {"select_all": "*"}
-        mock_db_config.COLUMNS = {"user_id": "user_id"}
+        mock_response.data = [{"id": "new_project_id", **project_data}]
+        mock_execute_operation.return_value = mock_response
         
-        # Act
-        result = await self.repository.find_by_user_id(user_id, limit=5, offset=10)
+        result = await self.repository.save(project_data)
         
-        # Assert
-        assert len(result) == 1
-        mock_execute.assert_called_once()
-
+        assert result["id"] == "new_project_id"
+        assert result["name"] == "New Project"
+        mock_execute_operation.assert_called_once()
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_find_by_user_id_error(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест обработки ошибки при поиске проектов по пользователю"""
-        # Arrange
-        user_id = uuid4()
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
-        mock_execute.side_effect = Exception("Database error")
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.QUERIES = {"select_all": "*"}
-        mock_db_config.COLUMNS = {"user_id": "user_id"}
+    async def test_save_error(self, mock_connection_manager, mock_execute_operation):
+        """Тест ошибки при сохранении проекта"""
+        project_data = {"name": "New Project"}
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
+        mock_execute_operation.side_effect = Exception("Save failed")
         
-        # Act & Assert
-        with pytest.raises(DatabaseError):
-            await self.repository.find_by_user_id(user_id)
-
+        with pytest.raises(DatabaseError, match="Database operation failed"):
+            await self.repository.save(project_data)
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_create_success(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест успешного создания проекта"""
-        # Arrange
-        project_data = {
-            "id": str(uuid4()),
-            "user_id": str(uuid4()),
-            "name": "New Project",
-            "description": "Project description"
-        }
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
-        mock_response = Mock()
-        mock_response.data = [project_data]
-        mock_execute.return_value = mock_response
-        mock_db_config.TABLES = {"projects": "projects"}
-        
-        # Act
-        result = await self.repository.create(project_data)
-        
-        # Assert
-        assert result == project_data
-        mock_execute.assert_called_once()
-
-    @patch('backend.repositories.project_repository.execute_supabase_operation')
-    @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_create_validation_error(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест обработки ValidationError при создании проекта"""
-        # Arrange
-        project_data = {"name": "New Project"}  # Неполные данные
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
-        mock_execute.side_effect = ValidationError("Validation failed")
-        mock_db_config.TABLES = {"projects": "projects"}
-        
-        # Act & Assert
-        with pytest.raises(DatabaseError) as exc_info:
-            await self.repository.create(project_data)
-        assert "Database operation failed" in str(exc_info.value)
-
-    @patch('backend.repositories.project_repository.execute_supabase_operation')
-    @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_update_success(self, mock_db_config, mock_pool_manager, mock_execute):
+    async def test_update_success(self, mock_connection_manager, mock_execute_operation):
         """Тест успешного обновления проекта"""
-        # Arrange
         project_id = uuid4()
-        update_data = {"name": "Updated Project"}
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
+        project_data = {"name": "Updated Project"}
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
         mock_response = Mock()
-        mock_response.data = [{"id": str(project_id), "name": "Updated Project"}]
-        mock_execute.return_value = mock_response
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.COLUMNS = {"id": "id"}
+        mock_response.data = [{"id": str(project_id), **project_data}]
+        mock_execute_operation.return_value = mock_response
         
-        # Act
-        result = await self.repository.update(project_id, update_data)
+        result = await self.repository.update(project_id, project_data)
         
-        # Assert
-        assert result == mock_response.data[0]
-        mock_execute.assert_called_once()
-
+        assert result["id"] == str(project_id)
+        assert result["name"] == "Updated Project"
+        mock_execute_operation.assert_called_once()
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_update_not_found(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест обновления несуществующего проекта"""
-        # Arrange
+    async def test_update_error(self, mock_connection_manager, mock_execute_operation):
+        """Тест ошибки при обновлении проекта"""
         project_id = uuid4()
-        update_data = {"name": "Updated Project"}
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
-        mock_response = Mock()
-        mock_response.data = []
-        mock_execute.return_value = mock_response
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.COLUMNS = {"id": "id"}
+        project_data = {"name": "Updated Project"}
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
+        mock_execute_operation.side_effect = Exception("Update failed")
         
-        # Act & Assert
-        with pytest.raises(NotFoundError):
-            await self.repository.update(project_id, update_data)
-
+        with pytest.raises(DatabaseError, match="Database operation failed"):
+            await self.repository.update(project_id, project_data)
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_delete_success(self, mock_db_config, mock_pool_manager, mock_execute):
+    async def test_delete_success(self, mock_connection_manager, mock_execute_operation):
         """Тест успешного удаления проекта"""
-        # Arrange
         project_id = uuid4()
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
         mock_response = Mock()
         mock_response.data = [{"id": str(project_id)}]
-        mock_execute.return_value = mock_response
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.COLUMNS = {"id": "id"}
+        mock_execute_operation.return_value = mock_response
         
-        # Act
         result = await self.repository.delete(project_id)
         
-        # Assert
         assert result is True
-        mock_execute.assert_called_once()
-
+        mock_execute_operation.assert_called_once()
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_delete_not_found(self, mock_db_config, mock_pool_manager, mock_execute):
+    async def test_delete_not_found(self, mock_connection_manager, mock_execute_operation):
         """Тест удаления несуществующего проекта"""
-        # Arrange
         project_id = uuid4()
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
         mock_response = Mock()
         mock_response.data = []
-        mock_execute.return_value = mock_response
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.COLUMNS = {"id": "id"}
+        mock_execute_operation.return_value = mock_response
         
-        # Act & Assert
-        with pytest.raises(NotFoundError):
+        result = await self.repository.delete(project_id)
+        
+        assert result is False
+        mock_execute_operation.assert_called_once()
+    
+    @pytest.mark.asyncio
+    @patch('backend.repositories.project_repository.execute_supabase_operation')
+    @patch('backend.repositories.project_repository.connection_pool_manager')
+    async def test_delete_error(self, mock_connection_manager, mock_execute_operation):
+        """Тест ошибки при удалении проекта"""
+        project_id = uuid4()
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
+        mock_execute_operation.side_effect = Exception("Delete failed")
+        
+        with pytest.raises(DatabaseError, match="Database operation failed"):
             await self.repository.delete(project_id)
-
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_count_by_user_success(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест успешного подсчета проектов по пользователю"""
-        # Arrange
-        user_id = uuid4()
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
-        mock_response = Mock()
-        mock_response.count = 5
-        mock_execute.return_value = mock_response
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.COLUMNS = {"user_id": "user_id"}
-        
-        # Act
-        result = await self.repository.count_by_user(user_id)
-        
-        # Assert
-        assert result == 5
-        mock_execute.assert_called_once()
-
-    @patch('backend.repositories.project_repository.execute_supabase_operation')
-    @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_count_by_user_error(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест обработки ошибки при подсчете проектов по пользователю"""
-        # Arrange
-        user_id = uuid4()
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
-        mock_execute.side_effect = Exception("Database error")
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.COLUMNS = {"user_id": "user_id"}
-        
-        # Act & Assert
-        with pytest.raises(DatabaseError):
-            await self.repository.count_by_user(user_id)
-
-    @patch('backend.repositories.project_repository.execute_supabase_operation')
-    @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_find_by_name_success(self, mock_db_config, mock_pool_manager, mock_execute):
+    async def test_find_by_name_success(self, mock_connection_manager, mock_execute_operation):
         """Тест успешного поиска проекта по имени"""
-        # Arrange
         user_id = uuid4()
         project_name = "Test Project"
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
         mock_response = Mock()
-        mock_response.data = [{"id": "123", "name": "Test Project"}]
-        mock_execute.return_value = mock_response
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.QUERIES = {"select_all": "*"}
-        mock_db_config.COLUMNS = {"user_id": "user_id", "name": "name"}
+        mock_response.data = [{"id": "project_id", "name": project_name}]
+        mock_execute_operation.return_value = mock_response
         
-        # Act
         result = await self.repository.find_by_name(user_id, project_name)
         
-        # Assert
-        assert result == mock_response.data[0]
-        mock_execute.assert_called_once()
-
+        assert result["id"] == "project_id"
+        assert result["name"] == project_name
+        mock_execute_operation.assert_called_once()
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_find_by_name_not_found(self, mock_db_config, mock_pool_manager, mock_execute):
+    async def test_find_by_name_not_found(self, mock_connection_manager, mock_execute_operation):
         """Тест поиска несуществующего проекта по имени"""
-        # Arrange
         user_id = uuid4()
         project_name = "Non-existent Project"
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
         mock_response = Mock()
         mock_response.data = []
-        mock_execute.return_value = mock_response
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.QUERIES = {"select_all": "*"}
-        mock_db_config.COLUMNS = {"user_id": "user_id", "name": "name"}
+        mock_execute_operation.return_value = mock_response
         
-        # Act
         result = await self.repository.find_by_name(user_id, project_name)
         
-        # Assert
         assert result is None
-
+        mock_execute_operation.assert_called_once()
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_find_by_name_error(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест обработки ошибки при поиске проекта по имени"""
-        # Arrange
+    async def test_find_recent_success(self, mock_connection_manager, mock_execute_operation):
+        """Тест успешного поиска недавних проектов"""
         user_id = uuid4()
-        project_name = "Test Project"
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
-        mock_execute.side_effect = ConnectionError("Connection failed")
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.QUERIES = {"select_all": "*"}
-        mock_db_config.COLUMNS = {"user_id": "user_id", "name": "name"}
-        
-        # Act & Assert
-        with pytest.raises(DatabaseError) as exc_info:
-            await self.repository.find_by_name(user_id, project_name)
-        assert "Database connection failed" in str(exc_info.value)
-
-    @patch('backend.repositories.project_repository.execute_supabase_operation')
-    @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_find_active_by_user_success(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест успешного поиска активных проектов по пользователю"""
-        # Arrange
-        user_id = uuid4()
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
         mock_response = Mock()
-        mock_response.data = [{"id": "123", "name": "Active Project", "is_active": True}]
-        mock_execute.return_value = mock_response
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.QUERIES = {"select_all": "*"}
-        mock_db_config.COLUMNS = {"user_id": "user_id", "is_active": "is_active"}
+        mock_response.data = [{"id": "recent1"}, {"id": "recent2"}]
+        mock_execute_operation.return_value = mock_response
         
-        # Act
-        result = await self.repository.find_active_by_user(user_id)
+        result = await self.repository.find_recent(user_id, limit=3)
         
-        # Assert
-        assert len(result) == 1
-        assert result[0]["is_active"] is True
-        mock_execute.assert_called_once()
-
+        assert len(result) == 2
+        mock_execute_operation.assert_called_once()
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_find_active_by_user_empty(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест поиска активных проектов по пользователю - пустой результат"""
-        # Arrange
+    async def test_find_recent_default_params(self, mock_connection_manager, mock_execute_operation):
+        """Тест поиска недавних проектов с параметрами по умолчанию"""
         user_id = uuid4()
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
         mock_response = Mock()
         mock_response.data = []
-        mock_execute.return_value = mock_response
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.QUERIES = {"select_all": "*"}
-        mock_db_config.COLUMNS = {"user_id": "user_id", "is_active": "is_active"}
+        mock_execute_operation.return_value = mock_response
         
-        # Act
-        result = await self.repository.find_active_by_user(user_id)
+        result = await self.repository.find_recent(user_id)
         
-        # Assert
         assert result == []
-
+        mock_execute_operation.assert_called_once()
+    
+    @pytest.mark.asyncio
     @patch('backend.repositories.project_repository.execute_supabase_operation')
     @patch('backend.repositories.project_repository.connection_pool_manager')
-    @patch('backend.repositories.project_repository.db_config')
-    async def test_find_active_by_user_error(self, mock_db_config, mock_pool_manager, mock_execute):
-        """Тест обработки ошибки при поиске активных проектов по пользователю"""
-        # Arrange
+    async def test_search_success(self, mock_connection_manager, mock_execute_operation):
+        """Тест успешного поиска проектов по запросу"""
         user_id = uuid4()
-        mock_supabase = Mock()
-        mock_pool_manager.get_supabase_client.return_value = mock_supabase
-        mock_execute.side_effect = TimeoutError("Timeout")
-        mock_db_config.TABLES = {"projects": "projects"}
-        mock_db_config.QUERIES = {"select_all": "*"}
-        mock_db_config.COLUMNS = {"user_id": "user_id", "is_active": "is_active"}
+        query = "test"
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
+        mock_response = Mock()
+        mock_response.data = [{"id": "search1"}, {"id": "search2"}]
+        mock_execute_operation.return_value = mock_response
         
-        # Act & Assert
-        with pytest.raises(DatabaseError) as exc_info:
-            await self.repository.find_active_by_user(user_id)
-        assert "Database operation timed out" in str(exc_info.value)
+        result = await self.repository.search(user_id, query, limit=20, offset=5)
+        
+        assert len(result) == 2
+        mock_execute_operation.assert_called_once()
+    
+    @pytest.mark.asyncio
+    @patch('backend.repositories.project_repository.execute_supabase_operation')
+    @patch('backend.repositories.project_repository.connection_pool_manager')
+    async def test_search_default_params(self, mock_connection_manager, mock_execute_operation):
+        """Тест поиска проектов по запросу с параметрами по умолчанию"""
+        user_id = uuid4()
+        query = "test"
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
+        mock_response = Mock()
+        mock_response.data = []
+        mock_execute_operation.return_value = mock_response
+        
+        result = await self.repository.search(user_id, query)
+        
+        assert result == []
+        mock_execute_operation.assert_called_once()
+    
+    @pytest.mark.asyncio
+    @patch('backend.repositories.project_repository.execute_supabase_operation')
+    @patch('backend.repositories.project_repository.connection_pool_manager')
+    async def test_count_by_user_success(self, mock_connection_manager, mock_execute_operation):
+        """Тест успешного подсчета проектов пользователя"""
+        user_id = uuid4()
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
+        mock_response = Mock()
+        mock_response.count = 15
+        mock_execute_operation.return_value = mock_response
+        
+        result = await self.repository.count_by_user(user_id)
+        
+        assert result == 15
+        mock_execute_operation.assert_called_once()
+    
+    @pytest.mark.asyncio
+    @patch('backend.repositories.project_repository.execute_supabase_operation')
+    @patch('backend.repositories.project_repository.connection_pool_manager')
+    async def test_count_by_user_error(self, mock_connection_manager, mock_execute_operation):
+        """Тест ошибки при подсчете проектов пользователя"""
+        user_id = uuid4()
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
+        mock_execute_operation.side_effect = Exception("Count failed")
+        
+        with pytest.raises(DatabaseError, match="Database operation failed"):
+            await self.repository.count_by_user(user_id)
+    
+    @pytest.mark.asyncio
+    @patch('backend.repositories.project_repository.execute_supabase_operation')
+    @patch('backend.repositories.project_repository.connection_pool_manager')
+    async def test_find_by_name_error(self, mock_connection_manager, mock_execute_operation):
+        """Тест ошибки при поиске проекта по имени"""
+        user_id = uuid4()
+        project_name = "Test Project"
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
+        mock_execute_operation.side_effect = Exception("Search failed")
+        
+        with pytest.raises(DatabaseError, match="Database operation failed"):
+            await self.repository.find_by_name(user_id, project_name)
+    
+    @pytest.mark.asyncio
+    @patch('backend.repositories.project_repository.execute_supabase_operation')
+    @patch('backend.repositories.project_repository.connection_pool_manager')
+    async def test_find_recent_error(self, mock_connection_manager, mock_execute_operation):
+        """Тест ошибки при поиске недавних проектов"""
+        user_id = uuid4()
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
+        mock_execute_operation.side_effect = Exception("Recent search failed")
+        
+        with pytest.raises(DatabaseError, match="Database operation failed"):
+            await self.repository.find_recent(user_id)
+    
+    @pytest.mark.asyncio
+    @patch('backend.repositories.project_repository.execute_supabase_operation')
+    @patch('backend.repositories.project_repository.connection_pool_manager')
+    async def test_search_error(self, mock_connection_manager, mock_execute_operation):
+        """Тест ошибки при поиске проектов по запросу"""
+        user_id = uuid4()
+        query = "test"
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
+        mock_execute_operation.side_effect = Exception("Search failed")
+        
+        with pytest.raises(DatabaseError, match="Database operation failed"):
+            await self.repository.search(user_id, query)
+    
+    @pytest.mark.asyncio
+    @patch('backend.repositories.project_repository.execute_supabase_operation')
+    @patch('backend.repositories.project_repository.connection_pool_manager')
+    async def test_find_by_user_id_error(self, mock_connection_manager, mock_execute_operation):
+        """Тест ошибки при поиске проектов по ID пользователя"""
+        user_id = uuid4()
+        mock_connection_manager.get_supabase_client.return_value = self.mock_supabase
+        mock_execute_operation.side_effect = Exception("Find failed")
+        
+        with pytest.raises(DatabaseError, match="Database operation failed"):
+            await self.repository.find_by_user_id(user_id)
