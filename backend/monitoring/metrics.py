@@ -11,6 +11,8 @@ from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 from collections import defaultdict, deque
 
+from .exceptions import MetricsCollectionError, SystemMetricsError
+
 try:
     from prometheus_client import Counter, Histogram, Gauge, Summary
     PROMETHEUS_AVAILABLE = True
@@ -29,7 +31,25 @@ class MetricData:
     metric_type: str  # counter, gauge, histogram, summary
 
 class MetricsCollector:
-    """Сборщик метрик"""
+    """
+    Сборщик метрик для системы мониторинга
+    
+    Обеспечивает сбор и управление метриками приложения, включая:
+    - Prometheus метрики (счетчики, gauges, гистограммы)
+    - Системные метрики (CPU, память, диск, сеть)
+    - Кастомные метрики приложения
+    
+    Attributes:
+        metrics: Словарь с Prometheus метриками
+        custom_metrics: Словарь с кастомными метриками
+        _last_collection: Время последнего сбора метрик
+    
+    Example:
+        >>> collector = MetricsCollector()
+        >>> collector.increment_counter('requests_total', {'method': 'GET'})
+        >>> collector.set_gauge('memory_usage', 85.5)
+        >>> await collector.collect_system_metrics()
+    """
     
     def __init__(self):
         self.metrics: Dict[str, Any] = {}
@@ -79,24 +99,64 @@ class MetricsCollector:
             )
         }
     
-    def increment_counter(self, name: str, labels: Dict[str, str] = None):
-        """Увеличить счетчик"""
+    def increment_counter(self, name: str, labels: Optional[Dict[str, str]] = None) -> None:
+        """
+        Увеличить счетчик метрики на 1
+        
+        Args:
+            name: Название метрики
+            labels: Метки для метрики (опционально)
+            
+        Example:
+            >>> collector.increment_counter('http_requests_total', {'method': 'GET', 'status': '200'})
+        """
         if name in self.metrics and PROMETHEUS_AVAILABLE:
             self.metrics[name].labels(**(labels or {})).inc()
     
-    def set_gauge(self, name: str, value: float, labels: Dict[str, str] = None):
-        """Установить значение gauge"""
+    def set_gauge(self, name: str, value: float, labels: Optional[Dict[str, str]] = None) -> None:
+        """
+        Установить значение gauge метрики
+        
+        Args:
+            name: Название метрики
+            value: Значение для установки
+            labels: Метки для метрики (опционально)
+            
+        Example:
+            >>> collector.set_gauge('memory_usage_percent', 85.5, {'host': 'server1'})
+        """
         if name in self.metrics and PROMETHEUS_AVAILABLE:
             self.metrics[name].labels(**(labels or {})).set(value)
     
-    def observe_histogram(self, name: str, value: float, labels: Dict[str, str] = None):
-        """Наблюдать гистограмму"""
+    def observe_histogram(self, name: str, value: float, labels: Optional[Dict[str, str]] = None) -> None:
+        """
+        Наблюдать значение в гистограмме
+        
+        Args:
+            name: Название метрики
+            value: Значение для наблюдения
+            labels: Метки для метрики (опционально)
+            
+        Example:
+            >>> collector.observe_histogram('request_duration_seconds', 0.5, {'endpoint': '/api/users'})
+        """
         if name in self.metrics and PROMETHEUS_AVAILABLE:
             self.metrics[name].labels(**(labels or {})).observe(value)
     
     def add_custom_metric(self, name: str, value: float, metric_type: str, 
-                         labels: Dict[str, str] = None):
-        """Добавить кастомную метрику"""
+                         labels: Optional[Dict[str, str]] = None) -> None:
+        """
+        Добавить кастомную метрику
+        
+        Args:
+            name: Название метрики
+            value: Значение метрики
+            metric_type: Тип метрики (counter, gauge, histogram, summary)
+            labels: Метки для метрики (опционально)
+            
+        Example:
+            >>> collector.add_custom_metric('custom_events', 42, 'counter', {'type': 'user_action'})
+        """
         self.custom_metrics[name] = MetricData(
             name=name,
             value=value,
@@ -105,8 +165,23 @@ class MetricsCollector:
             metric_type=metric_type
         )
     
-    async def collect_system_metrics(self):
-        """Сбор системных метрик"""
+    async def collect_system_metrics(self) -> None:
+        """
+        Сбор системных метрик
+        
+        Собирает метрики системы:
+        - CPU usage (процент использования)
+        - Memory usage (использование памяти в байтах)
+        - Disk usage (использование диска в байтах)
+        - Network I/O (отправленные/полученные байты)
+        
+        Raises:
+            SystemMetricsError: При ошибках доступа к процессам
+            MetricsCollectionError: При других ошибках сбора метрик
+            
+        Example:
+            >>> await collector.collect_system_metrics()
+        """
         try:
             # CPU usage
             cpu_percent = psutil.cpu_percent(interval=1)
@@ -125,8 +200,15 @@ class MetricsCollector:
             self.set_gauge('network_bytes_sent', net_io.bytes_sent)
             self.set_gauge('network_bytes_recv', net_io.bytes_recv)
             
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess) as e:
+            logger.warning(f"Process access error during metrics collection: {e}")
+            raise SystemMetricsError(f"Process access error: {e}") from e
+        except OSError as e:
+            logger.error(f"OS error during metrics collection: {e}")
+            raise SystemMetricsError(f"OS error: {e}") from e
         except Exception as e:
-            logger.error(f"Error collecting system metrics: {e}")
+            logger.error(f"Unexpected error collecting system metrics: {e}")
+            raise MetricsCollectionError(f"Unexpected error: {e}") from e
     
     def get_metrics_summary(self) -> Dict[str, Any]:
         """Получить сводку метрик"""

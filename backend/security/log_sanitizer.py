@@ -181,10 +181,10 @@ class SecureLogger:
         
         # Здесь можно добавить отправку в систему логирования
         # Например, в ELK, Splunk или другую систему
-        print(f"[{safe_data['level']}] {safe_data['message']}")
+        logger.info(f"[{safe_data['level']}] {safe_data['message']}")
         
         if safe_data['extra']:
-            print(f"Extra data: {self.sanitizer.safe_json_dumps(safe_data['extra'])}")
+            logger.debug(f"Extra data: {self.sanitizer.safe_json_dumps(safe_data['extra'])}")
     
     def debug(self, message: str, **kwargs):
         """Логирование уровня DEBUG"""

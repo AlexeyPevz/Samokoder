@@ -10,8 +10,11 @@ import uuid
 import time
 import hmac
 import hashlib
+import logging
 from datetime import datetime
 from typing import Dict, Optional
+
+logger = logging.getLogger(__name__)
 
 from config.settings import settings
 from backend.adapters.adapter_factory import get_adapter_factory
@@ -69,13 +72,13 @@ async def startup_event():
         # Инициализируем DI контейнер
         container = get_container()
         
-        print("✅ Samokoder Backend API v2.0.0 запущен")
-        print("✅ Новая архитектура активирована")
-        print("✅ DI контейнер инициализирован")
-        print("✅ Адаптеры загружены")
+        logger.info("✅ Samokoder Backend API v2.0.0 запущен")
+        logger.info("✅ Новая архитектура активирована")
+        logger.info("✅ DI контейнер инициализирован")
+        logger.info("✅ Адаптеры загружены")
         
     except Exception as e:
-        print(f"❌ Ошибка при запуске: {e}")
+        logger.error(f"❌ Ошибка при запуске: {e}")
         raise
 
 @app.on_event("shutdown")
@@ -83,9 +86,9 @@ async def shutdown_event():
     """Очистка при остановке"""
     try:
         await monitoring_adapter.stop_monitoring()
-        print("✅ Samokoder Backend API остановлен")
+        logger.info("✅ Samokoder Backend API остановлен")
     except Exception as e:
-        print(f"❌ Ошибка при остановке: {e}")
+        logger.error(f"❌ Ошибка при остановке: {e}")
 
 # Health check endpoints
 @app.get("/health")
