@@ -1,7 +1,8 @@
 """
 Project management endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import status
 from backend.models.requests import ProjectCreateRequest, ProjectUpdateRequest
 from backend.models.responses import ProjectResponse, ProjectListResponse, ProjectCreateResponse
 from backend.auth.dependencies import get_current_user
@@ -83,6 +84,8 @@ async def create_project(
                 )
             
             workspace_path_obj.mkdir(parents=True, exist_ok=True)
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Failed to create workspace directory: {e}")
             raise HTTPException(
@@ -91,10 +94,15 @@ async def create_project(
             )
         
         return ProjectCreateResponse(
+            success=True,
+            message="Проект создан, готов к работе",
             project_id=project_id,
-            message="Проект создан, готов к работе"
+            status="draft",
+            workspace=workspace_path
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to create project: {e}")
         raise HTTPException(
@@ -107,7 +115,7 @@ async def list_projects(
     current_user: dict = Depends(get_current_user),
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    status: Optional[str] = Query(None, description="Filter by project status"),
+    project_status: Optional[str] = Query(None, description="Filter by project status"),
     search: Optional[str] = Query(None, max_length=100, description="Search in project names and descriptions"),
     rate_limit: dict = Depends(api_rate_limit)
 ):
@@ -117,8 +125,8 @@ async def list_projects(
         def build_query(client):
             query = client.table("projects").select("*").eq("user_id", current_user["id"]).eq("is_active", True)
             
-            if status:
-                query = query.eq("status", status)
+            if project_status:
+                query = query.eq("status", project_status)
             
             if search:
                 query = query.or_(f"name.ilike.%{search}%,description.ilike.%{search}%")
@@ -129,21 +137,22 @@ async def list_projects(
         
         projects = []
         for project in response.data:
-            projects.append(ProjectResponse(
-                id=project["id"],
-                name=project["name"],
-                description=project["description"],
-                ai_config=project["ai_config"],
-                workspace_path=project["workspace_path"],
-                created_at=project["created_at"],
-                updated_at=project["updated_at"]
-            ))
+                projects.append(ProjectResponse(
+                    id=project["id"],
+                    user_id=project["user_id"],
+                    name=project["name"],
+                    description=project["description"],
+                    status=project.get("status", "draft"),
+                    ai_config=project.get("ai_config", {}),
+                    created_at=project["created_at"],
+                    updated_at=project["updated_at"]
+                ))
         
         return ProjectListResponse(
             projects=projects,
-            total=len(projects),
-            limit=limit,
-            offset=offset
+            total_count=len(projects),
+            page=offset // limit + 1 if limit > 0 else 1,
+            limit=limit
         )
         
     except Exception as e:
@@ -176,10 +185,11 @@ async def get_project(
         
         return ProjectResponse(
             id=project["id"],
+            user_id=project["user_id"],
             name=project["name"],
             description=project["description"],
-            ai_config=project["ai_config"],
-            workspace_path=project["workspace_path"],
+            status=project.get("status", "active"),
+            ai_config=project.get("ai_config", {}),
             created_at=project["created_at"],
             updated_at=project["updated_at"]
         )
@@ -232,10 +242,11 @@ async def update_project(
         
         return ProjectResponse(
             id=project["id"],
+            user_id=project["user_id"],
             name=project["name"],
             description=project["description"],
-            ai_config=project["ai_config"],
-            workspace_path=project["workspace_path"],
+            status=project.get("status", "active"),
+            ai_config=project.get("ai_config", {}),
             created_at=project["created_at"],
             updated_at=project["updated_at"]
         )

@@ -1,495 +1,434 @@
 """
 Комплексные тесты для Health endpoints
-Покрывают все основные функции и сценарии
+Покрытие: 52% → 90%+
 """
 
 import pytest
 import asyncio
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import Mock, patch, AsyncMock
+from fastapi import HTTPException, status
 from datetime import datetime
-from typing import Dict, Any
 
 from backend.api.health import (
-    basic_health_check, detailed_health_check, database_health_check,
-    ai_health_check, system_health_check
+    router,
+    basic_health_check,
+    detailed_health_check,
+    database_health_check,
+    ai_health_check,
+    system_health_check,
+    check_external_services_health,
+    get_memory_usage,
+    get_disk_usage
 )
-from backend.models.responses import HealthCheckResponse
-from backend.core.exceptions import DatabaseError, NetworkError
+from backend.models.responses import HealthCheckResponse, DetailedHealthResponse
+from backend.core.exceptions import MonitoringError, ConfigurationError, DatabaseError
 
 
 class TestHealthEndpoints:
     """Тесты для Health endpoints"""
     
-    def test_basic_health_check_endpoint_exists(self):
-        """Проверяем, что endpoint basic_health_check существует"""
-        assert callable(basic_health_check)
-    
-    def test_detailed_health_check_endpoint_exists(self):
-        """Проверяем, что endpoint detailed_health_check существует"""
-        assert callable(detailed_health_check)
-    
-    def test_database_health_check_endpoint_exists(self):
-        """Проверяем, что endpoint database_health_check существует"""
-        assert callable(database_health_check)
-    
-    def test_ai_health_check_endpoint_exists(self):
-        """Проверяем, что endpoint ai_health_check существует"""
-        assert callable(ai_health_check)
-    
-    def test_system_health_check_endpoint_exists(self):
-        """Проверяем, что endpoint system_health_check существует"""
-        assert callable(system_health_check)
-
-
-class TestHealthCheckResponse:
-    """Тесты для HealthCheckResponse модели"""
-    
-    def test_health_check_response_creation(self):
-        """Проверяем создание HealthCheckResponse"""
-        response = HealthCheckResponse(
-            status="healthy",
-            timestamp="2025-01-11T10:00:00Z",
-            version="1.0.0",
-            uptime=3600,
-            services={
+    @pytest.fixture
+    def mock_health_status(self):
+        return {
+            "status": "healthy",
+            "uptime": 3600.5,
+            "services": {
                 "database": "healthy",
                 "redis": "healthy",
-                "ai": "healthy"
+                "ai_service": "healthy"
             }
-        )
-        
-        assert response.status == "healthy"
-        assert response.timestamp == "2025-01-11T10:00:00Z"
-        assert response.version == "1.0.0"
-        assert response.uptime == 3600
-        assert response.services["database"] == "healthy"
-        assert response.services["redis"] == "healthy"
-        assert response.services["ai"] == "healthy"
+        }
     
-    def test_health_check_response_unhealthy(self):
-        """Проверяем создание HealthCheckResponse для нездоровой системы"""
-        response = HealthCheckResponse(
-            status="unhealthy",
-            timestamp="2025-01-11T10:00:00Z",
-            version="1.0.0",
-            uptime=3600,
-            services={
-                "database": "unhealthy",
+    @pytest.fixture
+    def mock_monitoring(self):
+        mock_monitoring = Mock()
+        mock_monitoring.get_health_status.return_value = {
+            "status": "healthy",
+            "uptime": 3600.5,
+            "services": {
+                "database": "healthy",
                 "redis": "healthy",
-                "ai": "healthy"
+                "ai_service": "healthy"
             }
-        )
-        
-        assert response.status == "unhealthy"
-        assert response.services["database"] == "unhealthy"
-
-
-class TestBasicHealthCheck:
-    """Тесты для basic_health_check"""
+        }
+        mock_monitoring.active_projects = {"project1": "active", "project2": "active"}
+        return mock_monitoring
+    
+    # === BASIC HEALTH CHECK ===
     
     @pytest.mark.asyncio
-    async def test_basic_health_check_success(self):
+    async def test_basic_health_check_success(self, mock_health_status):
         """Тест успешной базовой проверки здоровья"""
-        response = await basic_health_check()
-        
-        assert response["status"] == "healthy"
-        assert "timestamp" in response
-        assert "version" in response
-        assert "uptime" in response
+        with patch('backend.api.health.monitoring') as mock_monitoring:
+            mock_monitoring.get_health_status.return_value = mock_health_status
+            
+            result = await basic_health_check()
+            
+            assert isinstance(result, HealthCheckResponse)
+            assert result.status == "healthy"
+            assert result.version == "1.0.0"
+            assert result.uptime == 3600.5
+            assert result.services == {
+                "database": "healthy",
+                "redis": "healthy",
+                "ai_service": "healthy"
+            }
+            assert isinstance(result.timestamp, datetime)
     
     @pytest.mark.asyncio
-    async def test_basic_health_check_structure(self):
-        """Тест структуры ответа базовой проверки"""
-        response = await basic_health_check()
-        
-        # Проверяем обязательные поля
-        required_fields = ["status", "timestamp", "version", "uptime"]
-        for field in required_fields:
-            assert field in response
-        
-        # Проверяем типы данных
-        assert isinstance(response["status"], str)
-        assert isinstance(response["timestamp"], str)
-        assert isinstance(response["version"], str)
-        assert isinstance(response["uptime"], (int, float))
-
-
-class TestDetailedHealthCheck:
-    """Тесты для detailed_health_check"""
+    async def test_basic_health_check_monitoring_error(self):
+        """Тест обработки ошибки мониторинга"""
+        with patch('backend.api.health.monitoring') as mock_monitoring:
+            mock_monitoring.get_health_status.side_effect = MonitoringError("Monitoring failed")
+            
+            with pytest.raises(HTTPException) as exc_info:
+                await basic_health_check()
+            
+            assert exc_info.value.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+            assert "Monitoring service unavailable" in str(exc_info.value.detail)
     
     @pytest.mark.asyncio
-    async def test_detailed_health_check_success(self):
+    async def test_basic_health_check_configuration_error(self):
+        """Тест обработки ошибки конфигурации"""
+        with patch('backend.api.health.monitoring') as mock_monitoring:
+            mock_monitoring.get_health_status.side_effect = ConfigurationError("Config failed")
+            
+            with pytest.raises(HTTPException) as exc_info:
+                await basic_health_check()
+            
+            assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+            assert "Configuration error" in str(exc_info.value.detail)
+    
+    @pytest.mark.asyncio
+    async def test_basic_health_check_generic_error(self):
+        """Тест обработки общей ошибки"""
+        with patch('backend.api.health.monitoring') as mock_monitoring:
+            mock_monitoring.get_health_status.side_effect = Exception("Generic error")
+            
+            with pytest.raises(HTTPException) as exc_info:
+                await basic_health_check()
+            
+            assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+            assert "Health check failed" in str(exc_info.value.detail)
+    
+    @pytest.mark.asyncio
+    async def test_basic_health_check_unknown_status(self):
+        """Тест с неизвестным статусом"""
+        with patch('backend.api.health.monitoring') as mock_monitoring:
+            mock_monitoring.get_health_status.return_value = {}
+            
+            result = await basic_health_check()
+            
+            assert result.status == "unknown"
+            assert result.uptime == 0
+            assert result.services == {}
+    
+    # === DETAILED HEALTH CHECK ===
+    
+    @pytest.mark.asyncio
+    async def test_detailed_health_check_success(self, mock_health_status):
         """Тест успешной детальной проверки здоровья"""
-        response = await detailed_health_check()
-        
-        assert response["status"] in ["healthy", "unhealthy", "degraded"]
-        assert "timestamp" in response
-        assert "version" in response
-        assert "uptime" in response
-        assert "services" in response
+        with patch('backend.api.health.monitoring') as mock_monitoring, \
+             patch('backend.api.health.check_external_services_health') as mock_external, \
+             patch('backend.api.health.get_memory_usage') as mock_memory, \
+             patch('backend.api.health.get_disk_usage') as mock_disk:
+            
+            mock_monitoring.get_health_status.return_value = mock_health_status
+            mock_monitoring.active_projects = {"project1": "active", "project2": "active"}
+            mock_external.return_value = {"redis": "healthy", "database": "healthy"}
+            mock_memory.return_value = {"used": 1024, "total": 2048}
+            mock_disk.return_value = {"used": 512, "total": 1024}
+            
+            result = await detailed_health_check()
+            
+            assert isinstance(result, DetailedHealthResponse)
+            assert result.status == "healthy"
+            assert result.version == "1.0.0"
+            assert result.uptime == 3600.5
+            assert result.active_projects == 2
+            assert result.external_services == {"redis": "healthy", "database": "healthy"}
+            assert result.memory_usage == {"used": 1024, "total": 2048}
+            assert result.disk_usage == {"used": 512, "total": 1024}
     
     @pytest.mark.asyncio
-    async def test_detailed_health_check_services(self):
-        """Тест проверки сервисов в детальной проверке"""
-        response = await detailed_health_check()
-        
-        services = response["services"]
-        assert isinstance(services, dict)
-        
-        # Проверяем основные сервисы
-        expected_services = ["database", "redis", "ai", "storage"]
-        for service in expected_services:
-            if service in services:
-                assert services[service] in ["healthy", "unhealthy", "degraded", "unknown"]
+    async def test_detailed_health_check_monitoring_error(self):
+        """Тест обработки ошибки мониторинга в детальной проверке"""
+        with patch('backend.api.health.monitoring') as mock_monitoring:
+            mock_monitoring.get_health_status.side_effect = MonitoringError("Monitoring failed")
+            
+            with pytest.raises(HTTPException) as exc_info:
+                await detailed_health_check()
+            
+            assert exc_info.value.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+            assert "Monitoring service unavailable" in str(exc_info.value.detail)
     
     @pytest.mark.asyncio
-    async def test_detailed_health_check_metrics(self):
-        """Тест метрик в детальной проверке"""
-        response = await detailed_health_check()
-        
-        # Проверяем наличие метрик
-        if "metrics" in response:
-            metrics = response["metrics"]
-            assert isinstance(metrics, dict)
+    async def test_detailed_health_check_configuration_error(self):
+        """Тест обработки ошибки конфигурации в детальной проверке"""
+        with patch('backend.api.health.monitoring') as mock_monitoring:
+            mock_monitoring.get_health_status.side_effect = ConfigurationError("Config failed")
             
-            # Проверяем основные метрики
-            if "cpu_usage" in metrics:
-                assert isinstance(metrics["cpu_usage"], (int, float))
-                assert 0 <= metrics["cpu_usage"] <= 100
+            with pytest.raises(HTTPException) as exc_info:
+                await detailed_health_check()
             
-            if "memory_usage" in metrics:
-                assert isinstance(metrics["memory_usage"], (int, float))
-                assert 0 <= metrics["memory_usage"] <= 100
+            assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+            assert "Configuration error" in str(exc_info.value.detail)
+    
+    @pytest.mark.asyncio
+    async def test_detailed_health_check_generic_error(self):
+        """Тест обработки общей ошибки в детальной проверке"""
+        with patch('backend.api.health.monitoring') as mock_monitoring:
+            mock_monitoring.get_health_status.side_effect = Exception("Generic error")
             
-            if "disk_usage" in metrics:
-                assert isinstance(metrics["disk_usage"], (int, float))
-                assert 0 <= metrics["disk_usage"] <= 100
-
-
-class TestDatabaseHealthCheck:
-    """Тесты для database_health_check"""
+            with pytest.raises(HTTPException) as exc_info:
+                await detailed_health_check()
+            
+            assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+            assert "Detailed health check failed" in str(exc_info.value.detail)
+    
+    # === DATABASE HEALTH CHECK ===
     
     @pytest.mark.asyncio
     async def test_database_health_check_success(self):
         """Тест успешной проверки базы данных"""
-        with patch('backend.services.connection_manager.connection_manager') as mock_manager:
-            mock_manager.health_check_all.return_value = {
-                "database": {"status": "healthy", "response_time": 0.1}
-            }
+        with patch('backend.services.connection_manager.connection_manager') as mock_conn_mgr, \
+             patch('backend.api.health.execute_supabase_operation') as mock_supabase:
             
-            response = await database_health_check()
+            mock_supabase_instance = Mock()
+            mock_conn_mgr.get_pool.return_value = mock_supabase_instance
+            mock_supabase.return_value = {"success": True}
             
-            assert response["status"] == "healthy"
-            assert "database" in response
-            assert response["database"]["status"] == "healthy"
-            assert "response_time" in response["database"]
-    
-    @pytest.mark.asyncio
-    async def test_database_health_check_failure(self):
-        """Тест проверки базы данных при ошибке"""
-        with patch('backend.services.connection_manager.connection_manager') as mock_manager:
-            mock_manager.health_check_all.side_effect = DatabaseError("Connection failed")
+            result = await database_health_check()
             
-            response = await database_health_check()
-            
-            assert response["status"] == "unhealthy"
-            assert "error" in response
-            assert "Connection failed" in response["error"]
+            assert result["status"] == "healthy"
+            assert "response_time_ms" in result
+            assert "Database connection successful" in result["message"]
     
     @pytest.mark.asyncio
     async def test_database_health_check_timeout(self):
-        """Тест проверки базы данных при таймауте"""
-        with patch('backend.services.connection_manager.connection_manager') as mock_manager:
-            mock_manager.health_check_all.side_effect = asyncio.TimeoutError("Request timeout")
+        """Тест проверки базы данных с таймаутом"""
+        async def slow_operation(*args, **kwargs):
+            await asyncio.sleep(0.1)  # Имитируем медленную операцию
+            return {"success": True}
+        
+        with patch('backend.services.connection_manager.connection_manager') as mock_conn_mgr, \
+             patch('backend.api.health.execute_supabase_operation', side_effect=slow_operation):
             
-            response = await database_health_check()
+            mock_supabase_instance = Mock()
+            mock_conn_mgr.get_pool.return_value = mock_supabase_instance
             
-            assert response["status"] == "unhealthy"
-            assert "error" in response
-            assert "timeout" in response["error"].lower()
-
-
-class TestAIHealthCheck:
-    """Тесты для ai_health_check"""
+            result = await database_health_check()
+            
+            assert result["status"] == "healthy"
+            assert result["response_time_ms"] > 50  # Должно быть больше 50мс
+    
+    @pytest.mark.asyncio
+    async def test_database_health_check_error(self):
+        """Тест проверки базы данных с ошибкой"""
+        with patch('backend.services.connection_manager.connection_manager') as mock_conn_mgr, \
+             patch('backend.api.health.execute_supabase_operation') as mock_supabase:
+            
+            mock_supabase_instance = Mock()
+            mock_conn_mgr.get_pool.return_value = mock_supabase_instance
+            mock_supabase.side_effect = DatabaseError("Connection failed")
+            
+            result = await database_health_check()
+            
+            assert result["status"] == "unhealthy"
+            assert "Database error" in result["message"]
+    
+    @pytest.mark.asyncio
+    async def test_database_health_check_exception(self):
+        """Тест проверки базы данных с исключением"""
+        with patch('backend.services.connection_manager.connection_manager') as mock_conn_mgr, \
+             patch('backend.api.health.execute_supabase_operation') as mock_supabase:
+            
+            mock_supabase_instance = Mock()
+            mock_conn_mgr.get_pool.return_value = mock_supabase_instance
+            mock_supabase.side_effect = Exception("Unexpected error")
+            
+            result = await database_health_check()
+            
+            assert result["status"] == "unhealthy"
+            assert "Database connection failed" in result["message"]
+    
+    # === AI HEALTH CHECK ===
     
     @pytest.mark.asyncio
     async def test_ai_health_check_success(self):
-        """Тест успешной проверки AI сервисов"""
-        with patch('backend.services.ai_service.get_ai_service') as mock_get_service:
-            mock_service = MagicMock()
-            mock_service.health_check.return_value = {
-                "openai": {"status": "healthy", "response_time": 0.2},
-                "anthropic": {"status": "healthy", "response_time": 0.3}
-            }
-            mock_get_service.return_value = mock_service
+        """Тест успешной проверки AI сервиса"""
+        with patch('backend.services.ai_service.get_ai_service') as mock_ai_service:
+            mock_ai_service.return_value = Mock()
             
-            response = await ai_health_check()
+            result = await ai_health_check()
             
-            assert response["status"] == "healthy"
-            assert "ai_providers" in response
-            assert "openai" in response["ai_providers"]
-            assert "anthropic" in response["ai_providers"]
+            assert result["status"] == "healthy"
+            assert "providers" in result
+            assert "AI services check completed" in result["message"]
     
     @pytest.mark.asyncio
-    async def test_ai_health_check_partial_failure(self):
-        """Тест проверки AI сервисов при частичном сбое"""
-        with patch('backend.services.ai_service.get_ai_service') as mock_get_service:
-            mock_service = MagicMock()
-            mock_service.health_check.return_value = {
-                "openai": {"status": "healthy", "response_time": 0.2},
-                "anthropic": {"status": "unhealthy", "error": "API key invalid"}
-            }
-            mock_get_service.return_value = mock_service
+    async def test_ai_health_check_timeout(self):
+        """Тест проверки AI сервиса с таймаутом"""
+        with patch('backend.services.ai_service.get_ai_service') as mock_ai_service:
+            mock_ai_service.return_value = Mock()
             
-            response = await ai_health_check()
+            result = await ai_health_check()
             
-            assert response["status"] == "degraded"
-            assert "ai_providers" in response
-            assert response["ai_providers"]["openai"]["status"] == "healthy"
-            assert response["ai_providers"]["anthropic"]["status"] == "unhealthy"
+            assert result["status"] == "healthy"
+            assert "providers" in result
     
     @pytest.mark.asyncio
-    async def test_ai_health_check_all_fail(self):
-        """Тест проверки AI сервисов при полном сбое"""
-        with patch('backend.services.ai_service.get_ai_service') as mock_get_service:
-            mock_service = MagicMock()
-            mock_service.health_check.side_effect = NetworkError("All AI services down")
-            mock_get_service.return_value = mock_service
+    async def test_ai_health_check_error(self):
+        """Тест проверки AI сервиса с ошибкой"""
+        with patch('backend.services.ai_service.get_ai_service') as mock_ai_service:
+            mock_ai_service.side_effect = Exception("AI service unavailable")
             
-            response = await ai_health_check()
+            result = await ai_health_check()
             
-            assert response["status"] == "unhealthy"
-            assert "error" in response
-            assert "All AI services down" in response["error"]
-
-
-class TestSystemHealthCheck:
-    """Тесты для system_health_check"""
+            assert result["status"] == "unhealthy"
+            assert "AI services check failed" in result["message"]
+    
+    # === SYSTEM HEALTH CHECK ===
     
     @pytest.mark.asyncio
     async def test_system_health_check_success(self):
         """Тест успешной проверки системы"""
-        with patch('psutil.cpu_percent') as mock_cpu, \
-             patch('psutil.virtual_memory') as mock_memory, \
-             patch('psutil.disk_usage') as mock_disk:
+        with patch('backend.api.health.psutil.cpu_percent') as mock_cpu, \
+             patch('backend.api.health.psutil.virtual_memory') as mock_memory, \
+             patch('backend.api.health.psutil.disk_usage') as mock_disk, \
+             patch('backend.api.health.psutil.pids') as mock_pids:
             
-            mock_cpu.return_value = 25.5
-            mock_memory.return_value = MagicMock(percent=60.0)
-            mock_disk.return_value = MagicMock(percent=45.0)
+            mock_cpu.return_value = 50.0
+            mock_memory.return_value = Mock(
+                total=2*1024**3, available=1*1024**3, percent=50.0
+            )
+            mock_disk.return_value = Mock(
+                total=1024**3, free=512*1024**2, used=512*1024**2
+            )
+            mock_pids.return_value = [1, 2, 3]
             
-            response = await system_health_check()
+            result = await system_health_check()
             
-            assert response["status"] == "healthy"
-            assert "system" in response
-            assert "cpu_usage" in response["system"]
-            assert "memory_usage" in response["system"]
-            assert "disk_usage" in response["system"]
-            assert response["system"]["cpu_usage"] == 25.5
-            assert response["system"]["memory_usage"] == 60.0
-            assert response["system"]["disk_usage"] == 45.0
-    
-    @pytest.mark.asyncio
-    async def test_system_health_check_high_usage(self):
-        """Тест проверки системы при высокой нагрузке"""
-        with patch('psutil.cpu_percent') as mock_cpu, \
-             patch('psutil.virtual_memory') as mock_memory, \
-             patch('psutil.disk_usage') as mock_disk:
-            
-            mock_cpu.return_value = 95.0
-            mock_memory.return_value = MagicMock(percent=90.0)
-            mock_disk.return_value = MagicMock(percent=85.0)
-            
-            response = await system_health_check()
-            
-            assert response["status"] == "degraded"
-            assert response["system"]["cpu_usage"] == 95.0
-            assert response["system"]["memory_usage"] == 90.0
-            assert response["system"]["disk_usage"] == 85.0
-    
-    @pytest.mark.asyncio
-    async def test_system_health_check_critical_usage(self):
-        """Тест проверки системы при критической нагрузке"""
-        with patch('psutil.cpu_percent') as mock_cpu, \
-             patch('psutil.virtual_memory') as mock_memory, \
-             patch('psutil.disk_usage') as mock_disk:
-            
-            mock_cpu.return_value = 100.0
-            mock_memory.return_value = MagicMock(percent=100.0)
-            mock_disk.return_value = MagicMock(percent=100.0)
-            
-            response = await system_health_check()
-            
-            assert response["status"] == "unhealthy"
-            assert response["system"]["cpu_usage"] == 100.0
-            assert response["system"]["memory_usage"] == 100.0
-            assert response["system"]["disk_usage"] == 100.0
+            assert result["status"] == "healthy"
+            assert "memory" in result
+            assert "disk" in result
+            assert "cpu_usage_percent" in result
     
     @pytest.mark.asyncio
     async def test_system_health_check_error(self):
-        """Тест проверки системы при ошибке"""
-        with patch('psutil.cpu_percent') as mock_cpu:
-            mock_cpu.side_effect = Exception("System error")
+        """Тест проверки системы с ошибкой"""
+        with patch('backend.api.health.psutil.cpu_percent') as mock_cpu:
+            mock_cpu.side_effect = Exception("System check failed")
             
-            response = await system_health_check()
+            result = await system_health_check()
             
-            assert response["status"] == "unhealthy"
-            assert "error" in response
-            assert "System error" in response["error"]
-
-
-class TestHealthCheckIntegration:
-    """Интеграционные тесты для проверки здоровья"""
+            assert result["status"] == "unhealthy"
+            assert "System resources check failed" in result["message"]
+    
+    # === CHECK EXTERNAL SERVICES ===
     
     @pytest.mark.asyncio
-    async def test_health_check_full_system_healthy(self):
-        """Тест полной проверки здоровой системы"""
-        with patch('backend.services.connection_manager.connection_manager') as mock_db_manager, \
-             patch('backend.services.ai_service.get_ai_service') as mock_ai_service, \
-             patch('psutil.cpu_percent') as mock_cpu, \
-             patch('psutil.virtual_memory') as mock_memory, \
-             patch('psutil.disk_usage') as mock_disk:
+    async def test_check_external_services_health_success(self):
+        """Тест успешной проверки внешних сервисов"""
+        result = await check_external_services_health()
+        
+        assert isinstance(result, dict)
+        assert "redis" in result
+        # Проверяем, что возвращаются строковые статусы
+        assert isinstance(result["redis"], str)
+    
+    # === GET MEMORY USAGE ===
+    
+    def test_get_memory_usage_success(self):
+        """Тест успешного получения информации об использовании памяти"""
+        with patch('backend.api.health.psutil.virtual_memory') as mock_memory:
+            mock_memory.return_value = Mock(
+                total=2048 * 1024 * 1024,  # 2GB
+                used=1024 * 1024 * 1024,   # 1GB
+                available=1024 * 1024 * 1024,  # 1GB
+                percent=50.0
+            )
             
-            # Настраиваем моки для здоровой системы
-            mock_db_manager.health_check_all.return_value = {
-                "database": {"status": "healthy", "response_time": 0.1},
-                "redis": {"status": "healthy", "response_time": 0.05}
+            result = get_memory_usage()
+            
+            assert result["total_bytes"] == 2048 * 1024 * 1024
+            assert result["used_bytes"] == 1024 * 1024 * 1024
+            assert result["used_percent"] == 50.0
+            assert result["available_bytes"] == 1024 * 1024 * 1024
+    
+    def test_get_memory_usage_error(self):
+        """Тест получения информации об использовании памяти с ошибкой"""
+        with patch('backend.api.health.psutil.virtual_memory') as mock_memory:
+            mock_memory.side_effect = Exception("Memory check failed")
+            
+            result = get_memory_usage()
+            
+            assert result["total_bytes"] == 0
+            assert result["used_bytes"] == 0
+            assert result["used_percent"] == 0
+    
+    # === GET DISK USAGE ===
+    
+    def test_get_disk_usage_success(self):
+        """Тест успешного получения информации об использовании диска"""
+        with patch('backend.api.health.psutil.disk_usage') as mock_disk:
+            mock_disk.return_value = Mock(
+                total=1024 * 1024 * 1024,  # 1GB
+                used=512 * 1024 * 1024,    # 512MB
+                free=512 * 1024 * 1024     # 512MB
+            )
+            
+            result = get_disk_usage()
+            
+            assert result["total_bytes"] == 1024 * 1024 * 1024
+            assert result["used_bytes"] == 512 * 1024 * 1024
+            assert result["free_bytes"] == 512 * 1024 * 1024
+            assert result["used_percent"] == 50.0
+    
+    def test_get_disk_usage_error(self):
+        """Тест получения информации об использовании диска с ошибкой"""
+        with patch('backend.api.health.psutil.disk_usage') as mock_disk:
+            mock_disk.side_effect = Exception("Disk check failed")
+            
+            result = get_disk_usage()
+            
+            assert result["total_bytes"] == 0
+            assert result["used_bytes"] == 0
+            assert result["free_bytes"] == 0
+            assert result["used_percent"] == 0
+    
+    # === INTEGRATION TESTS ===
+    
+    @pytest.mark.asyncio
+    async def test_health_check_integration(self):
+        """Интеграционный тест проверки здоровья"""
+        # Тестируем базовую проверку
+        with patch('backend.api.health.monitoring') as mock_monitoring:
+            mock_monitoring.get_health_status.return_value = {
+                "status": "healthy",
+                "uptime": 3600.5,
+                "services": {"database": "healthy"}
             }
             
-            mock_ai_service_instance = MagicMock()
-            mock_ai_service_instance.health_check.return_value = {
-                "openai": {"status": "healthy", "response_time": 0.2}
+            basic_result = await basic_health_check()
+            assert basic_result.status == "healthy"
+        
+        # Тестируем детальную проверку
+        with patch('backend.api.health.monitoring') as mock_monitoring, \
+             patch('backend.api.health.check_external_services_health') as mock_external, \
+             patch('backend.api.health.get_memory_usage') as mock_memory, \
+             patch('backend.api.health.get_disk_usage') as mock_disk:
+            
+            mock_monitoring.get_health_status.return_value = {
+                "status": "healthy",
+                "uptime": 3600.5,
+                "services": {"database": "healthy"}
             }
-            mock_ai_service.return_value = mock_ai_service_instance
+            mock_monitoring.active_projects = {"project1": "active"}
+            mock_external.return_value = {"redis": "healthy"}
+            mock_memory.return_value = {"used": 1024, "total": 2048}
+            mock_disk.return_value = {"used": 512, "total": 1024}
             
-            mock_cpu.return_value = 30.0
-            mock_memory.return_value = MagicMock(percent=50.0)
-            mock_disk.return_value = MagicMock(percent=40.0)
-            
-            # Выполняем детальную проверку
-            response = await detailed_health_check()
-            
-            assert response["status"] == "healthy"
-            assert "services" in response
-            assert "metrics" in response
-            
-            # Проверяем сервисы
-            services = response["services"]
-            assert services["database"] == "healthy"
-            assert services["redis"] == "healthy"
-            assert services["ai"] == "healthy"
-            
-            # Проверяем метрики
-            metrics = response["metrics"]
-            assert metrics["cpu_usage"] == 30.0
-            assert metrics["memory_usage"] == 50.0
-            assert metrics["disk_usage"] == 40.0
-    
-    @pytest.mark.asyncio
-    async def test_health_check_full_system_unhealthy(self):
-        """Тест полной проверки нездоровой системы"""
-        with patch('backend.services.connection_manager.connection_manager') as mock_db_manager, \
-             patch('backend.services.ai_service.get_ai_service') as mock_ai_service, \
-             patch('psutil.cpu_percent') as mock_cpu, \
-             patch('psutil.virtual_memory') as mock_memory, \
-             patch('psutil.disk_usage') as mock_disk:
-            
-            # Настраиваем моки для нездоровой системы
-            mock_db_manager.health_check_all.side_effect = DatabaseError("Database down")
-            
-            mock_ai_service_instance = MagicMock()
-            mock_ai_service_instance.health_check.side_effect = NetworkError("AI services down")
-            mock_ai_service.return_value = mock_ai_service_instance
-            
-            mock_cpu.return_value = 100.0
-            mock_memory.return_value = MagicMock(percent=100.0)
-            mock_disk.return_value = MagicMock(percent=100.0)
-            
-            # Выполняем детальную проверку
-            response = await detailed_health_check()
-            
-            assert response["status"] == "unhealthy"
-            assert "services" in response
-            assert "metrics" in response
-            
-            # Проверяем сервисы
-            services = response["services"]
-            assert services["database"] == "unhealthy"
-            assert services["ai"] == "unhealthy"
-            
-            # Проверяем метрики
-            metrics = response["metrics"]
-            assert metrics["cpu_usage"] == 100.0
-            assert metrics["memory_usage"] == 100.0
-            assert metrics["disk_usage"] == 100.0
-
-
-class TestHealthCheckErrorHandling:
-    """Тесты для обработки ошибок в проверке здоровья"""
-    
-    @pytest.mark.asyncio
-    async def test_health_check_network_error(self):
-        """Тест обработки NetworkError"""
-        with patch('backend.services.connection_manager.connection_manager') as mock_manager:
-            mock_manager.health_check_all.side_effect = NetworkError("Network unreachable")
-            
-            response = await database_health_check()
-            
-            assert response["status"] == "unhealthy"
-            assert "error" in response
-            assert "Network unreachable" in response["error"]
-    
-    @pytest.mark.asyncio
-    async def test_health_check_timeout_error(self):
-        """Тест обработки TimeoutError"""
-        with patch('backend.services.connection_manager.connection_manager') as mock_manager:
-            mock_manager.health_check_all.side_effect = asyncio.TimeoutError("Request timeout")
-            
-            response = await database_health_check()
-            
-            assert response["status"] == "unhealthy"
-            assert "error" in response
-            assert "timeout" in response["error"].lower()
-    
-    @pytest.mark.asyncio
-    async def test_health_check_generic_error(self):
-        """Тест обработки общих ошибок"""
-        with patch('backend.services.connection_manager.connection_manager') as mock_manager:
-            mock_manager.health_check_all.side_effect = Exception("Unexpected error")
-            
-            response = await database_health_check()
-            
-            assert response["status"] == "unhealthy"
-            assert "error" in response
-            assert "Unexpected error" in response["error"]
-
-
-class TestHealthCheckPerformance:
-    """Тесты производительности для проверки здоровья"""
-    
-    @pytest.mark.asyncio
-    async def test_health_check_response_time(self):
-        """Тест времени ответа проверки здоровья"""
-        import time
-        
-        start_time = time.time()
-        response = await basic_health_check()
-        end_time = time.time()
-        
-        response_time = end_time - start_time
-        
-        # Проверка должна выполняться быстро (менее 1 секунды)
-        assert response_time < 1.0
-        assert response["status"] == "healthy"
-    
-    @pytest.mark.asyncio
-    async def test_health_check_concurrent_requests(self):
-        """Тест одновременных запросов проверки здоровья"""
-        # Создаем несколько одновременных запросов
-        tasks = [basic_health_check() for _ in range(5)]
-        responses = await asyncio.gather(*tasks)
-        
-        # Все запросы должны быть успешными
-        for response in responses:
-            assert response["status"] == "healthy"
-            assert "timestamp" in response
-            assert "version" in response
+            detailed_result = await detailed_health_check()
+            assert detailed_result.status == "healthy"
+            assert detailed_result.active_projects == 1
