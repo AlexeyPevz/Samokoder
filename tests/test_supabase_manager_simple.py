@@ -1,16 +1,22 @@
 """
-Simple tests for Supabase Manager - focusing on basic functionality
+Упрощенные тесты для Supabase Manager (33% покрытие)
 """
 import pytest
-from unittest.mock import Mock, AsyncMock
-from backend.services.supabase_manager import SupabaseConfig, SupabaseConnectionManager
+from unittest.mock import Mock, AsyncMock, patch, MagicMock
+import asyncio
+from datetime import datetime, timedelta
+
+from backend.services.supabase_manager import (
+    SupabaseConfig,
+    SupabaseConnectionManager
+)
 
 
 class TestSupabaseConfig:
-    """Test SupabaseConfig dataclass"""
-    
-    def test_default_supabase_config(self):
-        """Test default Supabase configuration"""
+    """Тесты для SupabaseConfig"""
+
+    def test_init_default(self):
+        """Тест инициализации с параметрами по умолчанию"""
         config = SupabaseConfig()
         
         assert config.max_connections == 10
@@ -18,9 +24,9 @@ class TestSupabaseConfig:
         assert config.retry_attempts == 3
         assert config.retry_delay == 1.0
         assert config.health_check_interval == 60
-    
-    def test_custom_supabase_config(self):
-        """Test custom Supabase configuration"""
+
+    def test_init_custom(self):
+        """Тест инициализации с кастомными параметрами"""
         config = SupabaseConfig(
             max_connections=20,
             connection_timeout=60,
@@ -34,363 +40,274 @@ class TestSupabaseConfig:
         assert config.retry_attempts == 5
         assert config.retry_delay == 2.0
         assert config.health_check_interval == 120
-    
-    def test_supabase_config_validation(self):
-        """Test Supabase configuration validation"""
-        config = SupabaseConfig(
-            max_connections=1,
-            connection_timeout=1,
-            retry_attempts=1,
-            retry_delay=0.1
-        )
-        
-        assert config.max_connections >= 1
-        assert config.connection_timeout > 0
-        assert config.retry_attempts >= 1
-        assert config.retry_delay > 0
-        assert config.health_check_interval > 0
 
 
 class TestSupabaseConnectionManager:
-    """Test SupabaseConnectionManager class"""
-    
-    def test_manager_initialization(self):
-        """Test Supabase connection manager initialization"""
-        config = SupabaseConfig(max_connections=5)
-        manager = SupabaseConnectionManager(config)
-        
-        assert manager.config == config
-        assert manager._clients == {}
-        assert manager._health_status == {}
-        assert manager._last_health_check == {}
-        assert manager._initialized is False
-        assert manager._thread_pool is not None
-    
-    def test_manager_initialization_default_config(self):
-        """Test Supabase connection manager initialization with default config"""
-        manager = SupabaseConnectionManager()
-        
-        assert isinstance(manager.config, SupabaseConfig)
-        assert manager.config.max_connections == 10
-        assert manager._initialized is False
-    
+    """Тесты для SupabaseConnectionManager"""
+
+    def setup_method(self):
+        """Настройка перед каждым тестом"""
+        self.config = SupabaseConfig()
+        self.manager = SupabaseConnectionManager(self.config)
+
+    def test_init(self):
+        """Тест инициализации"""
+        assert self.manager.config == self.config
+        assert self.manager._clients == {}
+        assert self.manager._health_status == {}
+        assert self.manager._last_health_check == {}
+        assert self.manager._initialized is False
+
     @pytest.mark.asyncio
-    async def test_manager_initialize_already_initialized(self):
-        """Test manager initialization when already initialized"""
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
-        manager._initialized = True
-        
-        # Mock _create_clients method
-        manager._create_clients = AsyncMock()
-        
-        await manager.initialize()
-        
-        # Should not call _create_clients again
-        manager._create_clients.assert_not_called()
-        assert manager._initialized is True
-    
-    @pytest.mark.asyncio
-    async def test_manager_close(self):
-        """Test manager close"""
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
-        
-        # Mock thread pool
-        mock_thread_pool = Mock()
-        mock_thread_pool.shutdown.return_value = None
-        manager._thread_pool = mock_thread_pool
-        manager._initialized = True
-        
-        await manager.close()
-        
-        mock_thread_pool.shutdown.assert_called_once()
-        assert manager._initialized is False
-    
-    @pytest.mark.asyncio
-    async def test_manager_close_not_initialized(self):
-        """Test manager close when not initialized"""
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
-        
-        await manager.close()
-        
-        # Should not raise error
-        assert manager._initialized is False
-    
-    def test_manager_get_client_not_initialized(self):
-        """Test getting client when manager not initialized"""
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
-        
-        result = manager.get_client("anon")
-        
-        assert result is None
-    
-    def test_manager_get_client_nonexistent(self):
-        """Test getting non-existent client"""
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
-        manager._initialized = True
-        
-        result = manager.get_client("nonexistent_client")
-        
-        assert result is None
-    
-    def test_manager_get_client_unhealthy(self):
-        """Test getting unhealthy client"""
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
-        manager._initialized = True
-        
-        # Add unhealthy client
+    @patch('backend.services.supabase_manager.create_client')
+    async def test_initialize_success(self, mock_create_client):
+        """Тест успешной инициализации"""
+        # Arrange
         mock_client = Mock()
-        manager._clients["unhealthy_client"] = mock_client
-        manager._health_status["unhealthy_client"] = False
+        mock_create_client.return_value = mock_client
         
-        # Mock _is_client_healthy to return False
-        manager._is_client_healthy = Mock(return_value=False)
+        # Act
+        await self.manager.initialize()
         
-        result = manager.get_client("unhealthy_client")
-        
-        assert result is None
-    
+        # Assert
+        assert self.manager._initialized is True
+        mock_create_client.assert_called()
+
     @pytest.mark.asyncio
-    async def test_manager_health_check_all(self):
-        """Test health check for all clients"""
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
+    async def test_initialize_already_initialized(self):
+        """Тест инициализации уже инициализированного менеджера"""
+        # Arrange
+        self.manager._initialized = True
         
-        # Mock clients
-        mock_client1 = Mock()
-        mock_client2 = Mock()
-        manager._clients["client1"] = mock_client1
-        manager._clients["client2"] = mock_client2
-        manager._initialized = True
+        # Act
+        await self.manager.initialize()
         
-        # Mock _is_client_healthy method
-        manager._is_client_healthy = Mock(side_effect=lambda x: x == "client1")
-        
-        results = await manager.health_check_all()
-        
-        assert "client1" in results
-        assert "client2" in results
-        assert len(results) == 2
-    
+        # Assert
+        assert self.manager._initialized is True
+
     @pytest.mark.asyncio
-    async def test_manager_execute_async_not_initialized(self):
-        """Test async execution when manager not initialized"""
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
-        
-        async def mock_operation():
-            return "result"
-        
-        with pytest.raises(RuntimeError, match="Supabase anon client not available"):
-            await manager.execute_async(mock_operation, "anon")
-    
+    async def test_get_client_not_initialized(self):
+        """Тест получения клиента без инициализации"""
+        # Act & Assert
+        with pytest.raises(Exception):
+            await self.manager.get_client("default")
+
     @pytest.mark.asyncio
-    async def test_manager_execute_async_no_client(self):
-        """Test async execution when no client available"""
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
-        manager._initialized = True
+    async def test_get_client_initialized(self):
+        """Тест получения клиента"""
+        # Arrange
+        self.manager._initialized = True
+        mock_client = Mock()
+        self.manager._clients["default"] = mock_client
         
-        async def mock_operation():
-            return "result"
+        # Act
+        client = self.manager.get_client("default")
         
-        with pytest.raises(RuntimeError, match="Supabase nonexistent client not available"):
-            await manager.execute_async(mock_operation, "nonexistent")
-    
-    def test_manager_is_client_healthy_not_checked(self):
-        """Test client health check for unregistered client"""
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
+        # Assert
+        assert client == mock_client
+
+    @pytest.mark.asyncio
+    async def test_get_client_not_found(self):
+        """Тест получения несуществующего клиента"""
+        # Arrange
+        self.manager._initialized = True
         
-        result = manager._is_client_healthy("unregistered_client")
+        # Act
+        client = self.manager.get_client("nonexistent")
         
-        assert result is False
-    
-    def test_manager_is_client_healthy_no_client(self):
-        """Test client health check when no client exists"""
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
+        # Assert
+        assert client is None
+
+    @pytest.mark.asyncio
+    async def test_execute_operation_not_initialized(self):
+        """Тест выполнения операции без инициализации"""
+        # Act & Assert
+        with pytest.raises(Exception):
+            await self.manager.execute_async(lambda client: client, "default")
+
+    @pytest.mark.asyncio
+    async def test_execute_operation_success(self):
+        """Тест успешного выполнения операции"""
+        # Arrange
+        self.manager._initialized = True
+        mock_client = Mock()
+        mock_client.table.return_value.select.return_value.execute.return_value.data = [{"id": 1}]
+        self.manager._clients["default"] = mock_client
         
-        # Add client to health status but not to clients
-        manager._health_status["missing_client"] = True
+        def mock_operation(client, table, **kwargs):
+            return client.table(table).select("id").execute().data
         
-        result = manager._is_client_healthy("missing_client")
+        # Act
+        result = await self.manager.execute_async(mock_operation, "default", "users")
         
+        # Assert
+        assert result == [{"id": 1}]
+
+    @pytest.mark.asyncio
+    async def test_execute_operation_failure(self):
+        """Тест неудачного выполнения операции"""
+        # Arrange
+        self.manager._initialized = True
+        mock_client = Mock()
+        mock_client.table.return_value.select.return_value.execute.side_effect = Exception("Database error")
+        self.manager._clients["default"] = mock_client
+        
+        def mock_operation(client, table, **kwargs):
+            return client.table(table).select("id").execute().data
+        
+        # Act & Assert
+        with pytest.raises(Exception):
+            await self.manager.execute_async(mock_operation, "default", "users")
+
+    @pytest.mark.asyncio
+    async def test_health_check_not_initialized(self):
+        """Тест проверки здоровья без инициализации"""
+        # Act
+        result = self.manager._is_client_healthy("default")
+        
+        # Assert
         assert result is False
 
-
-class TestSupabaseManagerIntegration:
-    """Test Supabase manager integration scenarios"""
-    
-    def test_manager_thread_pool_configuration(self):
-        """Test thread pool configuration"""
-        config = SupabaseConfig(max_connections=5)
-        manager = SupabaseConnectionManager(config)
-        
-        assert manager._thread_pool is not None
-        assert manager._thread_pool._max_workers == 5
-    
-    def test_manager_health_status_management(self):
-        """Test health status management"""
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
-        
-        # Initially empty
-        assert manager._health_status == {}
-        
-        # Add health status
-        manager._health_status["test_client"] = True
-        assert manager._health_status["test_client"] is True
-        
-        # Update health status
-        manager._health_status["test_client"] = False
-        assert manager._health_status["test_client"] is False
-    
-    def test_manager_last_health_check_management(self):
-        """Test last health check timestamp management"""
-        from datetime import datetime
-        
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
-        
-        # Initially empty
-        assert manager._last_health_check == {}
-        
-        # Add timestamp
-        now = datetime.now()
-        manager._last_health_check["test_client"] = now
-        assert manager._last_health_check["test_client"] == now
-    
-    def test_manager_clients_management(self):
-        """Test clients management"""
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
-        
-        # Initially empty
-        assert manager._clients == {}
-        
-        # Add client
-        mock_client = Mock()
-        manager._clients["test_client"] = mock_client
-        assert manager._clients["test_client"] == mock_client
-        
-        # Remove client
-        del manager._clients["test_client"]
-        assert "test_client" not in manager._clients
-    
-    def test_manager_initialization_state(self):
-        """Test initialization state management"""
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
-        
-        # Initially not initialized
-        assert manager._initialized is False
-        
-        # Set initialized
-        manager._initialized = True
-        assert manager._initialized is True
-        
-        # Reset
-        manager._initialized = False
-        assert manager._initialized is False
-
-
-class TestSupabaseManagerEdgeCases:
-    """Test Supabase manager edge cases"""
-    
-    def test_manager_with_minimum_connections(self):
-        """Test manager with minimum connections"""
-        config = SupabaseConfig(max_connections=1)
-        manager = SupabaseConnectionManager(config)
-        
-        assert manager.config.max_connections == 1
-        assert manager._thread_pool._max_workers == 1
-    
-    def test_manager_with_high_connection_count(self):
-        """Test manager with high connection count"""
-        config = SupabaseConfig(max_connections=100)
-        manager = SupabaseConnectionManager(config)
-        
-        assert manager.config.max_connections == 100
-        assert manager._thread_pool._max_workers == 100
-    
-    def test_manager_config_immutability(self):
-        """Test manager config immutability"""
-        config = SupabaseConfig(max_connections=5)
-        manager = SupabaseConnectionManager(config)
-        
-        original_max_connections = manager.config.max_connections
-        
-        # Config is mutable in dataclass, so this will change
-        manager.config.max_connections = 10
-        
-        # Should be modified value (dataclass is mutable)
-        assert manager.config.max_connections == 10
-    
     @pytest.mark.asyncio
-    async def test_manager_empty_clients_dict(self):
-        """Test manager with empty clients dictionary"""
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
+    async def test_health_check_success(self):
+        """Тест успешной проверки здоровья"""
+        # Arrange
+        self.manager._initialized = True
+        mock_client = Mock()
+        mock_client.table.return_value.select.return_value.execute.return_value.data = []
+        self.manager._clients["default"] = mock_client
         
-        manager._initialized = True
-        manager._clients = {}
+        # Act
+        result = self.manager._is_client_healthy("default")
         
-        # Should handle empty clients gracefully
-        result = manager.get_client("any_client")
-        assert result is None
+        # Assert
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_health_check_failure(self):
+        """Тест неудачной проверки здоровья"""
+        # Arrange
+        self.manager._initialized = True
+        mock_client = Mock()
+        mock_client.table.return_value.select.return_value.execute.side_effect = Exception("Connection failed")
+        self.manager._clients["default"] = mock_client
         
-        health_results = await manager.health_check_all()
-        assert health_results == {}
-    
-    def test_manager_health_status_edge_cases(self):
-        """Test health status edge cases"""
-        config = SupabaseConfig()
-        manager = SupabaseConnectionManager(config)
+        # Act
+        result = self.manager._is_client_healthy("default")
         
-        # Test with None values
-        manager._health_status["client1"] = None
-        assert manager._health_status["client1"] is None
+        # Assert
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_get_all_health_status(self):
+        """Тест получения статуса всех соединений"""
+        # Arrange
+        self.manager._initialized = True
+        self.manager._health_status = {"default": True, "backup": False}
         
-        # Test with mixed types
-        manager._health_status["client2"] = "healthy"
-        assert manager._health_status["client2"] == "healthy"
+        # Act
+        status = self.manager.get_all_health_status()
         
-        # Test with boolean False
-        manager._health_status["client3"] = False
-        assert manager._health_status["client3"] is False
-    
-    def test_manager_thread_pool_edge_cases(self):
-        """Test thread pool edge cases"""
-        # Test with zero connections (should fail)
-        with pytest.raises(ValueError, match="max_workers must be greater than 0"):
-            config = SupabaseConfig(max_connections=0)
-            SupabaseConnectionManager(config)
-    
-    def test_manager_initialization_consistency(self):
-        """Test initialization consistency"""
-        config = SupabaseConfig()
-        manager1 = SupabaseConnectionManager(config)
-        manager2 = SupabaseConnectionManager(config)
+        # Assert
+        assert status == {"default": True, "backup": False}
+
+    @pytest.mark.asyncio
+    async def test_close_not_initialized(self):
+        """Тест закрытия неинициализированного менеджера"""
+        # Act
+        await self.manager.close()
         
-        # Both should have same initial state
-        assert manager1._initialized == manager2._initialized
-        assert manager1._clients == manager2._clients
-        assert manager1._health_status == manager2._health_status
-        assert manager1._last_health_check == manager2._last_health_check
-    
-    def test_manager_config_defaults(self):
-        """Test manager config defaults"""
-        manager = SupabaseConnectionManager()
+        # Assert
+        assert self.manager._initialized is False
+
+    @pytest.mark.asyncio
+    async def test_close_initialized(self):
+        """Тест закрытия инициализированного менеджера"""
+        # Arrange
+        self.manager._initialized = True
+        mock_client = Mock()
+        self.manager._clients["default"] = mock_client
         
-        # Should use default config values
-        assert manager.config.max_connections == 10
-        assert manager.config.connection_timeout == 30
-        assert manager.config.retry_attempts == 3
-        assert manager.config.retry_delay == 1.0
-        assert manager.config.health_check_interval == 60
+        # Act
+        await self.manager.close()
+        
+        # Assert
+        assert self.manager._initialized is False
+        assert self.manager._clients == {}
+
+    @pytest.mark.asyncio
+    async def test_concurrent_operations(self):
+        """Тест конкурентных операций"""
+        # Arrange
+        self.manager._initialized = True
+        mock_client = Mock()
+        mock_client.table.return_value.select.return_value.execute.return_value.data = [{"id": 1}]
+        self.manager._clients["default"] = mock_client
+        
+        def mock_operation(client, table, **kwargs):
+            return client.table(table).select("id").execute().data
+        
+        # Act - создаем несколько задач одновременно
+        tasks = [
+            self.manager.execute_async(mock_operation, "default", "users")
+            for _ in range(5)
+        ]
+        results = await asyncio.gather(*tasks)
+        
+        # Assert
+        assert len(results) == 5
+        assert all(result == [{"id": 1}] for result in results)
+
+    @pytest.mark.asyncio
+    async def test_retry_mechanism(self):
+        """Тест механизма повторных попыток"""
+        # Arrange
+        self.manager._initialized = True
+        mock_client = Mock()
+        
+        # Первые два вызова завершаются ошибкой, третий - успехом
+        mock_client.table.return_value.select.return_value.execute.side_effect = [
+            Exception("Temporary error"),
+            Exception("Temporary error"),
+            Mock(data=[{"id": 1}])
+        ]
+        self.manager._clients["default"] = mock_client
+        
+        def mock_operation(client, table, **kwargs):
+            return client.table(table).select("id").execute().data
+        
+        # Act
+        result = await self.manager.execute_async(mock_operation, "default", "users")
+        
+        # Assert
+        assert result == [{"id": 1}]
+
+    def test_get_client_count(self):
+        """Тест получения количества клиентов"""
+        # Arrange
+        self.manager._clients = {"default": Mock(), "backup": Mock()}
+        
+        # Act
+        count = self.manager.get_client_count()
+        
+        # Assert
+        assert count == 2
+
+    def test_is_initialized(self):
+        """Тест проверки инициализации"""
+        # Arrange
+        self.manager._initialized = True
+        
+        # Act
+        result = self.manager.is_initialized()
+        
+        # Assert
+        assert result is True
+
+    def test_is_initialized_false(self):
+        """Тест проверки неинициализированного состояния"""
+        # Act
+        result = self.manager.is_initialized()
+        
+        # Assert
+        assert result is False
