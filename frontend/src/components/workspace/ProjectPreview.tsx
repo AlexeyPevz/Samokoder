@@ -13,13 +13,11 @@ export function ProjectPreview({ project }: ProjectPreviewProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   const handleRefresh = () => {
-    console.log('Refreshing preview...')
     setIsRefreshing(true)
     setTimeout(() => setIsRefreshing(false), 1000)
   }
 
   const handleScreenshot = () => {
-    console.log('Taking screenshot...')
     // Implementation for screenshot functionality
   }
 

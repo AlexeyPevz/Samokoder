@@ -498,18 +498,18 @@ class AdvancedMonitoring:
     
     def _start_background_tasks(self):
         """Запускает фоновые задачи мониторинга"""
-        def update_metrics():
+        async def update_metrics():
             while True:
                 try:
                     self._update_system_metrics()
                     self._check_alerts()
-                    time.sleep(30)  # Обновляем каждые 30 секунд
+                    await asyncio.sleep(30)  # Обновляем каждые 30 секунд
                 except Exception as e:
                     logger.error(f"Error in background monitoring: {e}")
-                    time.sleep(60)
+                    await asyncio.sleep(60)
         
-        thread = threading.Thread(target=update_metrics, daemon=True)
-        thread.start()
+        # Запускаем асинхронную задачу
+        asyncio.create_task(update_metrics())
     
     def _update_system_metrics(self):
         """Обновляет системные метрики"""

@@ -33,12 +33,10 @@ export function CreateProjectDialog({ open, onOpenChange, onProjectCreated }: Cr
     }
 
     try {
-      console.log('Creating project:', { name, description })
       setIsCreating(true)
       
       const response = await createProject({ name, description })
       
-      console.log('Project created:', response.project)
       onProjectCreated(response.project)
       
       toast({
@@ -52,7 +50,6 @@ export function CreateProjectDialog({ open, onOpenChange, onProjectCreated }: Cr
       onOpenChange(false)
       
     } catch (error) {
-      console.error('Error creating project:', error)
       toast({
         title: "Ошибка",
         description: "Не удалось создать проект",

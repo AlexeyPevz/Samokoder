@@ -58,12 +58,9 @@ export function ChatInterface({ projectId, messages, onNewMessage }: ChatInterfa
     setIsTyping(true)
 
     try {
-      console.log('Sending message:', messageContent)
       const response = await sendChatMessage(projectId, messageContent)
       onNewMessage(response.message, response.assistantMessage)
-      console.log('Message sent successfully')
     } catch (error) {
-      console.error('Error sending message:', error)
       toast({
         title: "Ошибка",
         description: "Не удалось отправить сообщение",

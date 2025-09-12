@@ -58,41 +58,69 @@ class FileSecretsProvider(SecretsProvider):
     def __init__(self, secrets_file: str = ".secrets.json"):
         self.secrets_file = secrets_file
         self._secrets: Dict[str, str] = {}
-        self._load_secrets()
+        # Загружаем секреты асинхронно при первом обращении
+        self._loaded = False
     
-    def _load_secrets(self):
+    async def _load_secrets(self):
         """Загрузить секреты из файла"""
         if os.path.exists(self.secrets_file):
             try:
-                with open(self.secrets_file, 'r') as f:
-                    self._secrets = json.load(f)
+                import aiofiles
+                async with aiofiles.open(self.secrets_file, 'r') as f:
+                    content = await f.read()
+                    self._secrets = json.loads(content)
+            except ImportError:
+                # Fallback to synchronous file operations
+                try:
+                    with open(self.secrets_file, 'r') as f:
+                        self._secrets = json.load(f)
+                except Exception as e:
+                    logger.warning(f"Failed to load secrets file: {e}")
+                    self._secrets = {}
             except Exception as e:
                 logger.warning(f"Failed to load secrets file: {e}")
                 self._secrets = {}
     
-    def _save_secrets(self):
+    async def _save_secrets(self):
         """Сохранить секреты в файл"""
         try:
-            with open(self.secrets_file, 'w') as f:
-                json.dump(self._secrets, f, indent=2)
+            import aiofiles
+            async with aiofiles.open(self.secrets_file, 'w') as f:
+                await f.write(json.dumps(self._secrets, indent=2))
+        except ImportError:
+            # Fallback to synchronous file operations
+            try:
+                with open(self.secrets_file, 'w') as f:
+                    json.dump(self._secrets, f, indent=2)
+            except Exception as e:
+                logger.error(f"Failed to save secrets file: {e}")
         except Exception as e:
             logger.error(f"Failed to save secrets file: {e}")
     
     async def get_secret(self, key: str) -> Optional[str]:
         """Получить секрет из файла"""
+        if not self._loaded:
+            await self._load_secrets()
+            self._loaded = True
         return self._secrets.get(key)
     
     async def set_secret(self, key: str, value: str) -> bool:
         """Установить секрет в файл"""
+        if not self._loaded:
+            await self._load_secrets()
+            self._loaded = True
         self._secrets[key] = value
-        self._save_secrets()
+        await self._save_secrets()
         return True
     
     async def delete_secret(self, key: str) -> bool:
         """Удалить секрет из файла"""
+        if not self._loaded:
+            await self._load_secrets()
+            self._loaded = True
         if key in self._secrets:
             del self._secrets[key]
-            self._save_secrets()
+            await self._save_secrets()
         return True
 
 class AWSSecretsManagerProvider(SecretsProvider):
@@ -103,23 +131,32 @@ class AWSSecretsManagerProvider(SecretsProvider):
         self.prefix = prefix
         self._client = None
     
-    def _get_client(self):
+    async def _get_client(self):
         """Получить AWS клиент"""
         if self._client is None:
             try:
                 import boto3
-                self._client = boto3.client('secretsmanager', region_name=self.region)
+                import aioboto3
+                # Используем aioboto3 для асинхронных операций
+                session = aioboto3.Session()
+                self._client = session.client('secretsmanager', region_name=self.region)
             except ImportError:
-                logger.error("boto3 not installed. Install with: pip install boto3")
-                raise
+                logger.error("aioboto3 not installed. Install with: pip install aioboto3")
+                # Fallback to synchronous boto3
+                try:
+                    import boto3
+                    self._client = boto3.client('secretsmanager', region_name=self.region)
+                except ImportError:
+                    logger.error("boto3 not installed. Install with: pip install boto3")
+                    raise
         return self._client
     
     async def get_secret(self, key: str) -> Optional[str]:
         """Получить секрет из AWS Secrets Manager"""
         try:
-            client = self._get_client()
+            client = await self._get_client()
             secret_name = f"{self.prefix}{key}"
-            response = client.get_secret_value(SecretId=secret_name)
+            response = await client.get_secret_value(SecretId=secret_name)
             return response['SecretString']
         except Exception as e:
             logger.error(f"Failed to get secret {key} from AWS: {e}")
@@ -128,35 +165,36 @@ class AWSSecretsManagerProvider(SecretsProvider):
     async def set_secret(self, key: str, value: str) -> bool:
         """Установить секрет в AWS Secrets Manager"""
         try:
-            client = self._get_client()
+            client = await self._get_client()
             secret_name = f"{self.prefix}{key}"
-            client.create_secret(
+            await client.create_secret(
                 Name=secret_name,
                 SecretString=value,
                 Description=f"Secret for {key}"
             )
             return True
-        except client.exceptions.ResourceExistsException:
-            # Секрет уже существует, обновляем его
-            try:
-                client.update_secret(
-                    SecretId=secret_name,
-                    SecretString=value
-                )
-                return True
-            except Exception as e:
-                logger.error(f"Failed to update secret {key}: {e}")
-                return False
         except Exception as e:
-            logger.error(f"Failed to set secret {key}: {e}")
-            return False
+            if "ResourceExistsException" in str(e):
+                # Секрет уже существует, обновляем его
+                try:
+                    await client.update_secret(
+                        SecretId=secret_name,
+                        SecretString=value
+                    )
+                    return True
+                except Exception as update_e:
+                    logger.error(f"Failed to update secret {key}: {update_e}")
+                    return False
+            else:
+                logger.error(f"Failed to set secret {key}: {e}")
+                return False
     
     async def delete_secret(self, key: str) -> bool:
         """Удалить секрет из AWS Secrets Manager"""
         try:
-            client = self._get_client()
+            client = await self._get_client()
             secret_name = f"{self.prefix}{key}"
-            client.delete_secret(
+            await client.delete_secret(
                 SecretId=secret_name,
                 ForceDeleteWithoutRecovery=True
             )

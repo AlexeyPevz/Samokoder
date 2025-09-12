@@ -13,10 +13,7 @@ export function Header() {
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  console.log('Header component rendering, current location:', location.pathname)
-
   const handleLogout = () => {
-    console.log('User logging out')
     logout()
     navigate("/login")
   }

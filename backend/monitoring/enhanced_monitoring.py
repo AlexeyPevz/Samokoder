@@ -14,6 +14,7 @@ import os
 
 from prometheus_client import Counter, Histogram, Gauge, Summary, Info
 from fastapi import Request, Response
+from backend.security.log_sanitizer import log_sanitizer
 
 logger = structlog.get_logger(__name__)
 
@@ -187,12 +188,26 @@ class EnhancedMonitoring:
                 await asyncio.sleep(30)  # Собираем метрики каждые 30 секунд
                 await self._update_system_metrics()
                 await self._update_application_metrics()
-            except Exception as e:
-                logger.error(
-                    "metrics_collection_error",
-                    error=str(e),
-                    error_type=type(e).__name__
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess) as e:
+                logger.warning(
+                    "process_metrics_error",
+                    error=log_sanitizer.sanitize_string(str(e)),
+                    error_type=log_sanitizer.sanitize_string(type(e).__name__)
                 )
+            except (OSError, IOError) as e:
+                logger.error(
+                    "system_access_error",
+                    error=log_sanitizer.sanitize_string(str(e)),
+                    error_type=log_sanitizer.sanitize_string(type(e).__name__)
+                )
+            except Exception as e:
+                logger.critical(
+                    "unexpected_metrics_error",
+                    error=log_sanitizer.sanitize_string(str(e)),
+                    error_type=log_sanitizer.sanitize_string(type(e).__name__)
+                )
+                # Не прерываем цикл сбора метрик
+                await asyncio.sleep(60)
     
     async def _update_system_metrics(self):
         """Обновление системных метрик"""
@@ -219,11 +234,23 @@ class EnhancedMonitoring:
             uptime = time.time() - self.start_time
             self.system_uptime_seconds.set(uptime)
             
-        except Exception as e:
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess) as e:
+            logger.warning(
+                "process_access_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
+            )
+        except (OSError, IOError) as e:
             logger.error(
-                "system_metrics_error",
-                error=str(e),
-                error_type=type(e).__name__
+                "system_io_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
+            )
+        except Exception as e:
+            logger.critical(
+                "unexpected_system_metrics_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
             )
     
     async def _update_application_metrics(self):
@@ -244,11 +271,23 @@ class EnhancedMonitoring:
             recent_requests = sum(1 for t in self.request_times if now - t < 60)
             self.app_requests_per_second.set(recent_requests)
             
-        except Exception as e:
+        except (ValueError, ZeroDivisionError) as e:
+            logger.warning(
+                "calculation_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
+            )
+        except (KeyError, AttributeError) as e:
             logger.error(
-                "application_metrics_error",
-                error=str(e),
-                error_type=type(e).__name__
+                "data_structure_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
+            )
+        except Exception as e:
+            logger.critical(
+                "unexpected_application_metrics_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
             )
     
     def record_request(self, request: Request, response: Response, duration: float):
@@ -301,11 +340,23 @@ class EnhancedMonitoring:
                 endpoint_metrics['failed_requests'] += 1
                 self.error_counts[f"{method} {endpoint}"] += 1
             
-        except Exception as e:
+        except (AttributeError, KeyError) as e:
+            logger.warning(
+                "request_data_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
+            )
+        except (ValueError, TypeError) as e:
             logger.error(
-                "record_request_error",
-                error=str(e),
-                error_type=type(e).__name__
+                "request_processing_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
+            )
+        except Exception as e:
+            logger.critical(
+                "unexpected_record_request_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
             )
     
     def record_ai_request(self, provider: str, model: str, duration: float, 
@@ -335,11 +386,23 @@ class EnhancedMonitoring:
                     model=model
                 ).inc(cost)
                 
-        except Exception as e:
+        except (ValueError, TypeError) as e:
+            logger.warning(
+                "ai_request_data_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
+            )
+        except (AttributeError, KeyError) as e:
             logger.error(
-                "record_ai_request_error",
-                error=str(e),
-                error_type=type(e).__name__
+                "ai_request_processing_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
+            )
+        except Exception as e:
+            logger.critical(
+                "unexpected_ai_request_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
             )
     
     def get_system_metrics(self) -> SystemMetrics:
@@ -360,11 +423,25 @@ class EnhancedMonitoring:
                 process_count=len(psutil.pids()),
                 network_connections=len(psutil.net_connections())
             )
-        except Exception as e:
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess) as e:
+            logger.warning(
+                "process_access_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
+            )
+            return SystemMetrics()
+        except (OSError, IOError) as e:
             logger.error(
-                "get_system_metrics_error",
-                error=str(e),
-                error_type=type(e).__name__
+                "system_io_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
+            )
+            return SystemMetrics()
+        except Exception as e:
+            logger.critical(
+                "unexpected_system_metrics_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
             )
             return SystemMetrics()
     
@@ -410,11 +487,25 @@ class EnhancedMonitoring:
                 error_rate=error_rate,
                 requests_per_second=requests_per_second
             )
-        except Exception as e:
+        except (ValueError, ZeroDivisionError) as e:
+            logger.warning(
+                "calculation_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
+            )
+            return ApplicationMetrics()
+        except (KeyError, AttributeError) as e:
             logger.error(
-                "get_application_metrics_error",
-                error=str(e),
-                error_type=type(e).__name__
+                "data_structure_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
+            )
+            return ApplicationMetrics()
+        except Exception as e:
+            logger.critical(
+                "unexpected_application_metrics_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
             )
             return ApplicationMetrics()
     
@@ -468,16 +559,38 @@ class EnhancedMonitoring:
                     "requests_per_second": app_metrics.requests_per_second
                 }
             }
-        except Exception as e:
+        except (ValueError, TypeError) as e:
+            logger.warning(
+                "health_status_calculation_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
+            )
+            return {
+                "status": "degraded",
+                "timestamp": datetime.utcnow().isoformat(),
+                "error": log_sanitizer.sanitize_string(str(e))
+            }
+        except (KeyError, AttributeError) as e:
             logger.error(
-                "get_health_status_error",
-                error=str(e),
-                error_type=type(e).__name__
+                "health_status_data_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
+            )
+            return {
+                "status": "degraded",
+                "timestamp": datetime.utcnow().isoformat(),
+                "error": log_sanitizer.sanitize_string(str(e))
+            }
+        except Exception as e:
+            logger.critical(
+                "unexpected_health_status_error",
+                error=log_sanitizer.sanitize_string(str(e)),
+                error_type=log_sanitizer.sanitize_string(type(e).__name__)
             )
             return {
                 "status": "unhealthy",
                 "timestamp": datetime.utcnow().isoformat(),
-                "error": str(e)
+                "error": log_sanitizer.sanitize_string(str(e))
             }
 
 # Глобальный экземпляр мониторинга
