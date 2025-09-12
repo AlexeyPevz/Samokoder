@@ -15,41 +15,11 @@ from typing import Dict, Optional
 
 router = APIRouter()
 
-# Безопасное хранилище MFA секретов в Redis
-import redis
-from config.settings import settings
+# Импорт MFA сервиса
+from backend.services.mfa_service import get_mfa_service
 
-redis_client = redis.Redis.from_url(settings.redis_url) if hasattr(settings, 'redis_url') else None
-
-def store_mfa_secret(user_id: str, secret: str):
-    """Безопасное хранение MFA секрета в Redis"""
-    if redis_client:
-        redis_client.setex(f"mfa_secret:{user_id}", 3600, secret)  # TTL 1 час
-    else:
-        # Fallback для разработки
-        global mfa_secrets
-        mfa_secrets[user_id] = secret
-
-def get_mfa_secret(user_id: str) -> Optional[str]:
-    """Получение MFA секрета из Redis"""
-    if redis_client:
-        return redis_client.get(f"mfa_secret:{user_id}")
-    else:
-        # Fallback для разработки
-        global mfa_secrets
-        return mfa_secrets.get(user_id)
-
-def delete_mfa_secret(user_id: str):
-    """Удаление MFA секрета"""
-    if redis_client:
-        redis_client.delete(f"mfa_secret:{user_id}")
-    else:
-        # Fallback для разработки
-        global mfa_secrets
-        mfa_secrets.pop(user_id, None)
-
-# Fallback для разработки
-mfa_secrets: Dict[str, str] = {}
+# Инициализация сервиса
+mfa_service = get_mfa_service()
 
 @router.post("/setup", response_model=MFASetupResponse)
 async def setup_mfa(
@@ -60,30 +30,18 @@ async def setup_mfa(
         user_id = current_user["id"]
         
         # Генерируем секрет для TOTP
-        secret = secrets.token_urlsafe(32)
-        store_mfa_secret(user_id, secret)
+        secret = mfa_service.generate_secret()
+        mfa_service.store_mfa_secret(user_id, secret)
         
         # Создаем QR код
-        qr_data = f"otpauth://totp/Samokoder:{current_user['email']}?secret={secret}&issuer=Samokoder"
+        qr_code = mfa_service.generate_qr_code(current_user['email'], secret)
         
-        qr = qrcode.QRCode(version=1, box_size=10, border=5)
-        qr.add_data(qr_data)
-        qr.make(fit=True)
-        
-        # Создаем изображение QR кода
-        img = qr.make_image(fill_color="black", back_color="white")
-        
-        # Конвертируем в base64
-        buffer = io.BytesIO()
-        img.save(buffer, format='PNG')
-        qr_code_base64 = base64.b64encode(buffer.getvalue()).decode()
-        
-        # Генерируем случайные backup коды
-        backup_codes = [secrets.token_hex(4).upper() for _ in range(10)]
+        # Генерируем резервные коды
+        backup_codes = mfa_service.generate_backup_codes()
         
         return MFASetupResponse(
             secret=secret,
-            qr_code=f"data:image/png;base64,{qr_code_base64}",
+            qr_code=qr_code,
             backup_codes=backup_codes
         )
         
