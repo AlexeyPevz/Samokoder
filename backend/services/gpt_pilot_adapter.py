@@ -90,10 +90,8 @@ class SamokoderGPTPilotAdapter:
                 os.environ['MODEL_NAME'] = 'gpt-4o-mini'
                 os.environ['ENDPOINT'] = 'OPENAI'
             else:
-                logger.warning("No API keys provided, using dummy keys")
-                os.environ['OPENAI_API_KEY'] = 'sk-dummy-key'
-                os.environ['MODEL_NAME'] = 'gpt-4o-mini'
-                os.environ['ENDPOINT'] = 'OPENAI'
+                logger.error("No API keys provided. Please configure API keys before using GPT-Pilot.")
+                raise ValueError("API keys not configured. Please set OpenRouter, OpenAI, Anthropic, or Groq API key.")
     
     async def initialize_project(self, app_name: str, app_description: str) -> Dict[str, Any]:
         """Инициализирует проект в GPT-Pilot"""

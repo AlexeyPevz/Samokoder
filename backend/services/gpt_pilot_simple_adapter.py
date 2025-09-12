@@ -72,7 +72,7 @@ class SamokoderGPTPilotSimpleAdapter:
                 os.environ['ENDPOINT'] = 'OPENAI'
             else:
                 logger.warning("No API keys provided, using dummy keys")
-                os.environ['OPENAI_API_KEY'] = 'sk-dummy-key'
+                raise ValueError("API keys not configured. Please set OpenRouter, OpenAI, Anthropic, or Groq API key.")
                 os.environ['MODEL_NAME'] = 'gpt-4o-mini'
                 os.environ['ENDPOINT'] = 'OPENAI'
     

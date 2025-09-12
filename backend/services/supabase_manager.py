@@ -63,7 +63,8 @@ class SupabaseConnectionManager:
             if url and key and not url.endswith("example.supabase.co"):
                 try:
                     # Создаем клиент в отдельном потоке
-                    client = await asyncio.get_event_loop().run_in_executor(
+                    loop = asyncio.get_running_loop()
+                    client = await loop.run_in_executor(
                         self._thread_pool,
                         self._create_sync_client,
                         url, key
@@ -132,7 +133,8 @@ class SupabaseConnectionManager:
         
         try:
             # Выполняем операцию в отдельном потоке
-            result = await asyncio.get_event_loop().run_in_executor(
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(
                 self._thread_pool,
                 self._execute_sync_operation,
                 operation, client, *args, **kwargs

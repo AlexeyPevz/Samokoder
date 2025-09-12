@@ -252,7 +252,10 @@ class SecretsManager:
         port = await self.get_secret("database_port") or "5432"
         name = await self.get_secret("database_name") or "samokoder"
         user = await self.get_secret("database_user") or "postgres"
-        password = await self.get_secret("database_password") or "password"
+        password = await self.get_secret("database_password")
+        
+        if not password:
+            raise ValueError("Database password not configured. Set SAMOKODER_DATABASE_PASSWORD environment variable or configure secrets provider.")
         
         return f"postgresql://{user}:{password}@{host}:{port}/{name}"
     
