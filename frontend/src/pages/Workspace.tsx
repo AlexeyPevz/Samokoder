@@ -37,7 +37,6 @@ export function Workspace() {
     if (!projectId) return
 
     try {
-      console.log('Loading workspace data for project:', projectId)
       setLoading(true)
       
       const projectResponse = await getProject(projectId)
@@ -46,7 +45,6 @@ export function Workspace() {
       // Временно пустой массив сообщений
       setMessages([])
       
-      console.log('Workspace data loaded:', {
         project: projectResponse.project.name,
         messagesCount: 0
       })

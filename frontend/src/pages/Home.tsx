@@ -13,7 +13,6 @@ export function Home() {
   const handleCreateApp = async () => {
     if (!appDescription.trim()) return
     
-    console.log('Creating app with description:', appDescription)
     setIsCreating(true)
     
     // Simulate app creation
@@ -24,7 +23,6 @@ export function Home() {
   }
 
   const handleExampleClick = (example: string) => {
-    console.log('Selected example:', example)
     setAppDescription(example)
   }
 

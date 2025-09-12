@@ -3,8 +3,6 @@ import { Header } from "./Header"
 import { Footer } from "./Footer"
 
 export function Layout() {
-  console.log('Layout component rendering')
-  
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
       <Header />

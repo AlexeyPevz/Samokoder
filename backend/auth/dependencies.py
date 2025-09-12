@@ -223,7 +223,8 @@ def verify_password(password: str, stored_hash: str) -> bool:
         try:
             dummy_hash = bcrypt.gensalt()
             bcrypt.checkpw(password_bytes, dummy_hash)
-        except:
+        except Exception:
+            # Игнорируем ошибки фиктивной проверки для constant-time
             pass
         return False
 

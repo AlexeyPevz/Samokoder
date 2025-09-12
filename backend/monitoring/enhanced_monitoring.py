@@ -1,484 +1,181 @@
 """
 Улучшенная система мониторинга с детальными метриками
+Оркестратор для всех компонентов мониторинга
 """
 
-import time
-import structlog
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timedelta
-from dataclasses import dataclass, field
-from collections import defaultdict, deque
 import asyncio
-import psutil
-import os
+import logging
+import time
+from datetime import datetime
+from typing import Dict, Any, Optional
 
-from prometheus_client import Counter, Histogram, Gauge, Summary, Info
-from fastapi import Request, Response
+from .system_metrics import SystemMetricsCollector
+from .application_metrics import ApplicationMetricsCollector
+from .request_tracker import RequestTracker
 
-logger = structlog.get_logger(__name__)
-
-@dataclass
-class SystemMetrics:
-    """Метрики системы"""
-    cpu_percent: float = 0.0
-    memory_percent: float = 0.0
-    memory_used_mb: float = 0.0
-    memory_available_mb: float = 0.0
-    disk_usage_percent: float = 0.0
-    disk_free_gb: float = 0.0
-    load_average: List[float] = field(default_factory=list)
-    uptime_seconds: float = 0.0
-    process_count: int = 0
-    network_connections: int = 0
-
-@dataclass
-class ApplicationMetrics:
-    """Метрики приложения"""
-    total_requests: int = 0
-    successful_requests: int = 0
-    failed_requests: int = 0
-    active_connections: int = 0
-    average_response_time: float = 0.0
-    p95_response_time: float = 0.0
-    p99_response_time: float = 0.0
-    error_rate: float = 0.0
-    requests_per_second: float = 0.0
+logger = logging.getLogger(__name__)
 
 class EnhancedMonitoring:
     """Улучшенная система мониторинга"""
     
     def __init__(self):
-        self.start_time = time.time()
-        self.request_times = deque(maxlen=1000)
-        self.error_counts = defaultdict(int)
-        self.endpoint_metrics = defaultdict(lambda: {
-            'total_requests': 0,
-            'successful_requests': 0,
-            'failed_requests': 0,
-            'response_times': deque(maxlen=100),
-            'last_request': None
-        })
-        
-        # Prometheus метрики
-        self._setup_prometheus_metrics()
-        
-        # Запускаем задачу сбора метрик
-        asyncio.create_task(self._collect_metrics_loop())
+        self.system_metrics = SystemMetricsCollector()
+        self.app_metrics = ApplicationMetricsCollector()
+        self.request_tracker = RequestTracker()
+        self._running = False
+        self._tasks: List[asyncio.Task] = []
     
-    def _setup_prometheus_metrics(self):
-        """Настройка Prometheus метрик"""
-        # HTTP метрики
-        self.http_requests_total = Counter(
-            'http_requests_total',
-            'Total HTTP requests',
-            ['method', 'endpoint', 'status_code']
-        )
+    async def start(self):
+        """Запустить мониторинг"""
+        if self._running:
+            logger.warning("Enhanced monitoring already running")
+            return
         
-        self.http_request_duration = Histogram(
-            'http_request_duration_seconds',
-            'HTTP request duration in seconds',
-            ['method', 'endpoint'],
-            buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0)
-        )
+        self._running = True
+        logger.info("Starting enhanced monitoring system")
         
-        self.http_request_size = Histogram(
-            'http_request_size_bytes',
-            'HTTP request size in bytes',
-            ['method', 'endpoint'],
-            buckets=(100, 1000, 10000, 100000, 1000000, 10000000)
-        )
+        # Запускаем фоновые задачи
+        self._tasks = [
+            asyncio.create_task(self._system_metrics_loop()),
+            asyncio.create_task(self._cleanup_loop())
+        ]
         
-        self.http_response_size = Histogram(
-            'http_response_size_bytes',
-            'HTTP response size in bytes',
-            ['method', 'endpoint'],
-            buckets=(100, 1000, 10000, 100000, 1000000, 10000000)
-        )
-        
-        # Системные метрики
-        self.system_cpu_percent = Gauge(
-            'system_cpu_percent',
-            'CPU usage percentage'
-        )
-        
-        self.system_memory_percent = Gauge(
-            'system_memory_percent',
-            'Memory usage percentage'
-        )
-        
-        self.system_memory_used_bytes = Gauge(
-            'system_memory_used_bytes',
-            'Memory used in bytes'
-        )
-        
-        self.system_disk_usage_percent = Gauge(
-            'system_disk_usage_percent',
-            'Disk usage percentage'
-        )
-        
-        self.system_load_average = Gauge(
-            'system_load_average',
-            'System load average',
-            ['period']
-        )
-        
-        self.system_uptime_seconds = Gauge(
-            'system_uptime_seconds',
-            'System uptime in seconds'
-        )
-        
-        # Метрики приложения
-        self.app_active_connections = Gauge(
-            'app_active_connections',
-            'Active connections'
-        )
-        
-        self.app_error_rate = Gauge(
-            'app_error_rate',
-            'Error rate percentage'
-        )
-        
-        self.app_requests_per_second = Gauge(
-            'app_requests_per_second',
-            'Requests per second'
-        )
-        
-        # AI метрики
-        self.ai_requests_total = Counter(
-            'ai_requests_total',
-            'Total AI requests',
-            ['provider', 'model', 'status']
-        )
-        
-        self.ai_request_duration = Histogram(
-            'ai_request_duration_seconds',
-            'AI request duration in seconds',
-            ['provider', 'model'],
-            buckets=(0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0)
-        )
-        
-        self.ai_tokens_used = Counter(
-            'ai_tokens_used_total',
-            'Total AI tokens used',
-            ['provider', 'model']
-        )
-        
-        self.ai_cost_usd = Counter(
-            'ai_cost_usd_total',
-            'Total AI cost in USD',
-            ['provider', 'model']
-        )
-        
-        # Информационные метрики
-        self.app_info = Info(
-            'app_info',
-            'Application information'
-        )
-        self.app_info.info({
-            'version': '1.0.0',
-            'name': 'samokoder-backend',
-            'environment': os.getenv('ENVIRONMENT', 'development')
-        })
+        logger.info("Enhanced monitoring system started")
     
-    async def _collect_metrics_loop(self):
-        """Цикл сбора метрик"""
-        while True:
+    async def stop(self):
+        """Остановить мониторинг"""
+        if not self._running:
+            return
+        
+        self._running = False
+        logger.info("Stopping enhanced monitoring system")
+        
+        # Отменяем все задачи
+        for task in self._tasks:
+            task.cancel()
+        
+        # Ждем завершения
+        await asyncio.gather(*self._tasks, return_exceptions=True)
+        self._tasks.clear()
+        
+        logger.info("Enhanced monitoring system stopped")
+    
+    async def _system_metrics_loop(self):
+        """Цикл сбора системных метрик"""
+        while self._running:
             try:
-                await asyncio.sleep(30)  # Собираем метрики каждые 30 секунд
-                await self._update_system_metrics()
-                await self._update_application_metrics()
+                await self.system_metrics.collect_metrics()
+                await asyncio.sleep(30)  # Собираем каждые 30 секунд
             except Exception as e:
-                logger.error(
-                    "metrics_collection_error",
-                    error=str(e),
-                    error_type=type(e).__name__
-                )
+                logger.error(f"Error in system metrics loop: {e}")
+                await asyncio.sleep(60)
     
-    async def _update_system_metrics(self):
-        """Обновление системных метрик"""
-        try:
-            # CPU
-            cpu_percent = psutil.cpu_percent(interval=1)
-            self.system_cpu_percent.set(cpu_percent)
-            
-            # Память
-            memory = psutil.virtual_memory()
-            self.system_memory_percent.set(memory.percent)
-            self.system_memory_used_bytes.set(memory.used)
-            
-            # Диск
-            disk = psutil.disk_usage('/')
-            self.system_disk_usage_percent.set(disk.percent)
-            
-            # Load average
-            load_avg = psutil.getloadavg()
-            for i, load in enumerate(load_avg):
-                self.system_load_average.labels(period=f'{i+1}m').set(load)
-            
-            # Uptime
-            uptime = time.time() - self.start_time
-            self.system_uptime_seconds.set(uptime)
-            
-        except Exception as e:
-            logger.error(
-                "system_metrics_error",
-                error=str(e),
-                error_type=type(e).__name__
-            )
+    async def _cleanup_loop(self):
+        """Цикл очистки старых данных"""
+        while self._running:
+            try:
+                # Очищаем старые запросы
+                self.request_tracker.cleanup_old_requests(max_age_seconds=300)
+                await asyncio.sleep(300)  # Очищаем каждые 5 минут
+            except Exception as e:
+                logger.error(f"Error in cleanup loop: {e}")
+                await asyncio.sleep(300)
     
-    async def _update_application_metrics(self):
-        """Обновление метрик приложения"""
-        try:
-            # Активные соединения (приблизительно)
-            active_connections = len(self.request_times)
-            self.app_active_connections.set(active_connections)
-            
-            # Error rate
-            total_requests = sum(metrics['total_requests'] for metrics in self.endpoint_metrics.values())
-            total_errors = sum(metrics['failed_requests'] for metrics in self.endpoint_metrics.values())
-            error_rate = (total_errors / total_requests * 100) if total_requests > 0 else 0
-            self.app_error_rate.set(error_rate)
-            
-            # Requests per second (за последние 60 секунд)
-            now = time.time()
-            recent_requests = sum(1 for t in self.request_times if now - t < 60)
-            self.app_requests_per_second.set(recent_requests)
-            
-        except Exception as e:
-            logger.error(
-                "application_metrics_error",
-                error=str(e),
-                error_type=type(e).__name__
-            )
-    
-    def record_request(self, request: Request, response: Response, duration: float):
-        """Записать метрику запроса"""
-        try:
-            method = request.method
-            endpoint = request.url.path
-            status_code = response.status_code
-            
-            # Обновляем счетчики
-            self.http_requests_total.labels(
-                method=method,
-                endpoint=endpoint,
-                status_code=status_code
-            ).inc()
-            
-            # Обновляем гистограмму времени
-            self.http_request_duration.labels(
-                method=method,
-                endpoint=endpoint
-            ).observe(duration)
-            
-            # Обновляем размер запроса
-            content_length = request.headers.get('content-length', 0)
-            if content_length:
-                self.http_request_size.labels(
-                    method=method,
-                    endpoint=endpoint
-                ).observe(int(content_length))
-            
-            # Обновляем размер ответа
-            response_size = response.headers.get('content-length', 0)
-            if response_size:
-                self.http_response_size.labels(
-                    method=method,
-                    endpoint=endpoint
-                ).observe(int(response_size))
-            
-            # Обновляем внутренние метрики
-            self.request_times.append(time.time())
-            
-            endpoint_metrics = self.endpoint_metrics[endpoint]
-            endpoint_metrics['total_requests'] += 1
-            endpoint_metrics['last_request'] = time.time()
-            endpoint_metrics['response_times'].append(duration)
-            
-            if 200 <= status_code < 400:
-                endpoint_metrics['successful_requests'] += 1
-            else:
-                endpoint_metrics['failed_requests'] += 1
-                self.error_counts[f"{method} {endpoint}"] += 1
-            
-        except Exception as e:
-            logger.error(
-                "record_request_error",
-                error=str(e),
-                error_type=type(e).__name__
-            )
-    
-    def record_ai_request(self, provider: str, model: str, duration: float, 
-                         tokens: int = 0, cost: float = 0.0, status: str = "success"):
-        """Записать метрику AI запроса"""
-        try:
-            self.ai_requests_total.labels(
-                provider=provider,
-                model=model,
-                status=status
-            ).inc()
-            
-            self.ai_request_duration.labels(
-                provider=provider,
-                model=model
-            ).observe(duration)
-            
-            if tokens > 0:
-                self.ai_tokens_used.labels(
-                    provider=provider,
-                    model=model
-                ).inc(tokens)
-            
-            if cost > 0:
-                self.ai_cost_usd.labels(
-                    provider=provider,
-                    model=model
-                ).inc(cost)
-                
-        except Exception as e:
-            logger.error(
-                "record_ai_request_error",
-                error=str(e),
-                error_type=type(e).__name__
-            )
-    
-    def get_system_metrics(self) -> SystemMetrics:
+    # Системные метрики
+    async def get_system_metrics(self) -> Dict[str, Any]:
         """Получить системные метрики"""
-        try:
-            memory = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
-            
-            return SystemMetrics(
-                cpu_percent=psutil.cpu_percent(),
-                memory_percent=memory.percent,
-                memory_used_mb=memory.used / (1024 * 1024),
-                memory_available_mb=memory.available / (1024 * 1024),
-                disk_usage_percent=disk.percent,
-                disk_free_gb=disk.free / (1024 * 1024 * 1024),
-                load_average=list(psutil.getloadavg()),
-                uptime_seconds=time.time() - self.start_time,
-                process_count=len(psutil.pids()),
-                network_connections=len(psutil.net_connections())
-            )
-        except Exception as e:
-            logger.error(
-                "get_system_metrics_error",
-                error=str(e),
-                error_type=type(e).__name__
-            )
-            return SystemMetrics()
+        metrics = await self.system_metrics.collect_metrics()
+        return {
+            "cpu_percent": metrics.cpu_percent,
+            "memory_percent": metrics.memory_percent,
+            "memory_used_mb": metrics.memory_used_mb,
+            "memory_available_mb": metrics.memory_available_mb,
+            "disk_usage_percent": metrics.disk_usage_percent,
+            "disk_free_gb": metrics.disk_free_gb,
+            "load_average": metrics.load_average,
+            "uptime_seconds": metrics.uptime_seconds,
+            "process_count": metrics.process_count,
+            "network_connections": metrics.network_connections
+        }
     
-    def get_application_metrics(self) -> ApplicationMetrics:
+    # Метрики приложения
+    def record_request(self, response_time: float, success: bool = True):
+        """Записать запрос"""
+        self.app_metrics.record_request(response_time, success)
+    
+    def set_active_connections(self, count: int):
+        """Установить количество активных соединений"""
+        self.app_metrics.set_active_connections(count)
+    
+    def get_application_metrics(self) -> Dict[str, Any]:
         """Получить метрики приложения"""
-        try:
-            total_requests = sum(metrics['total_requests'] for metrics in self.endpoint_metrics.values())
-            successful_requests = sum(metrics['successful_requests'] for metrics in self.endpoint_metrics.values())
-            failed_requests = sum(metrics['failed_requests'] for metrics in self.endpoint_metrics.values())
-            
-            # Вычисляем среднее время ответа
-            all_response_times = []
-            for metrics in self.endpoint_metrics.values():
-                all_response_times.extend(metrics['response_times'])
-            
-            if all_response_times:
-                avg_response_time = sum(all_response_times) / len(all_response_times)
-                sorted_times = sorted(all_response_times)
-                p95_index = int(len(sorted_times) * 0.95)
-                p99_index = int(len(sorted_times) * 0.99)
-                p95_response_time = sorted_times[p95_index] if p95_index < len(sorted_times) else sorted_times[-1]
-                p99_response_time = sorted_times[p99_index] if p99_index < len(sorted_times) else sorted_times[-1]
-            else:
-                avg_response_time = 0.0
-                p95_response_time = 0.0
-                p99_response_time = 0.0
-            
-            error_rate = (failed_requests / total_requests * 100) if total_requests > 0 else 0.0
-            
-            # Requests per second за последние 60 секунд
-            now = time.time()
-            recent_requests = sum(1 for t in self.request_times if now - t < 60)
-            requests_per_second = recent_requests / 60.0
-            
-            return ApplicationMetrics(
-                total_requests=total_requests,
-                successful_requests=successful_requests,
-                failed_requests=failed_requests,
-                active_connections=len(self.request_times),
-                average_response_time=avg_response_time,
-                p95_response_time=p95_response_time,
-                p99_response_time=p99_response_time,
-                error_rate=error_rate,
-                requests_per_second=requests_per_second
-            )
-        except Exception as e:
-            logger.error(
-                "get_application_metrics_error",
-                error=str(e),
-                error_type=type(e).__name__
-            )
-            return ApplicationMetrics()
+        return self.app_metrics.get_metrics_summary()
+    
+    def reset_application_metrics(self):
+        """Сбросить метрики приложения"""
+        self.app_metrics.reset_metrics()
+    
+    # Трекер запросов
+    def start_request(self, request) -> str:
+        """Начать отслеживание запроса"""
+        return self.request_tracker.start_request(request)
+    
+    def finish_request(self, request_id: str, response, success: bool = True, 
+                      error: Optional[Exception] = None):
+        """Завершить отслеживание запроса"""
+        self.request_tracker.finish_request(request_id, response, success, error)
+    
+    def get_active_requests(self) -> Dict[str, Dict[str, Any]]:
+        """Получить активные запросы"""
+        return self.request_tracker.get_active_requests()
+    
+    def get_request_summary(self) -> Dict[str, Any]:
+        """Получить сводку запросов"""
+        return self.request_tracker.get_request_summary()
+    
+    # Общее состояние
+    def get_comprehensive_metrics(self) -> Dict[str, Any]:
+        """Получить все метрики"""
+        return {
+            "system": self.get_system_metrics(),
+            "application": self.get_application_metrics(),
+            "requests": self.get_request_summary(),
+            "timestamp": datetime.now().isoformat()
+        }
     
     def get_health_status(self) -> Dict[str, Any]:
-        """Получить статус здоровья системы"""
+        """Получить статус здоровья"""
         try:
-            system_metrics = self.get_system_metrics()
             app_metrics = self.get_application_metrics()
             
-            # Определяем общий статус
-            status = "healthy"
-            issues = []
+            # Проверяем критические метрики
+            error_rate = app_metrics.get("error_rate_percent", 0)
+            avg_response_time = app_metrics.get("average_response_time_ms", 0)
             
-            # Проверяем системные метрики
-            if system_metrics.cpu_percent > 90:
-                status = "degraded"
-                issues.append("High CPU usage")
-            
-            if system_metrics.memory_percent > 90:
-                status = "degraded"
-                issues.append("High memory usage")
-            
-            if system_metrics.disk_usage_percent > 90:
-                status = "degraded"
-                issues.append("High disk usage")
-            
-            # Проверяем метрики приложения
-            if app_metrics.error_rate > 10:
-                status = "degraded"
-                issues.append("High error rate")
-            
-            if app_metrics.average_response_time > 5.0:
-                status = "degraded"
-                issues.append("Slow response times")
+            is_healthy = (
+                error_rate < 5.0 and  # Error rate < 5%
+                avg_response_time < 5000.0  # Response time < 5s
+            )
             
             return {
-                "status": status,
-                "timestamp": datetime.utcnow().isoformat(),
-                "uptime_seconds": system_metrics.uptime_seconds,
-                "issues": issues,
-                "system": {
-                    "cpu_percent": system_metrics.cpu_percent,
-                    "memory_percent": system_metrics.memory_percent,
-                    "disk_usage_percent": system_metrics.disk_usage_percent,
-                    "load_average": system_metrics.load_average
-                },
-                "application": {
-                    "total_requests": app_metrics.total_requests,
-                    "error_rate": app_metrics.error_rate,
-                    "average_response_time": app_metrics.average_response_time,
-                    "requests_per_second": app_metrics.requests_per_second
-                }
+                "healthy": is_healthy,
+                "error_rate_percent": error_rate,
+                "average_response_time_ms": avg_response_time,
+                "active_requests": len(self.get_active_requests()),
+                "timestamp": datetime.now().isoformat()
             }
         except Exception as e:
-            logger.error(
-                "get_health_status_error",
-                error=str(e),
-                error_type=type(e).__name__
-            )
+            logger.error(f"Error checking health status: {e}")
             return {
-                "status": "unhealthy",
-                "timestamp": datetime.utcnow().isoformat(),
-                "error": str(e)
+                "healthy": False,
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
             }
+    
+    def is_healthy(self) -> bool:
+        """Проверить здоровье системы"""
+        health = self.get_health_status()
+        return health.get("healthy", False)
 
-# Глобальный экземпляр мониторинга
+# Глобальный экземпляр для обратной совместимости
 enhanced_monitoring = EnhancedMonitoring()
