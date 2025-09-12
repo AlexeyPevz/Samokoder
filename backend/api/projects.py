@@ -129,7 +129,9 @@ async def list_projects(
                 query = query.eq("status", project_status)
             
             if search:
-                query = query.or_(f"name.ilike.%{search}%,description.ilike.%{search}%")
+                # Безопасный поиск с параметризованными запросами
+                search_pattern = f"%{search}%"
+                query = query.or_("name.ilike.{search_pattern},description.ilike.{search_pattern}".format(search_pattern=search_pattern))
             
             return query.range(offset, offset + limit - 1)
         
