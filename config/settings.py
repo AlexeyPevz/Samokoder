@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 from typing import List
 import os
+from backend.core.exceptions import ConfigurationError
 
 class Settings(BaseSettings):
     # Supabase
@@ -27,6 +28,10 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: List[str] = ["http://localhost:3000", "http://localhost:5173"]
     
+    # Session Management
+    session_secret_key: str
+    session_timeout: int = 3600
+    
     # File Storage
     max_file_size_mb: int = 50
     export_storage_path: str = "./exports"
@@ -45,6 +50,8 @@ class Settings(BaseSettings):
     
     # Security
     secret_key: str
+    session_secret_key: str
+    session_timeout: int = 3600
     access_token_expire_minutes: int = 30
     
     # Database
@@ -72,6 +79,32 @@ class Settings(BaseSettings):
     enable_backups: bool = False
     backup_interval_hours: int = 24
     
+    def model_post_init(self, __context) -> None:
+        """Валидация конфигурации после инициализации"""
+        # Проверка на демо ключи в продакшене
+        if not self.debug:
+            demo_keys = [
+                self.system_openai_key, 
+                self.system_anthropic_key,
+                self.system_groq_key,
+                self.system_openrouter_key
+            ]
+            
+            for key in demo_keys:
+                if key and ('demo' in key.lower() or 'test' in key.lower()):
+                    raise ConfigurationError(
+                        "Demo keys are not allowed in production environment. "
+                        "Please provide real API keys."
+                    )
+        
+        # Проверка обязательных полей в продакшене
+        if not self.debug:
+            if not self.database_url:
+                raise ConfigurationError("Database URL is required in production")
+            
+            if not self.secret_key or len(self.secret_key) < 32:
+                raise ConfigurationError("Secret key must be at least 32 characters in production")
+
     class Config:
         env_file = ".env"
         case_sensitive = False

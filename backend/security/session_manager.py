@@ -7,6 +7,7 @@ import secrets
 import time
 import hashlib
 import hmac
+import asyncio
 from typing import Dict, Optional, Set, List
 from datetime import datetime, timedelta
 import logging
@@ -45,6 +46,7 @@ class SecureSessionManager:
         self.sessions: Dict[str, SessionData] = {}
         self.user_sessions: Dict[str, Set[str]] = {}  # user_id -> set of session_ids
         self.revoked_sessions: Set[str] = set()
+        self._lock = asyncio.Lock()  # Добавляем async lock
         
         # Настройки безопасности
         self.max_sessions_per_user = 5
@@ -282,15 +284,17 @@ class SecureSessionManager:
         return False
 
 # Глобальный экземпляр менеджера сессий
+from config.settings import settings
+
 session_manager = SecureSessionManager(
-    secret_key="your-secret-key-here",  # Должен быть из настроек
-    session_timeout=3600
+    secret_key=settings.session_secret_key,  # Из настроек
+    session_timeout=settings.session_timeout
 )
 
 # Удобные функции
-def create_session(user_id: str, ip_address: str, user_agent: str) -> str:
+async def create_session(user_id: str, ip_address: str, user_agent: str) -> str:
     """Создает новую сессию"""
-    return session_manager.create_session(user_id, ip_address, user_agent)
+    return await session_manager.create_session(user_id, ip_address, user_agent)
 
 def validate_session(session_id: str, ip_address: str, user_agent: str) -> bool:
     """Валидирует сессию"""

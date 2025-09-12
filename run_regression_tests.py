@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Скрипт для запуска регрессионных тестов критических пользовательских потоков
+Скрипт для запуска регрессионных тестов с приоритизацией
+P0 тесты блокируют мёрж, P1 тесты рекомендуются
 """
 
 import subprocess
@@ -8,303 +9,327 @@ import sys
 import json
 import time
 from datetime import datetime
-from pathlib import Path
+from typing import Dict, List, Tuple
+import argparse
 
 class RegressionTestRunner:
-    """Класс для запуска регрессионных тестов"""
+    """Запуск регрессионных тестов с приоритизацией"""
     
     def __init__(self):
         self.results = {
-            "start_time": datetime.now().isoformat(),
-            "tests": {},
-            "summary": {
-                "total": 0,
-                "passed": 0,
-                "failed": 0,
-                "skipped": 0,
-                "errors": 0
-            }
+            "p0_tests": [],
+            "p1_tests": [],
+            "p0_passed": 0,
+            "p0_failed": 0,
+            "p1_passed": 0,
+            "p1_failed": 0,
+            "start_time": None,
+            "end_time": None,
+            "total_duration": 0
         }
     
-    def run_test_file(self, test_file: str, priority: str = "P1") -> dict:
-        """Запуск тестового файла"""
-        print(f"\n{'='*60}")
-        print(f"Запуск тестов: {test_file} (Приоритет: {priority})")
-        print(f"{'='*60}")
+    def run_p0_tests(self) -> Tuple[bool, List[str]]:
+        """Запуск P0 тестов (блокирующих мёрж)"""
+        print("🚨 Запуск P0 тестов (БЛОКИРУЮЩИХ МЁРЖ)...")
+        print("=" * 60)
         
-        start_time = time.time()
-        
-        try:
-            # Запускаем pytest для конкретного файла
-            result = subprocess.run([
-                sys.executable, "-m", "pytest", 
-                test_file, 
-                "-v", 
-                "--tb=short",
-                "--json-report",
-                "--json-report-file=test_results.json"
-            ], capture_output=True, text=True, timeout=300)
-            
-            end_time = time.time()
-            duration = end_time - start_time
-            
-            # Читаем JSON отчёт
-            try:
-                with open("test_results.json", "r") as f:
-                    json_report = json.load(f)
-                
-                test_results = {
-                    "status": "passed" if result.returncode == 0 else "failed",
-                    "duration": duration,
-                    "returncode": result.returncode,
-                    "stdout": result.stdout,
-                    "stderr": result.stderr,
-                    "summary": json_report.get("summary", {}),
-                    "tests": json_report.get("tests", [])
-                }
-            except FileNotFoundError:
-                test_results = {
-                    "status": "failed",
-                    "duration": duration,
-                    "returncode": result.returncode,
-                    "stdout": result.stdout,
-                    "stderr": result.stderr,
-                    "summary": {},
-                    "tests": []
-                }
-            
-            # Обновляем общую статистику
-            if test_results["status"] == "passed":
-                self.results["summary"]["passed"] += test_results["summary"].get("passed", 0)
-            else:
-                self.results["summary"]["failed"] += test_results["summary"].get("failed", 0)
-            
-            self.results["summary"]["total"] += test_results["summary"].get("total", 0)
-            self.results["summary"]["skipped"] += test_results["summary"].get("skipped", 0)
-            self.results["summary"]["errors"] += test_results["summary"].get("error", 0)
-            
-            return test_results
-            
-        except subprocess.TimeoutExpired:
-            return {
-                "status": "timeout",
-                "duration": 300,
-                "returncode": -1,
-                "stdout": "",
-                "stderr": "Test timeout after 5 minutes",
-                "summary": {},
-                "tests": []
-            }
-        except Exception as e:
-            return {
-                "status": "error",
-                "duration": 0,
-                "returncode": -1,
-                "stdout": "",
-                "stderr": str(e),
-                "summary": {},
-                "tests": []
-            }
-    
-    def run_all_tests(self):
-        """Запуск всех регрессионных тестов"""
-        print("🚀 Запуск регрессионных тестов критических пользовательских потоков")
-        print(f"Время начала: {self.results['start_time']}")
-        
-        # P0 тесты (критические - блокируют мёрж)
         p0_tests = [
-            ("tests/test_regression_auth_security.py", "P0"),
-            ("tests/test_regression_project_management.py", "P0"),
-            ("tests/test_regression_middleware_security.py", "P0")
+            "test_jwt_token_validation_regression",
+            "test_jwt_algorithm_validation_regression", 
+            "test_mfa_setup_redis_storage_regression",
+            "test_mfa_verification_totp_regression",
+            "test_api_key_creation_connection_manager_regression",
+            "test_api_key_retrieval_connection_manager_regression"
         ]
         
-        # P1 тесты (важные - требуют внимания)
+        failed_tests = []
+        
+        for test in p0_tests:
+            print(f"🧪 Запуск P0 теста: {test}")
+            start_time = time.time()
+            
+            try:
+                result = subprocess.run([
+                    "python", "-m", "pytest", 
+                    f"tests/test_regression_critical_flows.py::{test}",
+                    "-v", "--tb=short", "--no-header"
+                ], capture_output=True, text=True, timeout=300)
+                
+                duration = time.time() - start_time
+                
+                if result.returncode == 0:
+                    print(f"✅ {test} - ПРОЙДЕН ({duration:.2f}s)")
+                    self.results["p0_passed"] += 1
+                    self.results["p0_tests"].append({
+                        "name": test,
+                        "status": "PASSED",
+                        "duration": duration,
+                        "output": result.stdout
+                    })
+                else:
+                    print(f"❌ {test} - ПРОВАЛЕН ({duration:.2f}s)")
+                    print(f"   Ошибка: {result.stderr}")
+                    self.results["p0_failed"] += 1
+                    failed_tests.append(test)
+                    self.results["p0_tests"].append({
+                        "name": test,
+                        "status": "FAILED",
+                        "duration": duration,
+                        "output": result.stdout,
+                        "error": result.stderr
+                    })
+                    
+            except subprocess.TimeoutExpired:
+                print(f"⏰ {test} - ТАЙМАУТ (300s)")
+                self.results["p0_failed"] += 1
+                failed_tests.append(test)
+                self.results["p0_tests"].append({
+                    "name": test,
+                    "status": "TIMEOUT",
+                    "duration": 300,
+                    "error": "Test timeout after 300 seconds"
+                })
+            except Exception as e:
+                print(f"💥 {test} - ОШИБКА: {str(e)}")
+                self.results["p0_failed"] += 1
+                failed_tests.append(test)
+                self.results["p0_tests"].append({
+                    "name": test,
+                    "status": "ERROR",
+                    "duration": 0,
+                    "error": str(e)
+                })
+        
+        print("=" * 60)
+        print(f"📊 P0 тесты завершены: {self.results['p0_passed']} пройдено, {self.results['p0_failed']} провалено")
+        
+        return len(failed_tests) == 0, failed_tests
+    
+    def run_p1_tests(self) -> Tuple[bool, List[str]]:
+        """Запуск P1 тестов (рекомендуемых)"""
+        print("\n⚠️  Запуск P1 тестов (РЕКОМЕНДУЕМЫХ)...")
+        print("=" * 60)
+        
         p1_tests = [
-            ("tests/test_regression_ai_service.py", "P1"),
-            ("tests/test_regression_critical_user_flows.py", "P1")
+            "test_mfa_fallback_in_memory_regression",
+            "test_api_key_logging_security_regression",
+            "test_end_to_end_authentication_flow_regression",
+            "test_api_keys_management_flow_regression"
         ]
         
-        # Запускаем P0 тесты
-        print("\n🔴 P0 ТЕСТЫ (Критические - блокируют мёрж)")
-        for test_file, priority in p0_tests:
-            if Path(test_file).exists():
-                result = self.run_test_file(test_file, priority)
-                self.results["tests"][test_file] = result
-                
-                if result["status"] != "passed":
-                    print(f"❌ КРИТИЧЕСКАЯ ОШИБКА в {test_file}")
-                    print(f"   Статус: {result['status']}")
-                    print(f"   Ошибка: {result['stderr'][:200]}...")
-            else:
-                print(f"⚠️  Файл не найден: {test_file}")
+        failed_tests = []
         
-        # Запускаем P1 тесты
-        print("\n🟡 P1 ТЕСТЫ (Важные - требуют внимания)")
-        for test_file, priority in p1_tests:
-            if Path(test_file).exists():
-                result = self.run_test_file(test_file, priority)
-                self.results["tests"][test_file] = result
+        for test in p1_tests:
+            print(f"🧪 Запуск P1 теста: {test}")
+            start_time = time.time()
+            
+            try:
+                result = subprocess.run([
+                    "python", "-m", "pytest", 
+                    f"tests/test_regression_critical_flows.py::{test}",
+                    "-v", "--tb=short", "--no-header"
+                ], capture_output=True, text=True, timeout=300)
                 
-                if result["status"] != "passed":
-                    print(f"⚠️  ОШИБКА в {test_file}")
-                    print(f"   Статус: {result['status']}")
-                    print(f"   Ошибка: {result['stderr'][:200]}...")
-            else:
-                print(f"⚠️  Файл не найден: {test_file}")
+                duration = time.time() - start_time
+                
+                if result.returncode == 0:
+                    print(f"✅ {test} - ПРОЙДЕН ({duration:.2f}s)")
+                    self.results["p1_passed"] += 1
+                    self.results["p1_tests"].append({
+                        "name": test,
+                        "status": "PASSED",
+                        "duration": duration,
+                        "output": result.stdout
+                    })
+                else:
+                    print(f"❌ {test} - ПРОВАЛЕН ({duration:.2f}s)")
+                    print(f"   Ошибка: {result.stderr}")
+                    self.results["p1_failed"] += 1
+                    failed_tests.append(test)
+                    self.results["p1_tests"].append({
+                        "name": test,
+                        "status": "FAILED",
+                        "duration": duration,
+                        "output": result.stdout,
+                        "error": result.stderr
+                    })
+                    
+            except subprocess.TimeoutExpired:
+                print(f"⏰ {test} - ТАЙМАУТ (300s)")
+                self.results["p1_failed"] += 1
+                failed_tests.append(test)
+                self.results["p1_tests"].append({
+                    "name": test,
+                    "status": "TIMEOUT",
+                    "duration": 300,
+                    "error": "Test timeout after 300 seconds"
+                })
+            except Exception as e:
+                print(f"💥 {test} - ОШИБКА: {str(e)}")
+                self.results["p1_failed"] += 1
+                failed_tests.append(test)
+                self.results["p1_tests"].append({
+                    "name": test,
+                    "status": "ERROR",
+                    "duration": 0,
+                    "error": str(e)
+                })
         
-        # Завершаем
+        print("=" * 60)
+        print(f"📊 P1 тесты завершены: {self.results['p1_passed']} пройдено, {self.results['p1_failed']} провалено")
+        
+        return len(failed_tests) == 0, failed_tests
+    
+    def run_edge_case_tests(self) -> Tuple[bool, List[str]]:
+        """Запуск тестов граничных случаев"""
+        print("\n🔍 Запуск тестов граничных случаев...")
+        print("=" * 60)
+        
+        edge_tests = [
+            "test_connection_manager_failure_regression",
+            "test_redis_connection_failure_regression",
+            "test_jwt_token_expiration_regression",
+            "test_mfa_invalid_code_regression"
+        ]
+        
+        failed_tests = []
+        
+        for test in edge_tests:
+            print(f"🧪 Запуск edge case теста: {test}")
+            start_time = time.time()
+            
+            try:
+                result = subprocess.run([
+                    "python", "-m", "pytest", 
+                    f"tests/test_regression_critical_flows.py::{test}",
+                    "-v", "--tb=short", "--no-header"
+                ], capture_output=True, text=True, timeout=300)
+                
+                duration = time.time() - start_time
+                
+                if result.returncode == 0:
+                    print(f"✅ {test} - ПРОЙДЕН ({duration:.2f}s)")
+                else:
+                    print(f"❌ {test} - ПРОВАЛЕН ({duration:.2f}s)")
+                    print(f"   Ошибка: {result.stderr}")
+                    failed_tests.append(test)
+                    
+            except subprocess.TimeoutExpired:
+                print(f"⏰ {test} - ТАЙМАУТ (300s)")
+                failed_tests.append(test)
+            except Exception as e:
+                print(f"💥 {test} - ОШИБКА: {str(e)}")
+                failed_tests.append(test)
+        
+        print("=" * 60)
+        print(f"📊 Edge case тесты завершены: {len(edge_tests) - len(failed_tests)} пройдено, {len(failed_tests)} провалено")
+        
+        return len(failed_tests) == 0, failed_tests
+    
+    def generate_report(self, p0_success: bool, p1_success: bool, edge_success: bool):
+        """Генерация отчета о тестировании"""
         self.results["end_time"] = datetime.now().isoformat()
-        self.results["duration"] = (
+        self.results["total_duration"] = (
             datetime.fromisoformat(self.results["end_time"]) - 
             datetime.fromisoformat(self.results["start_time"])
         ).total_seconds()
         
-        self.print_summary()
-        self.save_results()
-    
-    def print_summary(self):
-        """Вывод сводки результатов"""
-        print(f"\n{'='*60}")
-        print("📊 СВОДКА РЕЗУЛЬТАТОВ РЕГРЕССИОННОГО ТЕСТИРОВАНИЯ")
-        print(f"{'='*60}")
+        print("\n" + "=" * 80)
+        print("📋 ОТЧЕТ О РЕГРЕССИОННОМ ТЕСТИРОВАНИИ")
+        print("=" * 80)
         
-        summary = self.results["summary"]
-        total = summary["total"]
-        passed = summary["passed"]
-        failed = summary["failed"]
-        skipped = summary["skipped"]
-        errors = summary["errors"]
+        print(f"🕐 Время начала: {self.results['start_time']}")
+        print(f"🕐 Время окончания: {self.results['end_time']}")
+        print(f"⏱️  Общая продолжительность: {self.results['total_duration']:.2f} секунд")
         
-        print(f"Всего тестов: {total}")
-        print(f"✅ Прошло: {passed}")
-        print(f"❌ Провалено: {failed}")
-        print(f"⏭️  Пропущено: {skipped}")
-        print(f"💥 Ошибок: {errors}")
+        print(f"\n🚨 P0 тесты (БЛОКИРУЮЩИЕ МЁРЖ):")
+        print(f"   ✅ Пройдено: {self.results['p0_passed']}")
+        print(f"   ❌ Провалено: {self.results['p0_failed']}")
+        print(f"   📊 Статус: {'ЗЕЛЁНЫЙ' if p0_success else 'КРАСНЫЙ'}")
         
-        success_rate = 0
-        if total > 0:
-            success_rate = (passed / total) * 100
-            print(f"📈 Процент успеха: {success_rate:.1f}%")
+        print(f"\n⚠️  P1 тесты (РЕКОМЕНДУЕМЫЕ):")
+        print(f"   ✅ Пройдено: {self.results['p1_passed']}")
+        print(f"   ❌ Провалено: {self.results['p1_failed']}")
+        print(f"   📊 Статус: {'ЗЕЛЁНЫЙ' if p1_success else 'КРАСНЫЙ'}")
         
-        print(f"⏱️  Общее время выполнения: {self.results['duration']:.2f} секунд")
+        print(f"\n🔍 Edge case тесты:")
+        print(f"   📊 Статус: {'ЗЕЛЁНЫЙ' if edge_success else 'КРАСНЫЙ'}")
         
-        # Проверяем критические ошибки
-        critical_failures = []
-        for test_file, result in self.results["tests"].items():
-            if "P0" in test_file and result["status"] != "passed":
-                critical_failures.append(test_file)
-        
-        if critical_failures:
-            print(f"\n🚨 КРИТИЧЕСКИЕ ОШИБКИ (P0) - МЁРЖ ЗАБЛОКИРОВАН:")
-            for test_file in critical_failures:
-                print(f"   ❌ {test_file}")
+        # Определяем статус мёржа
+        if p0_success:
+            print(f"\n🎉 СТАТУС МЁРЖА: РАЗРЕШЁН")
+            print(f"   ✅ Все P0 тесты пройдены")
+            if p1_success:
+                print(f"   ✅ Все P1 тесты пройдены")
+            else:
+                print(f"   ⚠️  Некоторые P1 тесты провалены (не блокируют мёрж)")
         else:
-            print(f"\n✅ Все критические тесты (P0) прошли успешно!")
+            print(f"\n🚫 СТАТУС МЁРЖА: ЗАБЛОКИРОВАН")
+            print(f"   ❌ P0 тесты провалены - мёрж запрещён")
         
-        # Рекомендации
-        print(f"\n📋 РЕКОМЕНДАЦИИ:")
-        if critical_failures:
-            print("   🔴 Исправьте критические ошибки перед мёржем")
-        if failed > 0:
-            print("   🟡 Исправьте ошибки P1 тестов перед релизом")
-        if success_rate >= 95:
-            print("   ✅ Отличное качество кода!")
-        elif success_rate >= 80:
-            print("   ⚠️  Хорошее качество, но есть место для улучшений")
-        else:
-            print("   🔴 Требуется серьёзная работа над качеством кода")
-    
-    def save_results(self):
-        """Сохранение результатов в файл"""
-        results_file = f"regression_test_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        
-        with open(results_file, "w", encoding="utf-8") as f:
+        # Сохраняем отчет в файл
+        report_file = f"regression_test_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        with open(report_file, 'w') as f:
             json.dump(self.results, f, indent=2, ensure_ascii=False)
         
-        print(f"\n💾 Результаты сохранены в файл: {results_file}")
+        print(f"\n📄 Отчет сохранен в файл: {report_file}")
         
-        # Создаём краткий отчёт
-        self.create_summary_report()
+        return p0_success
     
-    def create_summary_report(self):
-        """Создание краткого отчёта"""
-        report_file = "REGRESSION_TEST_SUMMARY.md"
+    def run_all_tests(self, include_edge_cases: bool = False):
+        """Запуск всех регрессионных тестов"""
+        self.results["start_time"] = datetime.now().isoformat()
         
-        with open(report_file, "w", encoding="utf-8") as f:
-            f.write("# Регрессионное тестирование - Краткий отчёт\n\n")
-            f.write(f"**Дата выполнения:** {self.results['start_time']}\n")
-            f.write(f"**Общее время:** {self.results['duration']:.2f} секунд\n\n")
-            
-            summary = self.results["summary"]
-            f.write("## Статистика\n\n")
-            f.write(f"- Всего тестов: {summary['total']}\n")
-            f.write(f"- Прошло: {summary['passed']}\n")
-            f.write(f"- Провалено: {summary['failed']}\n")
-            f.write(f"- Пропущено: {summary['skipped']}\n")
-            f.write(f"- Ошибок: {summary['errors']}\n\n")
-            
-            if summary['total'] > 0:
-                success_rate = (summary['passed'] / summary['total']) * 100
-                f.write(f"- Процент успеха: {success_rate:.1f}%\n\n")
-            
-            f.write("## Результаты по файлам\n\n")
-            for test_file, result in self.results["tests"].items():
-                status_emoji = "✅" if result["status"] == "passed" else "❌"
-                f.write(f"- {status_emoji} {test_file}: {result['status']}\n")
-            
-            f.write("\n## Рекомендации\n\n")
-            
-            critical_failures = [
-                test_file for test_file, result in self.results["tests"].items()
-                if "P0" in test_file and result["status"] != "passed"
-            ]
-            
-            if critical_failures:
-                f.write("🔴 **КРИТИЧЕСКИЕ ОШИБКИ (P0) - МЁРЖ ЗАБЛОКИРОВАН:**\n")
-                for test_file in critical_failures:
-                    f.write(f"- {test_file}\n")
-                f.write("\n")
-            
-            if summary['failed'] > 0:
-                f.write("🟡 **Ошибки P1 тестов требуют внимания перед релизом**\n\n")
-            
-            if summary['total'] > 0 and (summary['passed'] / summary['total']) >= 0.95:
-                f.write("✅ **Отличное качество кода!**\n")
-            elif summary['total'] > 0 and (summary['passed'] / summary['total']) >= 0.8:
-                f.write("⚠️ **Хорошее качество, но есть место для улучшений**\n")
-            else:
-                f.write("🔴 **Требуется серьёзная работа над качеством кода**\n")
+        print("🚀 ЗАПУСК РЕГРЕССИОННОГО ТЕСТИРОВАНИЯ")
+        print("=" * 80)
+        print(f"🕐 Время начала: {self.results['start_time']}")
+        print(f"🎯 Цель: Проверка критических пользовательских потоков")
+        print(f"📋 Статус: P0 тесты блокируют мёрж, P1 тесты рекомендуются")
         
-        print(f"📄 Краткий отчёт создан: {report_file}")
+        # Запускаем P0 тесты
+        p0_success, p0_failed = self.run_p0_tests()
+        
+        # Запускаем P1 тесты
+        p1_success, p1_failed = self.run_p1_tests()
+        
+        # Запускаем edge case тесты (опционально)
+        edge_success = True
+        if include_edge_cases:
+            edge_success, edge_failed = self.run_edge_case_tests()
+        
+        # Генерируем отчет
+        merge_allowed = self.generate_report(p0_success, p1_success, edge_success)
+        
+        return merge_allowed
 
 def main():
     """Основная функция"""
+    parser = argparse.ArgumentParser(description="Запуск регрессионных тестов")
+    parser.add_argument("--p0-only", action="store_true", help="Запустить только P0 тесты")
+    parser.add_argument("--p1-only", action="store_true", help="Запустить только P1 тесты")
+    parser.add_argument("--include-edge-cases", action="store_true", help="Включить тесты граничных случаев")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Подробный вывод")
+    
+    args = parser.parse_args()
+    
     runner = RegressionTestRunner()
     
-    try:
-        runner.run_all_tests()
-        
-        # Проверяем критические ошибки
-        critical_failures = [
-            test_file for test_file, result in runner.results["tests"].items()
-            if "P0" in test_file and result["status"] != "passed"
-        ]
-        
-        if critical_failures:
-            print(f"\n🚨 ОБНАРУЖЕНЫ КРИТИЧЕСКИЕ ОШИБКИ!")
-            print("Мёрж заблокирован до исправления ошибок P0 тестов.")
-            sys.exit(1)
-        else:
-            print(f"\n✅ Все критические тесты прошли успешно!")
-            print("Мёрж разрешён.")
-            sys.exit(0)
-            
-    except KeyboardInterrupt:
-        print(f"\n⏹️  Тестирование прервано пользователем")
-        sys.exit(1)
-    except Exception as e:
-        print(f"\n💥 Ошибка при выполнении тестов: {e}")
-        sys.exit(1)
+    if args.p0_only:
+        print("🚨 Запуск только P0 тестов (блокирующих мёрж)...")
+        p0_success, _ = runner.run_p0_tests()
+        runner.generate_report(p0_success, True, True)
+        return 0 if p0_success else 1
+    
+    elif args.p1_only:
+        print("⚠️  Запуск только P1 тестов (рекомендуемых)...")
+        p1_success, _ = runner.run_p1_tests()
+        runner.generate_report(True, p1_success, True)
+        return 0 if p1_success else 1
+    
+    else:
+        print("🚀 Запуск всех регрессионных тестов...")
+        merge_allowed = runner.run_all_tests(include_edge_cases=args.include_edge_cases)
+        return 0 if merge_allowed else 1
 
 if __name__ == "__main__":
-    main()
+    exit(main())

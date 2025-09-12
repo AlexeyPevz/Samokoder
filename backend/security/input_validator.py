@@ -41,6 +41,15 @@ class SecureInputValidator:
             r'(?i)(or\s+1\s*=\s*1|and\s+1\s*=\s*1)',
             r'(?i)(\'\s*or\s*\'\s*=\s*\'|\"\s*or\s*\"\s*=\s*\")',
             r'(?i)(insert\s+into.*values|update\s+.*set.*where|delete\s+from.*where)',
+            # Дополнительные паттерны для критических атак
+            r'(?i)(\d+\'\s*or\s*\'\d+\'\s*=\s*\'\d+)',  # 1' OR '1'='1
+            r'(?i)(\d+\s*;\s*delete\s+from)',  # 1; DELETE FROM
+            r'(?i)(\d+\s*;\s*drop\s+table)',  # 1; DROP TABLE
+            r'(?i)(\d+\s*;\s*update\s+)',  # 1; UPDATE
+            r'(?i)(\d+\s*;\s*insert\s+into)',  # 1; INSERT INTO
+            r'(?i)(admin\'\s*--)',  # admin'--
+            r'(?i)(\'\s*;\s*drop\s+table)',  # '; DROP TABLE
+            r'(?i)(\'\s*;\s*delete\s+from)',  # '; DELETE FROM
         ]
         
         # Паттерны для XSS атак
@@ -63,11 +72,17 @@ class SecureInputValidator:
         # Паттерны для path traversal
         self.path_traversal_patterns = [
             r'\.\./',
-            r'\.\.\\\\',
+            r'\.\.\\\\',  # ..\\
+            r'\.\.\\',    # ..\ (одинарный слеш)
             r'%2e%2e%2f',
             r'%2e%2e%5c',
             r'\.\.%2f',
             r'\.\.%5c',
+            # Дополнительные паттерны для Windows
+            r'\.\.\\\.\.\\',  # ..\..\
+            r'\.\./\.\./',    # ../../
+            r'\.\.\\[^/]*\\', # ..\anything\
+            r'\.\./[^/]*/',   # ../anything/
         ]
         
         # Разрешенные HTML теги для bleach
@@ -199,16 +214,16 @@ class SecureInputValidator:
         
         return True
     
-    def validate_password_strength(self, password: str) -> Tuple[bool, List[str]]:
-        """Валидирует силу пароля"""
+    def _check_password_length(self, password: str) -> List[str]:
+        """Проверяет длину пароля"""
         errors = []
-        
-        if not isinstance(password, str):
-            errors.append("Password must be a string")
-            return False, errors
-        
         if len(password) < 12:
             errors.append("Password must be at least 12 characters long")
+        return errors
+    
+    def _check_password_characters(self, password: str) -> List[str]:
+        """Проверяет наличие различных типов символов"""
+        errors = []
         
         if not re.search(r'[A-Z]', password):
             errors.append("Password must contain at least one uppercase letter")
@@ -222,7 +237,11 @@ class SecureInputValidator:
         if not re.search(r'[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]', password):
             errors.append("Password must contain at least one special character")
         
-        # Проверка на общие пароли
+        return errors
+    
+    def _check_common_passwords(self, password: str) -> List[str]:
+        """Проверяет на общие пароли"""
+        errors = []
         common_passwords = [
             'password', '123456', 'qwerty', 'abc123', 'password123',
             'admin', 'letmein', 'welcome', 'monkey', '1234567890'
@@ -230,6 +249,21 @@ class SecureInputValidator:
         
         if password.lower() in common_passwords:
             errors.append("Password is too common")
+        
+        return errors
+    
+    def validate_password_strength(self, password: str) -> Tuple[bool, List[str]]:
+        """Валидирует силу пароля"""
+        errors = []
+        
+        if not isinstance(password, str):
+            errors.append("Password must be a string")
+            return False, errors
+        
+        # Проверяем все критерии
+        errors.extend(self._check_password_length(password))
+        errors.extend(self._check_password_characters(password))
+        errors.extend(self._check_common_passwords(password))
         
         return len(errors) == 0, errors
     

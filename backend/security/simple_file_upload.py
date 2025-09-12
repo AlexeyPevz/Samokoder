@@ -131,42 +131,54 @@ class SimpleFileUploadSecurity:
         """Валидирует архив"""
         try:
             if extension == '.zip':
-                with zipfile.ZipFile(io.BytesIO(file_content)) as zip_file:
-                    # Проверяем количество файлов в архиве
-                    if len(zip_file.namelist()) > 1000:
-                        return False
-                    
-                    # Проверяем на path traversal
-                    for name in zip_file.namelist():
-                        if '..' in name or name.startswith('/'):
-                            return False
-                        
-                        # Проверяем расширения файлов в архиве
-                        file_ext = Path(name).suffix.lower()
-                        if file_ext in self.forbidden_extensions:
-                            return False
-            
+                return self._validate_zip_archive(file_content)
             elif extension == '.tar':
-                with tarfile.open(fileobj=io.BytesIO(file_content)) as tar_file:
-                    # Проверяем количество файлов в архиве
-                    if len(tar_file.getnames()) > 1000:
-                        return False
-                    
-                    # Проверяем на path traversal
-                    for name in tar_file.getnames():
-                        if '..' in name or name.startswith('/'):
-                            return False
-                        
-                        # Проверяем расширения файлов в архиве
-                        file_ext = Path(name).suffix.lower()
-                        if file_ext in self.forbidden_extensions:
-                            return False
-            
-            return True
-            
-        except Exception as e:
-            logger.warning(f"Archive validation failed: {e}")
+                return self._validate_tar_archive(file_content)
+            else:
+                return False
+        except Exception:
             return False
+
+    def _validate_zip_archive(self, file_content: bytes) -> bool:
+        """Валидирует ZIP архив"""
+        with zipfile.ZipFile(io.BytesIO(file_content)) as zip_file:
+            # Проверяем количество файлов в архиве
+            if len(zip_file.namelist()) > 1000:
+                return False
+            
+            # Проверяем каждый файл в архиве
+            for name in zip_file.namelist():
+                if not self._validate_archive_file(name):
+                    return False
+        
+        return True
+
+    def _validate_tar_archive(self, file_content: bytes) -> bool:
+        """Валидирует TAR архив"""
+        with tarfile.open(fileobj=io.BytesIO(file_content)) as tar_file:
+            # Проверяем количество файлов в архиве
+            if len(tar_file.getnames()) > 1000:
+                return False
+            
+            # Проверяем каждый файл в архиве
+            for name in tar_file.getnames():
+                if not self._validate_archive_file(name):
+                    return False
+        
+        return True
+
+    def _validate_archive_file(self, name: str) -> bool:
+        """Валидирует файл в архиве"""
+        # Проверяем на path traversal
+        if '..' in name or name.startswith('/'):
+            return False
+        
+        # Проверяем расширения файлов в архиве
+        file_ext = Path(name).suffix.lower()
+        if file_ext in self.forbidden_extensions:
+            return False
+        
+        return True
     
     def save_file(self, file_content: bytes, filename: str, user_id: str, project_id: str) -> Tuple[bool, str, Optional[str]]:
         """Безопасно сохраняет файл"""

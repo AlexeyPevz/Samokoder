@@ -9,7 +9,7 @@ import re
 import shlex
 from pathlib import Path
 from typing import Optional, List
-from backend.core.config import settings
+from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,11 @@ class MigrationManager:
             return db_url
         
         # Fallback на settings (для development)
-        return f"postgresql://{settings.database_user}:{settings.database_password}@{settings.database_host}:{settings.database_port}/{settings.database_name}"
+        if hasattr(settings, 'database_url') and settings.database_url:
+            return settings.database_url
+        else:
+            # Возвращаем пустую строку если нет настроек БД
+            return ""
     
     def _validate_revision(self, revision: str) -> bool:
         """Валидация ревизии миграции"""

@@ -35,21 +35,31 @@ class ConnectionManager:
             await supabase_manager.initialize()
             self._pools['supabase'] = supabase_manager
             
-            # Инициализируем Redis pool
-            redis_pool = RedisConnectionPool(self._config)
-            await redis_pool.initialize(settings.redis_url)
-            self._pools['redis'] = redis_pool
+            # Инициализируем Redis pool (опционально)
+            try:
+                redis_pool = RedisConnectionPool(self._config)
+                await redis_pool.initialize(settings.redis_url)
+                self._pools['redis'] = redis_pool
+                logger.info("Redis connection pool initialized successfully")
+            except Exception as e:
+                logger.warning(f"Redis connection failed, continuing without Redis: {e}")
+                self._pools['redis'] = None
             
             # Инициализируем HTTP pool
             http_pool = HTTPConnectionPool(self._config)
             await http_pool.initialize()
             self._pools['http'] = http_pool
             
-            # Инициализируем Database pool если есть URL
+            # Инициализируем Database pool если есть URL (опционально)
             if settings.database_url:
-                db_pool = DatabaseConnectionPool(self._config)
-                await db_pool.initialize(settings.database_url)
-                self._pools['database'] = db_pool
+                try:
+                    db_pool = DatabaseConnectionPool(self._config)
+                    await db_pool.initialize(settings.database_url)
+                    self._pools['database'] = db_pool
+                    logger.info("Database connection pool initialized successfully")
+                except Exception as e:
+                    logger.warning(f"Database connection failed, continuing without database: {e}")
+                    self._pools['database'] = None
             
             self._initialized = True
             logger.info("All connection pools initialized")

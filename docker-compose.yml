@@ -26,6 +26,24 @@ services:
       timeout: 10s
       retries: 3
 
+  # PostgreSQL для локальной разработки
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: samokoder
+      POSTGRES_USER: samokoder
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U samokoder"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Redis для кэширования и rate limiting
   redis:
     image: redis:7-alpine
@@ -83,6 +101,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  postgres_data:
   redis_data:
   prometheus_data:
   grafana_data:

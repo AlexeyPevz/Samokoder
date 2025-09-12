@@ -85,3 +85,29 @@ class RedisError(SamokoderException):
 class MonitoringError(SamokoderException):
     """Ошибка мониторинга"""
     pass
+
+def convert_to_http_exception(exception: SamokoderException) -> int:
+    """Конвертирует внутренние исключения в HTTP статус коды"""
+    error_mapping = {
+        AuthenticationError: 401,
+        AuthorizationError: 403,
+        ValidationError: 400,
+        NotFoundError: 404,
+        ConflictError: 409,
+        RateLimitError: 429,
+        AIServiceError: 503,
+        DatabaseError: 503,
+        ExternalServiceError: 503,
+        ConfigurationError: 500,
+        ConnectionError: 503,
+        TimeoutError: 504,
+        EncryptionError: 500,
+        ProjectError: 400,
+        FileSystemError: 500,
+        NetworkError: 503,
+        CacheError: 500,
+        RedisError: 503,
+        MonitoringError: 500,
+    }
+    
+    return error_mapping.get(type(exception), 500)

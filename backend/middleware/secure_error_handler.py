@@ -7,7 +7,8 @@ import structlog
 import traceback
 import uuid
 from datetime import datetime
-from typing import Union, Dict, Any
+from typing import Union, Dict, Any, Optional
+from dataclasses import dataclass
 from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -15,28 +16,56 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logger = structlog.get_logger(__name__)
 
+@dataclass
+class ErrorResponseParams:
+    """Параметры для создания ответа об ошибке"""
+    error: str
+    detail: str
+    status_code: int
+    error_code: Optional[str] = None
+    request: Optional[Request] = None
+    show_details: bool = False
+
+@dataclass
+class ErrorContext:
+    """Контекст ошибки для группировки связанных параметров"""
+    path: Optional[str] = None
+    method: Optional[str] = None
+    error_id: Optional[str] = None
+    timestamp: Optional[str] = None
+
+@dataclass
+class ErrorDetails:
+    """Детали ошибки для группировки связанных параметров"""
+    error: str
+    detail: str
+    error_code: Optional[str] = None
+    show_details: bool = False
+
 class SecureErrorResponse:
     """Безопасный формат ответа об ошибке"""
     
     def __init__(
         self,
-        error: str,
-        detail: str,
-        error_code: str = None,
-        error_id: str = None,
-        timestamp: str = None,
-        path: str = None,
-        method: str = None,
-        show_details: bool = False
+        error_details: ErrorDetails,
+        context: Optional[ErrorContext] = None
     ):
-        self.error = error
-        self.detail = detail
-        self.error_code = error_code or "UNKNOWN_ERROR"
-        self.error_id = error_id or str(uuid.uuid4())
-        self.timestamp = timestamp or datetime.utcnow().isoformat()
-        self.path = path
-        self.method = method
-        self.show_details = show_details
+        self.error = error_details.error
+        self.detail = error_details.detail
+        self.error_code = error_details.error_code or "UNKNOWN_ERROR"
+        self.show_details = error_details.show_details
+        
+        # Устанавливаем контекст
+        if context:
+            self.error_id = context.error_id or str(uuid.uuid4())
+            self.timestamp = context.timestamp or datetime.utcnow().isoformat()
+            self.path = context.path
+            self.method = context.method
+        else:
+            self.error_id = str(uuid.uuid4())
+            self.timestamp = datetime.utcnow().isoformat()
+            self.path = None
+            self.method = None
     
     def to_dict(self) -> Dict[str, Any]:
         """Преобразовать в словарь для JSON ответа"""
@@ -57,54 +86,57 @@ class SecureErrorResponse:
         
         return response
 
-def create_secure_error_response(
-    error: str,
-    detail: str,
-    status_code: int,
-    error_code: str = None,
-    request: Request = None,
-    show_details: bool = False
-) -> JSONResponse:
+def create_secure_error_response(params: ErrorResponseParams) -> JSONResponse:
     """Создать безопасный ответ об ошибке"""
     
     # В production скрываем детали
-    if not show_details:
+    if not params.show_details:
         # Общие сообщения для пользователей
-        if status_code == 500:
-            detail = "Внутренняя ошибка сервера. Обратитесь к администратору."
-        elif status_code == 404:
-            detail = "Ресурс не найден."
-        elif status_code == 403:
-            detail = "Доступ запрещен."
-        elif status_code == 401:
-            detail = "Требуется аутентификация."
-        elif status_code == 400:
-            detail = "Некорректный запрос."
+        if params.status_code == 500:
+            params.detail = "Внутренняя ошибка сервера. Обратитесь к администратору."
+        elif params.status_code == 404:
+            params.detail = "Ресурс не найден."
+        elif params.status_code == 403:
+            params.detail = "Доступ запрещен."
+        elif params.status_code == 401:
+            params.detail = "Требуется аутентификация."
+        elif params.status_code == 400:
+            params.detail = "Некорректный запрос."
+    
+    # Создаем детали ошибки
+    error_details = ErrorDetails(
+        error=params.error,
+        detail=params.detail,
+        error_code=params.error_code,
+        show_details=params.show_details
+    )
+    
+    # Создаем контекст ошибки
+    context = ErrorContext(
+        path=params.request.url.path if params.request else None,
+        method=params.request.method if params.request else None
+    )
     
     error_response = SecureErrorResponse(
-        error=error,
-        detail=detail,
-        error_code=error_code,
-        path=request.url.path if request else None,
-        method=request.method if request else None,
-        show_details=show_details
+        error_details=error_details,
+        context=context
     )
     
     # Логируем ошибку безопасно
     logger.error(
         "api_error",
-        error=error,
-        error_code=error_code,
+        error=params.error,
+        error_code=params.error_code,
         error_id=error_response.error_id,
-        status_code=status_code,
-        path=request.url.path if request else None,
-        method=request.method if request else None,
+        status_code=params.status_code,
+        path=params.request.url.path if params.request else None,
+        method=params.request.method if params.request else None,
         # НЕ логируем детали ошибки в production
-        details=detail if show_details else "hidden"
+        details=params.detail if params.show_details else "hidden"
     )
     
     return JSONResponse(
-        status_code=status_code,
+        status_code=params.status_code,
         content=error_response.to_dict()
     )
 

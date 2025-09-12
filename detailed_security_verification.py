@@ -48,6 +48,34 @@ class SecurityVerifier:
             self.add_issue("CRITICAL", file_path, 0, f"Не удалось прочитать файл: {e}")
             return []
     
+    def _check_required_imports(self, file_path: str, lines: list) -> None:
+        """Проверяет наличие требуемых импортов"""
+        required_imports = ["jwt", "time", "hashlib", "secrets"]
+        file_content = "".join(lines)
+        
+        for imp in required_imports:
+            if imp not in file_content:
+                self.add_issue("CRITICAL", file_path, 0, f"Отсутствует импорт: {imp}")
+
+    def _check_required_functions(self, file_path: str, lines: list) -> None:
+        """Проверяет наличие требуемых функций"""
+        required_functions = ["validate_jwt_token", "secure_password_validation", "hash_password"]
+        file_content = "".join(lines)
+        
+        for func in required_functions:
+            if f"def {func}" not in file_content:
+                self.add_issue("CRITICAL", file_path, 0, f"Отсутствует функция: {func}")
+
+    def _check_security_practices(self, file_path: str, lines: list) -> None:
+        """Проверяет безопасные практики"""
+        for i, line in enumerate(lines, 1):
+            # Проверяем на небезопасные практики
+            if "supabase = connection_manager.get_pool('supabase')" in line and "if not supabase_client:" not in "".join(lines[i-5:i+5]):
+                self.add_issue("CRITICAL", file_path, i, "Небезопасная проверка подключения к Supabase", line.strip())
+            
+            if "logger.error" in line and ("password" in line.lower() or "token" in line.lower()):
+                self.add_issue("WARNING", file_path, i, "Возможное логирование чувствительных данных", line.strip())
+
     def check_auth_dependencies(self):
         """Проверяет auth/dependencies.py"""
         print("🔍 Проверяю auth/dependencies.py...")
@@ -58,36 +86,13 @@ class SecurityVerifier:
             return
         
         lines = self.read_file(file_path)
+        if not lines:
+            return
         
-        # Проверяем импорты
-        required_imports = ["jwt", "time", "hashlib", "secrets"]
-        for i, line in enumerate(lines, 1):
-            if "import" in line:
-                for imp in required_imports:
-                    if imp in line:
-                        break
-                else:
-                    if any(imp in line for imp in required_imports):
-                        continue
-                    # Проверяем, есть ли импорт в других строках
-                    if not any(imp in "".join(lines) for imp in required_imports):
-                        self.add_issue("CRITICAL", file_path, i, f"Отсутствует импорт: {required_imports}")
-        
-        # Проверяем функции
-        required_functions = ["validate_jwt_token", "secure_password_validation", "hash_password"]
-        file_content = "".join(lines)
-        for func in required_functions:
-            if f"def {func}" not in file_content:
-                self.add_issue("CRITICAL", file_path, 0, f"Отсутствует функция: {func}")
-        
-        # Проверяем безопасность
-        for i, line in enumerate(lines, 1):
-            # Проверяем на небезопасные практики
-            if "supabase = connection_manager.get_pool('supabase')" in line and "if not supabase_client:" not in "".join(lines[i-5:i+5]):
-                self.add_issue("CRITICAL", file_path, i, "Небезопасная проверка подключения к Supabase", line.strip())
-            
-            if "logger.error" in line and ("password" in line.lower() or "token" in line.lower()):
-                self.add_issue("WARNING", file_path, i, "Возможное логирование чувствительных данных", line.strip())
+        # Выполняем все проверки
+        self._check_required_imports(file_path, lines)
+        self._check_required_functions(file_path, lines)
+        self._check_security_practices(file_path, lines)
     
     def check_auth_api(self):
         """Проверяет api/auth.py"""

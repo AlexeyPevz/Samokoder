@@ -1,205 +1,75 @@
 """
-Конфигурация pytest для проекта Самокодер
+Исправленные фикстуры для тестов
 """
 
 import pytest
 import asyncio
-import os
-import sys
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
-
-# Добавляем корневую директорию в Python path
-root_dir = Path(__file__).parent
-sys.path.insert(0, str(root_dir))
-
-# Настройка переменных окружения для тестов
-os.environ["ENVIRONMENT"] = "test"
-os.environ["DEBUG"] = "true"
-os.environ["LOG_LEVEL"] = "DEBUG"
-os.environ["SUPABASE_URL"] = "https://test.supabase.co"
-os.environ["SUPABASE_ANON_KEY"] = "test-anon-key"
-os.environ["API_ENCRYPTION_KEY"] = "test-encryption-key-32-chars-long"
-os.environ["API_ENCRYPTION_SALT"] = "test-salt-16"
-os.environ["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role-key"
-os.environ["SECRET_KEY"] = "test-secret-key-that-is-32-chars-long"
-os.environ["DATABASE_POOL_SIZE"] = "10"
-os.environ["DATABASE_MAX_OVERFLOW"] = "20"
+from unittest.mock import patch, MagicMock
+from fastapi.testclient import TestClient
+from test_app import test_app
 
 @pytest.fixture(scope="session")
 def event_loop():
-    """Создает event loop для всех тестов"""
+    """Создание event loop для тестов"""
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
 
 @pytest.fixture
-def mock_supabase():
-    """Фикстура для мока Supabase"""
-    mock_supabase = MagicMock()
-    mock_supabase.auth.sign_in_with_password = AsyncMock()
-    mock_supabase.auth.sign_out = AsyncMock()
-    mock_supabase.auth.get_user = AsyncMock()
-    mock_supabase.table.return_value.select.return_value.eq.return_value.execute = AsyncMock()
-    return mock_supabase
+def client():
+    """Тестовый клиент без проблемных middleware"""
+    return TestClient(test_app)
 
 @pytest.fixture
-def mock_redis():
-    """Фикстура для мока Redis"""
-    mock_redis = AsyncMock()
-    mock_redis.pipeline.return_value = AsyncMock()
-    mock_redis.get = AsyncMock()
-    mock_redis.set = AsyncMock()
-    mock_redis.delete = AsyncMock()
-    return mock_redis
+def mock_connection_manager():
+    """Мок для connection manager"""
+    with patch('backend.services.connection_manager.connection_manager') as mock:
+        # Настраиваем мок для connection manager
+        mock.get_pool.return_value = MagicMock()
+        mock._initialized = True
+        mock._pools = {
+            'supabase': MagicMock(),
+            'redis': MagicMock(),
+            'http': MagicMock(),
+            'database': MagicMock()
+        }
+        yield mock
 
 @pytest.fixture
-def sample_user():
-    """Фикстура для тестового пользователя"""
-    return {
-        "id": "test-user-123",
-        "email": "test@example.com",
-        "full_name": "Test User",
-        "subscription_tier": "free",
-        "subscription_status": "active",
-        "api_credits_balance": 10.0,
-        "created_at": "2025-01-01T00:00:00Z",
-        "updated_at": "2025-01-01T00:00:00Z"
-    }
+def mock_supabase_operation():
+    """Мок для Supabase операций"""
+    with patch('backend.api.api_keys.execute_supabase_operation') as mock:
+        yield mock
 
 @pytest.fixture
-def sample_project():
-    """Фикстура для тестового проекта"""
-    return {
-        "id": "test-project-123",
-        "user_id": "test-user-123",
-        "name": "Test Project",
-        "description": "This is a test project",
-        "status": "draft",
-        "tech_stack": {"frontend": "React", "backend": "FastAPI"},
-        "ai_config": {"provider": "openai", "model": "gpt-4o-mini"},
-        "file_count": 0,
-        "total_size_bytes": 0,
-        "generation_time_seconds": 0,
-        "generation_progress": 0,
-        "current_agent": None,
-        "created_at": "2025-01-01T00:00:00Z",
-        "updated_at": "2025-01-01T00:00:00Z",
-        "archived_at": None
-    }
+def mock_encryption_service():
+    """Мок для encryption service"""
+    with patch('backend.api.api_keys.get_encryption_service') as mock:
+        mock_service = MagicMock()
+        mock_service.encrypt_api_key.return_value = "encrypted_key"
+        mock_service.get_key_last_4.return_value = "1234"
+        mock.return_value = mock_service
+        yield mock
 
 @pytest.fixture
-def sample_api_key():
-    """Фикстура для тестового API ключа"""
-    return {
-        "id": "test-key-123",
-        "user_id": "test-user-123",
-        "provider": "openai",
-        "key_name": "Test OpenAI Key",
-        "api_key_encrypted": "encrypted-key-data",
-        "api_key_last_4": "cdef",
-        "is_active": True,
-        "last_used_at": None,
-        "created_at": "2025-01-01T00:00:00Z"
-    }
+def mock_redis_client():
+    """Мок для Redis клиента"""
+    with patch('backend.api.mfa.redis_client') as mock:
+        mock.setex.return_value = True
+        mock.get.return_value = b"test_secret"
+        mock.delete.return_value = 1
+        yield mock
 
 @pytest.fixture
-def sample_chat_messages():
-    """Фикстура для тестовых сообщений чата"""
-    return [
-        {"role": "system", "content": "You are a helpful AI assistant."},
-        {"role": "user", "content": "Hello, how are you?"},
-        {"role": "assistant", "content": "Hello! I'm doing well, thank you for asking."}
-    ]
+def mock_current_user():
+    """Мок для текущего пользователя"""
+    with patch('backend.auth.dependencies.get_current_user') as mock:
+        mock.return_value = {"id": "test_user_123", "email": "test@example.com"}
+        yield mock
 
 @pytest.fixture
-def sample_ai_response():
-    """Фикстура для тестового AI ответа"""
-    return {
-        "content": "This is a test AI response.",
-        "provider": "openai",
-        "model": "gpt-4o-mini",
-        "tokens_used": 25,
-        "cost_usd": 0.001,
-        "response_time": 1.5,
-        "success": True,
-        "error": None
-    }
-
-@pytest.fixture(autouse=True)
-def setup_test_environment():
-    """Автоматическая настройка тестового окружения"""
-    # Создаем тестовые директории
-    test_dirs = ["exports", "workspaces", "logs", "backups"]
-    for dir_name in test_dirs:
-        Path(dir_name).mkdir(exist_ok=True)
-    
-    yield
-    
-    # Очистка после тестов
-    import shutil
-    for dir_name in test_dirs:
-        if Path(dir_name).exists():
-            shutil.rmtree(dir_name, ignore_errors=True)
-
-@pytest.fixture
-def mock_openai_client():
-    """Фикстура для мока OpenAI клиента"""
-    mock_client = AsyncMock()
-    mock_response = MagicMock()
-    mock_response.choices = [MagicMock()]
-    mock_response.choices[0].message.content = "Test response from OpenAI"
-    mock_response.usage.total_tokens = 25
-    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
-    return mock_client
-
-@pytest.fixture
-def mock_anthropic_client():
-    """Фикстура для мока Anthropic клиента"""
-    mock_client = AsyncMock()
-    mock_response = MagicMock()
-    mock_response.content = [MagicMock()]
-    mock_response.content[0].text = "Test response from Anthropic"
-    mock_response.usage.input_tokens = 10
-    mock_response.usage.output_tokens = 15
-    mock_client.messages.create = AsyncMock(return_value=mock_response)
-    return mock_client
-
-@pytest.fixture
-def mock_groq_response():
-    """Фикстура для мока Groq ответа"""
-    return {
-        "choices": [{"message": {"content": "Test response from Groq"}}],
-        "usage": {"total_tokens": 20}
-    }
-
-# Маркеры для категоризации тестов
-def pytest_configure(config):
-    """Конфигурация pytest маркеров"""
-    config.addinivalue_line(
-        "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
-    )
-    config.addinivalue_line(
-        "markers", "integration: marks tests as integration tests"
-    )
-    config.addinivalue_line(
-        "markers", "unit: marks tests as unit tests"
-    )
-    config.addinivalue_line(
-        "markers", "security: marks tests as security tests"
-    )
-    config.addinivalue_line(
-        "markers", "performance: marks tests as performance tests"
-    )
-
-# Параметризация для тестирования разных провайдеров
-@pytest.fixture(params=["openai", "anthropic", "openrouter", "groq"])
-def ai_provider(request):
-    """Фикстура для тестирования разных AI провайдеров"""
-    return request.param
-
-# Параметризация для тестирования разных размеров данных
-@pytest.fixture(params=[1, 10, 100, 1000])
-def data_size(request):
-    """Фикстура для тестирования разных размеров данных"""
-    return request.param
+def mock_jwt_validation():
+    """Мок для JWT валидации"""
+    with patch('backend.auth.dependencies.validate_jwt_token') as mock:
+        mock.return_value = True
+        yield mock

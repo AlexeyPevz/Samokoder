@@ -291,22 +291,23 @@ class SecureErrorHandler:
         """Классифицирует ошибку"""
         error_name = error.__class__.__name__.lower()
         
-        if "validation" in error_name or "value" in error_name:
-            return "validation_error"
-        elif "authentication" in error_name or "unauthorized" in error_name:
-            return "authentication_error"
-        elif "authorization" in error_name or "forbidden" in error_name:
-            return "authorization_error"
-        elif "database" in error_name or "sql" in error_name:
-            return "database_error"
-        elif "encryption" in error_name or "crypto" in error_name:
-            return "encryption_error"
-        elif "timeout" in error_name:
-            return "timeout_error"
-        elif "rate" in error_name or "limit" in error_name:
-            return "rate_limit_error"
-        else:
-            return "internal_error"
+        # Конфигурация классификации ошибок
+        error_classification = {
+            "validation_error": ["validation", "value"],
+            "authentication_error": ["authentication", "unauthorized"],
+            "authorization_error": ["authorization", "forbidden"],
+            "database_error": ["database", "sql"],
+            "encryption_error": ["encryption", "crypto"],
+            "timeout_error": ["timeout"],
+            "rate_limit_error": ["rate", "limit"]
+        }
+        
+        # Ищем подходящую категорию
+        for category, keywords in error_classification.items():
+            if any(keyword in error_name for keyword in keywords):
+                return category
+        
+        return "internal_error"
     
     def _get_http_status_code(self, error_type: str) -> int:
         """Получает HTTP статус код для типа ошибки"""

@@ -8,33 +8,52 @@ from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from typing import Union
+from typing import Union, Optional
+from dataclasses import dataclass
 import traceback
 import uuid
 from datetime import datetime
 
 logger = structlog.get_logger(__name__)
 
+@dataclass
+class ErrorContext:
+    """Контекст ошибки для группировки связанных параметров"""
+    path: Optional[str] = None
+    method: Optional[str] = None
+    error_id: Optional[str] = None
+    timestamp: Optional[str] = None
+
+@dataclass
+class ErrorInfo:
+    """Информация об ошибке для группировки связанных параметров"""
+    error: str
+    detail: str
+    error_code: Optional[str] = None
+
 class ErrorResponse:
     """Стандартизированный формат ответа об ошибке"""
     
     def __init__(
         self,
-        error: str,
-        detail: str,
-        error_code: str = None,
-        error_id: str = None,
-        timestamp: str = None,
-        path: str = None,
-        method: str = None
+        error_info: ErrorInfo,
+        context: Optional[ErrorContext] = None
     ):
-        self.error = error
-        self.detail = detail
-        self.error_code = error_code or "UNKNOWN_ERROR"
-        self.error_id = error_id or str(uuid.uuid4())
-        self.timestamp = timestamp or datetime.utcnow().isoformat()
-        self.path = path
-        self.method = method
+        self.error = error_info.error
+        self.detail = error_info.detail
+        self.error_code = error_info.error_code or "UNKNOWN_ERROR"
+        
+        # Устанавливаем контекст
+        if context:
+            self.error_id = context.error_id or str(uuid.uuid4())
+            self.timestamp = context.timestamp or datetime.utcnow().isoformat()
+            self.path = context.path
+            self.method = context.method
+        else:
+            self.error_id = str(uuid.uuid4())
+            self.timestamp = datetime.utcnow().isoformat()
+            self.path = None
+            self.method = None
     
     def to_dict(self) -> dict:
         """Преобразовать в словарь для JSON ответа"""
@@ -68,12 +87,22 @@ def create_error_response(
     Returns:
         JSONResponse: Стандартизированный ответ об ошибке
     """
-    error_response = ErrorResponse(
+    # Создаем информацию об ошибке
+    error_info = ErrorInfo(
         error=error,
         detail=detail,
-        error_code=error_code,
+        error_code=error_code
+    )
+    
+    # Создаем контекст ошибки
+    context = ErrorContext(
         path=request.url.path if request else None,
         method=request.method if request else None
+    )
+    
+    error_response = ErrorResponse(
+        error_info=error_info,
+        context=context
     )
     
     # Логируем ошибку

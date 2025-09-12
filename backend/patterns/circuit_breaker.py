@@ -100,17 +100,17 @@ class CircuitBreaker:
             self.last_failure_time = datetime.now()
             self.failure_count += 1
             
-            logger.warning("circuit_breaker_failure", name=self.name, failure_count=self.failure_count, error=str(error))
+            logger.warning(f"circuit_breaker_failure: {self.name}, failure_count={self.failure_count}, error={str(error)}")
             
             if self.state == CircuitState.HALF_OPEN:
                 # Any failure in half-open state opens the circuit
                 self.state = CircuitState.OPEN
-                logger.warning("circuit_breaker_open_from_half_open", name=self.name)
+                logger.warning(f"circuit_breaker_open_from_half_open: {self.name}")
                 
             elif self.state == CircuitState.CLOSED and self.failure_count >= self.config.failure_threshold:
                 # Too many failures, open the circuit
                 self.state = CircuitState.OPEN
-                logger.warning("circuit_breaker_open", name=self.name)
+                logger.warning(f"circuit_breaker_open: {self.name}")
     
     def _should_attempt_reset(self) -> bool:
         """Check if enough time has passed to attempt reset"""

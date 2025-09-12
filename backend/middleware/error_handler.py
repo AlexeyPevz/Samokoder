@@ -159,22 +159,23 @@ class ErrorHandler:
         """Классифицирует исключение по типу"""
         exception_type = type(exc).__name__
         
-        if "ValidationError" in exception_type:
-            return "validation_error"
-        elif "AuthenticationError" in exception_type or "Unauthorized" in exception_type:
-            return "authentication_error"
-        elif "PermissionError" in exception_type or "Forbidden" in exception_type:
-            return "authorization_error"
-        elif "FileNotFoundError" in exception_type or "OSError" in exception_type:
-            return "file_system_error"
-        elif "ConnectionError" in exception_type or "TimeoutError" in exception_type:
-            return "external_service_error"
-        elif "DatabaseError" in exception_type or "IntegrityError" in exception_type:
-            return "database_error"
-        elif "AI" in exception_type or "OpenAI" in exception_type or "Anthropic" in exception_type:
-            return "ai_service_error"
-        else:
-            return "internal_error"
+        # Конфигурация классификации исключений
+        exception_classification = {
+            "validation_error": ["ValidationError"],
+            "authentication_error": ["AuthenticationError", "Unauthorized"],
+            "authorization_error": ["PermissionError", "Forbidden"],
+            "file_system_error": ["FileNotFoundError", "OSError"],
+            "external_service_error": ["ConnectionError", "TimeoutError"],
+            "database_error": ["DatabaseError", "IntegrityError"],
+            "ai_service_error": ["AI", "OpenAI", "Anthropic"]
+        }
+        
+        # Ищем подходящую категорию
+        for category, keywords in exception_classification.items():
+            if any(keyword in exception_type for keyword in keywords):
+                return category
+        
+        return "internal_error"
 
 # Глобальный экземпляр обработчика ошибок
 error_handler = ErrorHandler()

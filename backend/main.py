@@ -183,7 +183,7 @@ async def initialize_managers():
         await supabase_manager.initialize()
         await connection_manager.initialize()
         await project_state_manager.initialize()
-        monitoring.initialize()
+        # monitoring уже инициализирован в __init__
     except ConfigurationError as e:
         logger.error(f"configuration_error: {str(e)}")
         raise

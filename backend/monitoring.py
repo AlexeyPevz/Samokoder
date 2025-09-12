@@ -116,7 +116,7 @@ class MonitoringService:
         
         if settings.sentry_dsn:
             integrations = [
-                FastApiIntegration(auto_enabling_instrumentations=True),
+                FastApiIntegration(),
                 HttpxIntegration(),
             ]
             

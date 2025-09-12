@@ -72,6 +72,7 @@ prometheus-client>=0.22.1,<1.0.0
 
 # Additional utilities
 python-dateutil>=2.9.0,<3.0.0
+qrcode>=7.4.2,<8.0.0
 
 # Security tools
 pip-audit>=2.6.0,<3.0.0
