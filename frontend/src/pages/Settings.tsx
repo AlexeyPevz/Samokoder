@@ -59,7 +59,6 @@ export function Settings() {
   const handleSaveApiSettings = async () => {
     try {
       setSaving(true)
-      console.log('Saving API settings:', { apiProvider, apiKey: apiKey ? '***' : '' })
       
       await updateUserProfile({
         apiProvider,
@@ -93,7 +92,6 @@ export function Settings() {
     }
 
     setIsTestingConnection(true)
-    console.log('Testing API connection...')
 
     // Simulate API test
     setTimeout(() => {
@@ -108,7 +106,6 @@ export function Settings() {
   const handleSavePreferences = async () => {
     try {
       setSaving(true)
-      console.log('Saving preferences:', { theme, language, emailNotifications, browserNotifications })
       
       await updateUserProfile({
         preferences: {

@@ -12,7 +12,6 @@ export const usePerformance = () => {
     // Analyze bundle size
     const bundleAnalysis = analyzeBundleSize();
     if (bundleAnalysis) {
-      console.log('Bundle Analysis:', bundleAnalysis);
     }
 
     // Cleanup on unmount

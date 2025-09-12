@@ -180,7 +180,7 @@ class SimpleFileUploadSecurity:
         
         return True
     
-    def save_file(self, file_content: bytes, filename: str, user_id: str, project_id: str) -> Tuple[bool, str, Optional[str]]:
+    async def save_file(self, file_content: bytes, filename: str, user_id: str, project_id: str) -> Tuple[bool, str, Optional[str]]:
         """Безопасно сохраняет файл"""
         try:
             # Валидируем файл
@@ -204,9 +204,15 @@ class SimpleFileUploadSecurity:
                 file_path = user_dir / f"{name_part}_{counter}{ext_part}"
                 counter += 1
             
-            # Сохраняем файл
-            with open(file_path, 'wb') as f:
-                f.write(file_content)
+            # Сохраняем файл асинхронно
+            try:
+                import aiofiles
+                async with aiofiles.open(file_path, 'wb') as f:
+                    await f.write(file_content)
+            except ImportError:
+                # Fallback to synchronous file operations
+                with open(file_path, 'wb') as f:
+                    f.write(file_content)
             
             # Вычисляем хеш файла
             file_hash = hashlib.sha256(file_content).hexdigest()
@@ -345,9 +351,9 @@ def validate_file(file_content: bytes, filename: str) -> Tuple[bool, str, Option
     """Валидирует загружаемый файл"""
     return simple_file_upload_security.validate_file(file_content, filename)
 
-def save_file(file_content: bytes, filename: str, user_id: str, project_id: str) -> Tuple[bool, str, Optional[str]]:
+async def save_file(file_content: bytes, filename: str, user_id: str, project_id: str) -> Tuple[bool, str, Optional[str]]:
     """Безопасно сохраняет файл"""
-    return simple_file_upload_security.save_file(file_content, filename, user_id, project_id)
+    return await simple_file_upload_security.save_file(file_content, filename, user_id, project_id)
 
 def scan_file_for_malware(file_path: str) -> Tuple[bool, str]:
     """Сканирует файл на malware"""

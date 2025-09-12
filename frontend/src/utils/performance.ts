@@ -32,7 +32,6 @@ export class PerformanceMonitor {
           const entries = list.getEntries();
           const lastEntry = entries[entries.length - 1] as PerformanceEventTiming;
           this.vitals.lcp = lastEntry.startTime;
-          console.log('LCP:', lastEntry.startTime);
         });
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
         this.observers.push(lcpObserver);
@@ -50,7 +49,6 @@ export class PerformanceMonitor {
             }
           }
           this.vitals.cls = clsValue;
-          console.log('CLS:', clsValue);
         });
         clsObserver.observe({ entryTypes: ['layout-shift'] });
         this.observers.push(clsObserver);
@@ -65,7 +63,6 @@ export class PerformanceMonitor {
           const fcpEntry = entries.find(entry => entry.name === 'first-contentful-paint');
           if (fcpEntry) {
             this.vitals.fcp = fcpEntry.startTime;
-            console.log('FCP:', fcpEntry.startTime);
           }
         });
         fcpObserver.observe({ entryTypes: ['paint'] });
@@ -81,7 +78,6 @@ export class PerformanceMonitor {
           for (const entry of entries) {
             if (entry.entryType === 'first-input') {
               this.vitals.fid = (entry as any).processingStart - entry.startTime;
-              console.log('FID:', this.vitals.fid);
             }
           }
         });
@@ -98,7 +94,6 @@ export class PerformanceMonitor {
           const navigationEntry = entries.find(entry => entry.entryType === 'navigation');
           if (navigationEntry) {
             this.vitals.ttfb = (navigationEntry as any).responseStart - (navigationEntry as any).requestStart;
-            console.log('TTFB:', this.vitals.ttfb);
           }
         });
         ttfbObserver.observe({ entryTypes: ['navigation'] });
@@ -120,7 +115,6 @@ export class PerformanceMonitor {
         const delay = performance.now() - start;
         maxDelay = Math.max(maxDelay, delay);
         this.vitals.inp = maxDelay;
-        console.log('INP:', maxDelay);
       });
     };
 
@@ -166,9 +160,6 @@ export const analyzeBundleSize = () => {
       return total + (resource.transferSize || 0);
     }, 0);
 
-    console.log('Bundle Analysis:');
-    console.log(`Total JS resources: ${jsResources.length}`);
-    console.log(`Total JS size: ${(totalJSSize / 1024).toFixed(2)} KB`);
     
     return {
       jsResources: jsResources.length,

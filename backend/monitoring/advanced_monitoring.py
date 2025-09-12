@@ -282,7 +282,9 @@ class StructuredLogger:
         if STRUCTLOG_AVAILABLE:
             self.logger.info("HTTP request", **log_data)
         else:
-            self.logger.info(f"HTTP {method} {endpoint} {status_code} {duration:.3f}s")
+            safe_method = log_sanitizer.sanitize_string(method)
+            safe_endpoint = log_sanitizer.sanitize_string(endpoint)
+            self.logger.info(f"HTTP {safe_method} {safe_endpoint} {status_code} {duration:.3f}s")
     
     def log_ai_request(self, provider: str, model: str, tokens: int, cost: float, duration: float, success: bool):
         """Логирует AI запрос"""
@@ -299,7 +301,9 @@ class StructuredLogger:
         if STRUCTLOG_AVAILABLE:
             self.logger.info("AI request", **log_data)
         else:
-            self.logger.info(f"AI {provider}/{model} {tokens} tokens ${cost:.4f} {duration:.3f}s")
+            safe_provider = log_sanitizer.sanitize_string(provider)
+            safe_model = log_sanitizer.sanitize_string(model)
+            self.logger.info(f"AI {safe_provider}/{safe_model} {tokens} tokens ${cost:.4f} {duration:.3f}s")
     
     def log_error(self, error: Exception, context: Dict[str, Any] = None):
         """Логирует ошибку"""
@@ -313,7 +317,9 @@ class StructuredLogger:
         if STRUCTLOG_AVAILABLE:
             self.logger.error("Application error", **log_data)
         else:
-            self.logger.error(f"Error: {type(error).__name__}: {error}")
+            safe_error_type = log_sanitizer.sanitize_string(type(error).__name__)
+            safe_error_msg = log_sanitizer.sanitize_string(str(error))
+            self.logger.error(f"Error: {safe_error_type}: {safe_error_msg}")
     
     def log_security_event(self, event_type: str, details: Dict[str, Any]):
         """Логирует событие безопасности"""
@@ -326,7 +332,9 @@ class StructuredLogger:
         if STRUCTLOG_AVAILABLE:
             self.logger.warning("Security event", **log_data)
         else:
-            self.logger.warning(f"Security: {event_type} - {details}")
+            safe_event_type = log_sanitizer.sanitize_string(event_type)
+            safe_details = log_sanitizer.sanitize_string(str(details))
+            self.logger.warning(f"Security: {safe_event_type} - {safe_details}")
 
 class AlertManager:
     """Менеджер алертов"""
@@ -417,10 +425,14 @@ class AlertManager:
                     self.last_alert_times[rule.name] = current_time
                     
                     # Логируем алерт
-                    logger.warning(f"ALERT: {rule.severity.upper()} - {rule.message}")
+                    safe_severity = log_sanitizer.sanitize_string(rule.severity.upper())
+                    safe_message = log_sanitizer.sanitize_string(rule.message)
+                    logger.warning(f"ALERT: {safe_severity} - {safe_message}")
                     
             except Exception as e:
-                logger.error(f"Error checking alert rule {rule.name}: {e}")
+                safe_rule_name = log_sanitizer.sanitize_string(rule.name)
+                safe_error = log_sanitizer.sanitize_string(str(e))
+                logger.error(f"Error checking alert rule {safe_rule_name}: {safe_error}")
     
     def get_active_alerts(self) -> List[Alert]:
         """Возвращает активные алерты"""
@@ -431,7 +443,8 @@ class AlertManager:
         for alert in self.alerts:
             if alert.rule_name == rule_name and not alert.resolved:
                 alert.resolved = True
-                logger.info(f"Alert resolved: {rule_name}")
+                safe_rule_name = log_sanitizer.sanitize_string(rule_name)
+                logger.info(f"Alert resolved: {safe_rule_name}")
 
 class PerformanceProfiler:
     """Профилировщик производительности"""
@@ -505,7 +518,8 @@ class AdvancedMonitoring:
                     self._check_alerts()
                     await asyncio.sleep(30)  # Обновляем каждые 30 секунд
                 except Exception as e:
-                    logger.error(f"Error in background monitoring: {e}")
+                    safe_error = log_sanitizer.sanitize_string(str(e))
+                    logger.error(f"Error in background monitoring: {safe_error}")
                     await asyncio.sleep(60)
         
         # Запускаем асинхронную задачу
@@ -521,7 +535,8 @@ class AdvancedMonitoring:
             # Здесь можно добавить запросы к БД для получения актуальных данных
             
         except Exception as e:
-            logger.error(f"Error updating system metrics: {e}")
+            safe_error = log_sanitizer.sanitize_string(str(e))
+            logger.error(f"Error updating system metrics: {safe_error}")
     
     def _check_alerts(self):
         """Проверяет алерты"""

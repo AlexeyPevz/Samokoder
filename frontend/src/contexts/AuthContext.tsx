@@ -31,32 +31,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  console.log('AuthProvider initializing, current user:', user)
 
   useEffect(() => {
     checkAuth()
   }, [])
 
   const checkAuth = async () => {
-    console.log('Checking authentication...')
     const token = localStorage.getItem('accessToken')
     
     if (!token) {
-      console.log('No access token found')
       setLoading(false)
       return
     }
 
     try {
-      console.log('Access token found, fetching user profile...')
       const response = await getUserProfile()
-      console.log('Profile response:', response)
       
       if (response.data) {
-        console.log('User authenticated successfully:', response.data.email)
         setUser(response.data)
       } else {
-        console.log('Invalid profile response, clearing tokens')
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')
       }
@@ -71,7 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
-    console.log('Logging out user')
     localStorage.removeItem('accessToken')
     localStorage.removeItem('refreshToken')
     setUser(null)

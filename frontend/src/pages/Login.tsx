@@ -23,8 +23,6 @@ export function Login() {
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
 
-  console.log('Login component rendering')
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
@@ -56,15 +54,11 @@ export function Login() {
     }
 
     try {
-      console.log('Attempting login with email:', email)
       setIsLoading(true)
       
       const response = await login({ email, password })
-      console.log('Login response received:', response)
       
       if (response.success && response.data) {
-        console.log('Login successful, setting user and navigating')
-        
         // Сохраняем токены с валидацией
         if (response.data.accessToken && typeof response.data.accessToken === 'string') {
           localStorage.setItem('accessToken', response.data.accessToken)
@@ -83,11 +77,8 @@ export function Login() {
           description: "Вход выполнен успешно"
         })
         
-        console.log('About to navigate to dashboard')
         navigate("/dashboard")
-        console.log('Navigation to dashboard completed')
       } else {
-        console.error('Login failed - invalid response structure:', response)
         toast({
           title: "Ошибка",
           description: "Неверные данные для входа",
@@ -95,7 +86,6 @@ export function Login() {
         })
       }
     } catch (error) {
-      console.error('Login error:', error)
       toast({
         title: "Ошибка",
         description: error instanceof Error ? error.message : "Ошибка входа",

@@ -23,23 +23,18 @@ export function Dashboard() {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [announcement, setAnnouncement] = useState<string | null>(null)
 
-  console.log('Dashboard component rendering')
-
   useEffect(() => {
     loadProjects()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadProjects = async () => {
     try {
-      console.log('Loading projects...')
       setLoading(true)
       setAnnouncement("Загрузка проектов...")
       const response = await getProjects()
       setProjects(response.projects)
       setAnnouncement(`Загружено ${response.projects.length} проектов`)
-      console.log('Projects loaded:', response.projects.length)
     } catch (error) {
-      console.error('Error loading projects:', error)
       setAnnouncement("Ошибка загрузки проектов")
       toast({
         title: "Ошибка",
@@ -53,7 +48,6 @@ export function Dashboard() {
 
   const handleDeleteProject = async (projectId: string) => {
     try {
-      console.log('Deleting project:', projectId)
       setAnnouncement("Удаление проекта...")
       await deleteProject(projectId)
       setProjects(projects.filter(p => p._id !== projectId))
@@ -63,7 +57,6 @@ export function Dashboard() {
         description: "Проект удален"
       })
     } catch (error) {
-      console.error('Error deleting project:', error)
       setAnnouncement("Ошибка удаления проекта")
       toast({
         title: "Ошибка",

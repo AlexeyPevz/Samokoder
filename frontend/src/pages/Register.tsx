@@ -59,7 +59,6 @@ export function Register() {
         throw new Error(response.message || "Ошибка регистрации")
       }
     } catch (error) {
-      console.log("Register error:", error)
       toast({
         variant: "destructive",
         title: "Ошибка",
