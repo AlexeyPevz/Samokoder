@@ -5,7 +5,7 @@ Secure Authentication API
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from backend.models.requests import LoginRequest, RegisterRequest
-from backend.models.responses import LoginResponse, RegisterResponse
+from backend.models.responses import LoginResponse, RegisterResponse, UserResponse
 from backend.auth.dependencies import get_current_user, secure_password_validation, hash_password
 from backend.middleware.secure_rate_limiter import auth_rate_limit
 from backend.services.connection_pool import connection_pool_manager
@@ -90,11 +90,22 @@ async def login(
         logger.info(f"User login successful: {profile['id']}")
         
         return LoginResponse(
+            success=True,
+            message="Успешный вход",
+            user=UserResponse(
+                id=str(profile["id"]),
+                email=profile["email"],
+                full_name=profile.get("full_name"),
+                avatar_url=profile.get("avatar_url"),
+                subscription_tier=profile.get("subscription_tier", "free"),
+                subscription_status=profile.get("subscription_status", "active"),
+                api_credits_balance=profile.get("api_credits_balance", 0.0),
+                created_at=profile.get("created_at", datetime.now()),
+                updated_at=profile.get("updated_at", datetime.now())
+            ),
             access_token=response.session.access_token,
             token_type="bearer",
-            user_id=str(profile["id"]),
-            email=profile["email"],
-            message="Успешный вход"
+            expires_in=3600  # 1 час
         )
         
     except HTTPException:
@@ -152,7 +163,7 @@ async def register(
             "full_name": user_data.full_name,
             "subscription_tier": "free",
             "subscription_status": "active",
-            "password_salt": salt.hex()  # Сохраняем соль
+                "password_salt": "supabase_managed"  # Supabase управляет солью
         }
         
         profile_response = await execute_supabase_operation(
@@ -180,9 +191,10 @@ async def register(
         logger.info(f"User registered successfully: {response.user.id}")
         
         return RegisterResponse(
+            success=True,
+            message="Пользователь успешно зарегистрирован",
             user_id=str(response.user.id),
-            email=user_data.email,
-            message="Пользователь успешно зарегистрирован"
+            email=user_data.email
         )
         
     except HTTPException:
