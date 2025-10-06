@@ -190,7 +190,7 @@ class BaseLLMClient:
                         remaining_retries = max_retries
                         continue
 
-                # They don't want to retry (or we can't ask them), raise the last error and stop Pythagora
+                # They don't want to retry (or we can't ask them), raise the last error and stop самокодер
                 raise APIError(last_error_msg)
 
             remaining_retries -= 1
