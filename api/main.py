@@ -1,4 +1,5 @@
 import asyncio
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 
@@ -8,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 
 from samokoder.core.config import get_config
+from samokoder.core.log import get_logger
 from samokoder.core.config.validator import validate_config_security
 from samokoder.core.db.session import get_async_engine
 from samokoder.core.api.error_handlers import generic_exception_handler, validation_exception_handler
@@ -31,6 +33,8 @@ from samokoder.api.middleware.metrics import metrics_middleware
 from prometheus_client import make_asgi_app
 from slowapi.errors import RateLimitExceeded
 
+logger = get_logger(__name__)
+
 
 async def cleanup_orphaned_containers() -> None:
     """Periodically clean up Docker containers left after sessions."""
@@ -53,10 +57,11 @@ async def cleanup_orphaned_containers() -> None:
                     continue
 
                 if now - created_time > timedelta(hours=24):
+                    logger.info(f"Removing orphaned container: {container.id}")
                     container.stop()
                     container.remove()
         except Exception as exc:
-            print(f"Error during container cleanup: {exc}")
+            logger.error(f"Error during container cleanup: {exc}", exc_info=True)
 
         await asyncio.sleep(3600)
 
@@ -66,20 +71,25 @@ async def lifespan(app: FastAPI):
     """Lifespan event handler for startup and shutdown."""
     # Startup
     try:
+        logger.info("Starting Samokoder API server...")
         config = get_config()
         validate_config_security(config, fail_fast=True)
+        logger.info("Configuration validated successfully")
         
         _ = get_async_engine(config.db.url)
+        logger.info("Database engine initialized")
 
         cleanup_task = asyncio.create_task(cleanup_orphaned_containers())
+        logger.info("Container cleanup task started")
     except Exception as exc:
-        print(f"Error during startup: {exc}")
+        logger.error(f"Error during startup: {exc}", exc_info=True)
         raise
     
     yield
     
     # Shutdown
     try:
+        logger.info("Shutting down Samokoder API server...")
         cleanup_task.cancel()
         try:
             await cleanup_task
@@ -89,8 +99,9 @@ async def lifespan(app: FastAPI):
         # Dispose database engines to cleanly close all connections
         from samokoder.core.db.session import dispose_engines
         await dispose_engines()
+        logger.info("Shutdown completed successfully")
     except Exception as exc:
-        print(f"Error during shutdown: {exc}")
+        logger.error(f"Error during shutdown: {exc}", exc_info=True)
 
 
 app = FastAPI(title="Samokoder SaaS API", version="1.0", lifespan=lifespan)
@@ -113,11 +124,8 @@ app.middleware('http')(metrics_middleware)
 metrics_app = make_asgi_app()
 app.mount('/metrics', metrics_app)
 
-import os
-
 # P2-3: Strict CORS configuration
 config = get_config()
-
 cors_origins = os.environ.get("CORS_ORIGINS", "").split(",")
 if not cors_origins or cors_origins == [""]:
     if config.environment == "production":
