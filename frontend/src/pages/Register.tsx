@@ -1,6 +1,5 @@
 import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,31 +9,60 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card"
 import { useToast } from "@/hooks/useToast"
-import {
-  UserPlus
-} from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { register } from "@/api/auth"
 import { useAuth } from "@/contexts/AuthContext"
-
-type RegisterForm = {
-  email: string
-  password: string
-}
+import { FormField } from "@/components/accessibility/FormField"
+import { ErrorAnnouncer, LoadingAnnouncer } from "@/components/accessibility/ErrorAnnouncer"
+import { PageTitle } from "@/components/accessibility/ScreenReaderSupport"
+import { useFocusManagement } from "@/hooks/useFocusManagement"
 
 export default function Register() {
-  const [loading, setLoading] = useState(false)
-  const { toast } = useToast()
-  const { setUser } = useAuth()
   const navigate = useNavigate()
-  const { register: registerForm, handleSubmit } = useForm<RegisterForm>()
+  const { setUser } = useAuth()
+  const { toast } = useToast()
+  const { focusRef, setFocus } = useFocusManagement()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
 
-  const onSubmit = async (data: RegisterForm) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErrors({})
+    
+    // Валидация email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const newErrors: { email?: string; password?: string } = {}
+    
+    if (!email || !email.trim()) {
+      newErrors.email = "Введите email"
+    } else if (!emailRegex.test(email)) {
+      newErrors.email = "Введите корректный email"
+    }
+    
+    if (!password || !password.trim()) {
+      newErrors.password = "Введите пароль"
+    } else if (password.length < 6) {
+      newErrors.password = "Пароль должен содержать минимум 6 символов"
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      // Focus на первое поле с ошибкой
+      const firstErrorField = document.querySelector('[aria-invalid="true"]') as HTMLElement
+      if (firstErrorField) {
+        setFocus(firstErrorField)
+      }
+      return
+    }
+
     try {
-      setLoading(true)
-      const response = await register({ email: data.email, password: data.password });
+      setIsLoading(true)
+      
+      const response = await register({ email, password });
       
       if (response.success && response.data) {
         // P0-2: Tokens are now in httpOnly cookies, no localStorage needed
@@ -58,58 +86,98 @@ export default function Register() {
         description: error instanceof Error ? error.message : "Ошибка регистрации",
       })
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Create an account</CardTitle>
-          <CardDescription>Enter your details to get started</CardDescription>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-secondary-50 p-4">
+      <PageTitle 
+        title="Регистрация в Самокодер" 
+        description="Создайте аккаунт для начала работы"
+      />
+      <ErrorAnnouncer error={Object.values(errors)[0] || null} />
+      <LoadingAnnouncer loading={isLoading} message="Создание аккаунта..." />
+      
+      <Card className="w-full max-w-md" role="main" aria-labelledby="register-title">
+        <CardHeader className="space-y-1">
+          <div className="flex items-center justify-center mb-4">
+            <div 
+              className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center text-white text-xl font-bold"
+              role="img"
+              aria-label="Логотип Самокодер"
+            >
+              С
+            </div>
+          </div>
+          <CardTitle id="register-title" className="text-2xl text-center">
+            Регистрация
+          </CardTitle>
+          <CardDescription className="text-center">
+            Создайте аккаунт для начала работы
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                {...registerForm("email", { required: true })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Choose a password"
-                {...registerForm("password", { required: true })}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                "Loading..."
-              ) : (
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <FormField
+              id="email"
+              label="Email"
+              type="email"
+              value={email}
+              onChange={setEmail}
+              error={errors.email}
+              required
+              disabled={isLoading}
+              placeholder="your@email.com"
+              description="Введите ваш email адрес"
+            />
+            
+            <FormField
+              id="password"
+              label="Пароль"
+              type="password"
+              value={password}
+              onChange={setPassword}
+              error={errors.password}
+              required
+              disabled={isLoading}
+              placeholder="••••••••"
+              description="Минимум 6 символов"
+            />
+            
+            <Button 
+              type="submit" 
+              className="w-full bg-gradient-to-r from-primary to-secondary hover:from-blue-700 hover:to-purple-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              disabled={isLoading}
+              aria-describedby="register-help"
+            >
+              {isLoading ? (
                 <>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Create Account
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                  <span className="sr-only">Создание аккаунта</span>
+                  <span aria-hidden="true">Создание...</span>
                 </>
+              ) : (
+                "Зарегистрироваться"
               )}
             </Button>
+            
+            <div id="register-help" className="sr-only">
+              Нажмите Enter для регистрации или Tab для перехода к следующему полю
+            </div>
           </form>
+          
+          <div className="mt-4 text-center text-sm">
+            <span>Уже есть аккаунт? </span>
+            <Link 
+              to="/login" 
+              className="text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+              aria-label="Перейти к странице входа"
+            >
+              Войти
+            </Link>
+          </div>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <Button
-            variant="link"
-            className="text-sm text-muted-foreground"
-            onClick={() => navigate("/login")}
-          >
-            Already have an account? Sign in
-          </Button>
-        </CardFooter>
       </Card>
     </div>
   )
