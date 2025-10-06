@@ -32,6 +32,7 @@ from samokoder.api.middleware.rate_limiter import limiter, _rate_limit_exceeded_
 from samokoder.api.middleware.metrics import metrics_middleware
 from prometheus_client import make_asgi_app
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 logger = get_logger(__name__)
 
@@ -112,6 +113,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 # Add rate limiter state
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # P1-4: Add secure error handlers
 app.add_exception_handler(Exception, generic_exception_handler)
