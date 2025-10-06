@@ -5,7 +5,8 @@ FROM python:3.12-slim as builder
 WORKDIR /app
 
 # Install poetry and configure it to create venv in the project directory
-RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir poetry
+RUN pip install --no-cache-dir --upgrade pip==24.2 && \
+    pip install --no-cache-dir poetry==1.8.3
 RUN poetry config virtualenvs.in-project true
 
 # Copy dependency files (use existing lock file instead of generating it)
