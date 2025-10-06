@@ -118,7 +118,7 @@ export default function Dashboard() {
           
           <AccessibleButton
             onClick={() => setShowCreateDialog(true)}
-            className="bg-gradient-to-r from-primary to-secondary hover:from-blue-700 hover:to-purple-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="bg-primary hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             data-action="create-project"
             description="Создать новый проект"
           >
@@ -148,7 +148,7 @@ export default function Dashboard() {
               placeholder="Поиск проектов..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="pl-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label="Поиск проектов по названию и описанию"
             />
           </div>

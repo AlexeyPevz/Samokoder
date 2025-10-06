@@ -68,7 +68,7 @@ export function ProjectCard({ project, onOpen, onDelete }: ProjectCardProps) {
 
   return (
     <Card 
-      className="hover:shadow-lg transition-all duration-200 hover:-translate-y-1 bg-white/80 backdrop-blur-sm border-0 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+      className="hover:shadow-lg transition-all duration-200 hover:-translate-y-1 bg-white/80 backdrop-blur-sm border-0 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       role="article"
       aria-labelledby={`project-title-${project.id}`}
       aria-describedby={`project-description-${project.id}`}
@@ -215,7 +215,7 @@ export function ProjectCard({ project, onOpen, onDelete }: ProjectCardProps) {
               e.stopPropagation()
               onOpen()
             }}
-            className="w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             variant={project.status === 'ready' ? 'default' : 'outline'}
             disabled={project.status === 'error'}
             description={`Открыть проект ${project.name}`}

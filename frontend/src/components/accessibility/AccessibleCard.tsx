@@ -33,7 +33,7 @@ export function AccessibleCard({
       tabIndex={tabIndex}
       onClick={onClick}
       className={cn(
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
         isInteractive && 'cursor-pointer hover:shadow-lg transition-shadow',
         className
       )}
@@ -158,7 +158,7 @@ export function AccessibleProjectCard({
               e.stopPropagation()
               onOpen()
             }}
-            className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="flex-1 bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
             aria-label={`Открыть проект ${project.name}`}
           >
             Открыть

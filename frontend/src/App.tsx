@@ -12,6 +12,8 @@ const Dashboard = lazy(() => import("./pages/Dashboard"))
 const Settings = lazy(() => import("./pages/Settings"))
 const Login = lazy(() => import("./pages/Login"))
 const Workspace = lazy(() => import("./pages/Workspace"))
+const BrandShowcase = lazy(() => import("./pages/BrandShowcase"))
+const BrandTest = lazy(() => import("./pages/BrandTest"))
 
 // Loading fallback component
 function LoadingFallback() {
@@ -66,6 +68,8 @@ function App() {
                     <Settings />
                   </ProtectedRoute>
                 } />
+                <Route path="/brand" element={<BrandShowcase />} />
+                <Route path="/brand-test" element={<BrandTest />} />
                 <Route path="*" element={<div style={{padding: "20px"}}>404</div>} />
               </Routes>
             </Suspense>
