@@ -1,0 +1,101 @@
+[
+  {
+    "id": "SEC-DOCKER-001",
+    "title": "Изоляция исполнения: убрать docker.sock и контейнеризировать превью",
+    "description": "Устранить прямой доступ к docker.sock (даже ro). Перевести Executor и превью на изолированное исполнение (rootless/Sysbox/K8s), ограничить сеть (network=none), CPU/Memory cgroups, whitelist допустимых команд для превью.",
+    "severity": "Critical",
+    "effort_days": 5,
+    "expected_impact": "Снижение риска RCE/побега из контейнера; безопасные превью-процессы",
+    "kpis_to_measure": ["кол-во orphaned containers", "инциденты безопасности", "время жизни превью"],
+    "files_involved": [
+      "docker-compose.yml",
+      "api/routers/preview.py",
+      "core/proc/process_manager.py",
+      "core/agents/executor.py"
+    ],
+    "suggested_steps": [
+      "Удалить монтирование /var/run/docker.sock, внедрить sidecar/proxy с RBAC или K8s Job",
+      "Запуск превью в контейнере с network=none, ограничениями ресурсов, таймаутами",
+      "Добавить allow-list команд (npm run dev/preview) и проверку наличия package.json",
+      "Метрики и GC превью процессов/контейнеров"
+    ]
+  },
+  {
+    "id": "PERF-DB-JSONB-002",
+    "title": "Нормализация ProjectState и устранение N+1",
+    "description": "Вынести iterations/steps/tasks/epics из JSONB в таблицы (миграции уже есть) и обновить код чтения/записи; добавить eager loading файлов и индексы в горячих путях.",
+    "severity": "Major",
+    "effort_days": 7,
+    "expected_impact": "-30–70% latency на чтении больших проектов; стабильная память",
+    "kpis_to_measure": ["p95 latency /v1/projects/*", "DB query count per request", "CPU/Memory DB"],
+    "files_involved": [
+      "core/db/models/*",
+      "core/state/state_manager.py",
+      "api/routers/projects.py",
+      "alembic/versions/20251007_normalize_project_state.py"
+    ],
+    "suggested_steps": [
+      "Мигрировать записи ProjectState в нормализованный вид",
+      "Обновить ORM слои и репозитории",
+      "Добавить selectinload/joinedload для File/FileContent",
+      "Нагрузочное тестирование и сравнение метрик"
+    ]
+  },
+  {
+    "id": "SEC-HTTP-003",
+    "title": "Таймауты и retries для httpx + CSP ужесточение в prod",
+    "description": "Ввести единые таймауты и retry-политику для httpx (telemetry, OAuth, external docs), а также ужесточить CSP в production (убрать unsafe-inline/eval, ввести nonce/hash).",
+    "severity": "Major",
+    "effort_days": 2,
+    "expected_impact": "Снижение подвисаний и XSS-рисков в продакшене",
+    "kpis_to_measure": ["кол-во таймаутов HTTP", "ошибки XSS сканеров", "p95 внешних вызовов"],
+    "files_involved": [
+      "core/telemetry/__init__.py",
+      "api/routers/auth.py",
+      "core/agents/external_docs.py",
+      "core/api/middleware/security_headers.py"
+    ],
+    "suggested_steps": [
+      "Добавить httpx.Timeout(...) во все клиенты",
+      "Вынести константы таймаутов в config/constants",
+      "Для CSP: разделить профили dev/prod, убрать inline/eval в prod, использовать nonce/hashed"
+    ]
+  },
+  {
+    "id": "COST-LLM-004",
+    "title": "Кэш LLM-ответов на детерминированных участках",
+    "description": "Добавить слой кэширования по ключу (provider, model, prompt, settings) для операций, где допустима идемпотентность, с TTL и инвалидацией.",
+    "severity": "Minor",
+    "effort_days": 3,
+    "expected_impact": "-10–30% токенов/стоимости",
+    "kpis_to_measure": ["tokens/request", "llm_requests_total", "llm_request_errors_total"],
+    "files_involved": [
+      "core/llm/*",
+      "core/agents/*"
+    ],
+    "suggested_steps": [
+      "Внедрить Redis‑кэш с шардированием по ключу",
+      "Добавить bypass-флаг для критичных секций",
+      "Метрики попаданий/промахов"
+    ]
+  },
+  {
+    "id": "DEVEX-TOOLING-005",
+    "title": "Dev‑контейнер и Makefile для аудитов",
+    "description": "Добавить devcontainer/Makefile для локального запуска cloc, pip-audit, eslint, depcruise, graphviz, чтобы повторить CI‑аудиты локально.",
+    "severity": "Minor",
+    "effort_days": 1,
+    "expected_impact": "Сокращение времени на локальные проверки и аудит",
+    "kpis_to_measure": ["время от клонирования до зелёного CI", "число локальных прогонов перед PR"],
+    "files_involved": [
+      "Makefile",
+      ".devcontainer/devcontainer.json",
+      "README.md"
+    ],
+    "suggested_steps": [
+      "Собрать dev‑контейнер с нужными CLI",
+      "Makefile цели: audit, lint, cloc, depcruise",
+      "Документация в README"
+    ]
+  }
+]
