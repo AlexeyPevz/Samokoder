@@ -30,8 +30,10 @@ services:
       - REDIS_PORT=6379
       - ENVIRONMENT=development
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - ./workspace:/app/workspace
       - /var/run/docker.sock:/var/run/docker.sock
@@ -63,8 +65,10 @@ services:
       - ENVIRONMENT=development
       - SAMOKODER_CONFIG_DIR=/app/config
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - ./workspace:/app/workspace
       - /var/run/docker.sock:/var/run/docker.sock
