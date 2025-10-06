@@ -16,8 +16,6 @@ from samokoder.core.log import get_logger
 from samokoder.core.telemetry import telemetry
 from samokoder.core.ui.base import ProjectStage, samokoder_source
 
-If "is_loop" is True, самокодер is stuck in a loop and needs to consider alternative solutions.
-
 log = get_logger(__name__)
 
 LOOP_THRESHOLD = 3  # number of iterations in task to be considered a loop

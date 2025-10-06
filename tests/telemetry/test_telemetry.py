@@ -148,6 +148,9 @@ async def test_send_enabled_and_successful(mock_settings, mock_getenv, mock_http
     expected = {
         "pathId": "test-id",
         "event": "samokoder-core-telemetry",
+        "data": telemetry.data,
+    }
+    mock_httpx_post.assert_awaited_once_with(telemetry.endpoint, json=expected)
 
 
 @pytest.mark.asyncio

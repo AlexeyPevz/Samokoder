@@ -65,7 +65,7 @@ def upgrade() -> None:
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('folder_name', sa.String(), nullable=False),
-    sa.Column('gpt_pilot_state', sa.JSON(), nullable=True),
+    sa.Column('samokoder_state', sa.JSON(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f('fk_projects_user_id_users')),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_projects'))
     )

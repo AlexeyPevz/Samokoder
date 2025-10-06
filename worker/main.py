@@ -54,7 +54,7 @@ async def run_generation_task(ctx, project_id_str: str, user_id: int):
             logger.error(f"[worker] Error: User {user_id} or Project {project_id_str} not found.")
             return
 
-        # This logic is copied from gpt_pilot_integration.py
+        # This logic is copied from samokoder_integration.py
         if user.api_keys:
             from samokoder.core.security.crypto import CryptoService
             from samokoder.core.config.exceptions import ConfigError
