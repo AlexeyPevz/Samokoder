@@ -1,0 +1,21 @@
+{
+  "tools": {
+    "cloc": {"status": "not_available", "reason": "cloc не найден в среде"},
+    "npm_audit": {"status": "failed_or_unavailable", "reason": "npm audit завершился ошибкой или npm недоступен без зависимостей"},
+    "pip_audit": {"status": "not_available", "reason": "pip-audit не найден в среде"},
+    "eslint": {"status": "failed_or_unavailable", "reason": "eslint не установлен в среде, запуск из npx завершился ошибкой"},
+    "dependency_cruiser": {"status": "failed_or_unavailable", "reason": "нет конфигурации .dependency-cruiser.(c)js; предлагается запуск с --no-config"},
+    "graphviz_dot": {"status": "not_available", "reason": "dot не найден"}
+  },
+  "fallback_metrics": {
+    "python_lines": 29826,
+    "frontend_ts_lines": 0,
+    "frontend_tsx_lines": 0,
+    "javascript_lines": 2284,
+    "css_lines": 909
+  },
+  "notes": [
+    "На сервере отсутствуют несколько CLI-инструментов. Метрики собраны частично через ripgrep.",
+    "Для полной инвентаризации рекомендуется установить cloc, pip-audit, graphviz и выполнить npm ci для фронтенда."
+  ]
+}
