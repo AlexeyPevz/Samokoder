@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from samokoder.core.db.session import get_db
+from sqlalchemy.ext.asyncio import AsyncSession  # FIX: Async session
+from samokoder.core.db.session import get_async_db  # FIX: Async DB
 from samokoder.core.db.models.user import User
 from samokoder.core.analytics.analytics_service import analytics_service
 from samokoder.api.routers.auth import get_current_user, require_admin
@@ -12,7 +12,7 @@ router = APIRouter()
 @router.get("/analytics/user")
 async def get_user_analytics(
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)  # FIX: AsyncSession
 ):
     """
     Get analytics metrics for the current user
@@ -34,7 +34,7 @@ async def get_user_analytics(
 @router.get("/analytics/system")
 async def get_system_analytics(
     admin: User = Depends(require_admin),  # P0-1: FIXED - Require admin privileges
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)  # FIX: AsyncSession
 ):
     """
     Get overall system analytics metrics (ADMIN ONLY).
@@ -57,7 +57,7 @@ async def get_system_analytics(
 async def get_user_action_logs(
     limit: int = 100,
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)  # FIX: AsyncSession
 ):
     """
     Get action logs for the current user
@@ -83,7 +83,7 @@ async def record_user_action(
     details: Dict[str, Any] = None,
     project_id: str = None,
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)  # FIX: AsyncSession
 ):
     """
     Record a user action for analytics
@@ -108,7 +108,7 @@ async def record_user_action(
 @router.get("/analytics/export")
 async def export_analytics(
     admin: User = Depends(require_admin),  # P0-1: FIXED - Require admin privileges
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)  # FIX: AsyncSession
 ):
     """
     Export all analytics data (ADMIN ONLY).

@@ -38,6 +38,7 @@ from samokoder.core.db.models.revoked_tokens import RevokedToken
 from samokoder.core.db.models.login_attempts import LoginAttempt
 from samokoder.core.db.session import get_async_db
 from samokoder.core.security.audit_logger import audit_logger
+from samokoder.core.config.constants import SecurityLimits  # FIX: Use constants
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +47,11 @@ router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-ACCESS_TOKEN_EXPIRE_MINUTES = 15
-REFRESH_TOKEN_EXPIRE_DAYS = 7
-MAX_LOGIN_ATTEMPTS = 5
-LOCKOUT_DURATION_MINUTES = 15
+# FIX: Use constants from config instead of magic numbers
+ACCESS_TOKEN_EXPIRE_MINUTES = SecurityLimits.ACCESS_TOKEN_EXPIRE_MINUTES
+REFRESH_TOKEN_EXPIRE_DAYS = SecurityLimits.REFRESH_TOKEN_EXPIRE_DAYS
+MAX_LOGIN_ATTEMPTS = SecurityLimits.MAX_LOGIN_ATTEMPTS
+LOCKOUT_DURATION_MINUTES = SecurityLimits.LOCKOUT_DURATION_MINUTES
 
 
 def _create_token(*, data: dict, secret: str, expires_delta: timedelta, token_type: str) -> str:
@@ -155,7 +157,7 @@ async def require_admin(current_user: User = Depends(get_current_user)) -> User:
 
 
 @router.post("/auth/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-# @limiter.limit(get_rate_limit("auth"))
+@limiter.limit(get_rate_limit("auth"))  # FIX: Добавлен rate limit для защиты от bruteforce/email enumeration
 async def register(
     request: Request,
     payload: Annotated[RegisterRequest, Body()],

@@ -14,6 +14,7 @@ from samokoder.core.config.validator import validate_config_security
 from samokoder.core.db.session import get_async_engine
 from samokoder.core.api.error_handlers import generic_exception_handler, validation_exception_handler
 from samokoder.core.api.middleware.security_headers import SecurityHeadersMiddleware
+from samokoder.api.middleware.request_limits import RequestSizeLimitMiddleware  # FIX: Request size limits
 from samokoder.api.routers.auth import router as auth_router
 from samokoder.api.routers.projects import router as projects_router
 from samokoder.api.routers.keys import router as keys_router
@@ -108,6 +109,9 @@ app = FastAPI(title="Samokoder SaaS API", version="1.0", lifespan=lifespan)
 
 # P1-5: Add security headers middleware
 app.add_middleware(SecurityHeadersMiddleware)
+
+# FIX: Add request size limit middleware (защита от DoS через большие payloads)
+app.add_middleware(RequestSizeLimitMiddleware, max_size=10 * 1024 * 1024)  # 10 MB default
 
 # Add rate limiter state
 app.state.limiter = limiter

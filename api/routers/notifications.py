@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from samokoder.core.db.session import get_db
+from sqlalchemy.ext.asyncio import AsyncSession  # FIX: Async session
+from samokoder.core.db.session import get_async_db  # FIX: Async DB
 from samokoder.core.db.models.user import User
 from samokoder.core.services.notification_service import notification_service
 from samokoder.api.routers.auth import get_current_user
@@ -13,7 +13,7 @@ router = APIRouter()
 async def subscribe_to_notifications(
     notification_types: List[str],
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)  # FIX: AsyncSession
 ):
     """
     Subscribe user to notification types
@@ -37,7 +37,7 @@ async def subscribe_to_notifications(
 async def unsubscribe_from_notifications(
     notification_types: List[str],
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)  # FIX: AsyncSession
 ):
     """
     Unsubscribe user from notification types
