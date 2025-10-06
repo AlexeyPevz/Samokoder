@@ -64,6 +64,14 @@ class LLMLimits(IntEnum):
     REQUEST_TIMEOUT = 60  # seconds
 
 
+class HttpClientTimeouts(IntEnum):
+    """HTTP client timeout configuration (seconds)."""
+    CONNECT = 5
+    READ = 30
+    WRITE = 30
+    POOL = 5
+
+
 class CacheLimits(IntEnum):
     """Cache configuration."""
     REDIS_KEY_TTL = 3600  # 1 hour

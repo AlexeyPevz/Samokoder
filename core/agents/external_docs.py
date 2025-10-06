@@ -11,6 +11,7 @@ from samokoder.core.config.config import EXTERNAL_DOCUMENTATION_API
 from samokoder.core.llm.parser import JSONParser
 from samokoder.core.log import get_logger
 from samokoder.core.telemetry import telemetry
+from httpx import Timeout
 
 log = get_logger(__name__)
 
@@ -71,7 +72,8 @@ class ExternalDocumentation(BaseAgent):
 
     async def _get_available_docsets(self) -> list[tuple]:
         url = urljoin(EXTERNAL_DOCUMENTATION_API, "docsets")
-        client = httpx.Client(transport=httpx.HTTPTransport(retries=3))
+        from samokoder.core.config.constants import HttpClientTimeouts as T
+        client = httpx.Client(transport=httpx.HTTPTransport(retries=3), timeout=Timeout(connect=T.CONNECT, read=T.READ, write=T.WRITE, pool=T.POOL))
         try:
             resp = client.get(url)
         except httpx.HTTPError:
@@ -136,7 +138,8 @@ class ExternalDocumentation(BaseAgent):
         """
         url = urljoin(EXTERNAL_DOCUMENTATION_API, "query")
         snippets: list[tuple] = []
-        async with httpx.AsyncClient(transport=httpx.AsyncHTTPTransport(retries=3)) as client:
+        from samokoder.core.config.constants import HttpClientTimeouts as T
+        async with httpx.AsyncClient(transport=httpx.AsyncHTTPTransport(retries=3), timeout=Timeout(connect=T.CONNECT, read=T.READ, write=T.WRITE, pool=T.POOL)) as client:
             reqs = []
             ordered_keys = []
             for docset_key, qs in queries.items():
