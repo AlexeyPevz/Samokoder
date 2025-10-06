@@ -1,13 +1,33 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
+import { Suspense, lazy } from "react"
 import { ThemeProvider } from "./components/ui/theme-provider"
 import { AuthProvider } from "./contexts/AuthContext"
 import { Toaster } from "./components/ui/toaster"
 import { ProtectedRoute } from "./components/ProtectedRoute"
 import { ErrorBoundary } from "react-error-boundary"
-import Dashboard from "./pages/Dashboard"
-import Settings from "./pages/Settings"
-import Login from "./pages/Login"
-import Home from "./pages/Home"
+
+// Lazy load all pages for optimal code splitting
+const Home = lazy(() => import("./pages/Home"))
+const Dashboard = lazy(() => import("./pages/Dashboard"))
+const Settings = lazy(() => import("./pages/Settings"))
+const Login = lazy(() => import("./pages/Login"))
+const Workspace = lazy(() => import("./pages/Workspace"))
+
+// Loading fallback component
+function LoadingFallback() {
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: "100vh",
+      fontSize: "18px",
+      color: "#666"
+    }}>
+      <div className="loading-spinner" aria-label="Loading page"></div>
+    </div>
+  )
+}
 
 function ErrorFallback({error}: {error: Error}) {
   return (
@@ -26,25 +46,30 @@ function App() {
     <AuthProvider>
       <ThemeProvider defaultTheme="light" storageKey="ui-theme">
         <Router>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <ErrorBoundary FallbackComponent={ErrorFallback}>
-                  <Dashboard />
-                </ErrorBoundary>
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <ErrorBoundary FallbackComponent={ErrorFallback}>
-                  <Settings />
-                </ErrorBoundary>
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<div style={{padding: "20px"}}>404</div>} />
-          </Routes>
+          <ErrorBoundary FallbackComponent={ErrorFallback}>
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/workspace/:id" element={
+                  <ProtectedRoute>
+                    <Workspace />
+                  </ProtectedRoute>
+                } />
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } />
+                <Route path="*" element={<div style={{padding: "20px"}}>404</div>} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
         </Router>
         <Toaster />
       </ThemeProvider>

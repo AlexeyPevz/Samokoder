@@ -172,41 +172,52 @@ export const analyzeBundleSize = () => {
 
 // Performance optimization utilities
 export const preloadCriticalResources = () => {
-  // CSS preload removed - Vite bundles CSS with dynamic hash in production
-  // and automatically injects it into index.html
-
-  // Preload critical fonts with font-display: swap
-  const fontPreload = document.createElement('link');
-  fontPreload.rel = 'preload';
-  fontPreload.href = 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2';
-  fontPreload.as = 'font';
-  fontPreload.type = 'font/woff2';
-  fontPreload.crossOrigin = 'anonymous';
-  document.head.appendChild(fontPreload);
-
-  // Preload critical images
-  const criticalImages = [
-    'https://s3.us-east-1.amazonaws.com/assets.pythagora.ai/logos/favicon.ico'
-  ];
+  // Preload API endpoint for faster initial data fetch
+  if ('dns-prefetch' in document.createElement('link')) {
+    const apiPrefetch = document.createElement('link');
+    apiPrefetch.rel = 'dns-prefetch';
+    apiPrefetch.href = window.location.origin;
+    document.head.appendChild(apiPrefetch);
+  }
   
-  criticalImages.forEach(src => {
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.href = src;
-    link.as = 'image';
-    document.head.appendChild(link);
-  });
+  // Preconnect to API for faster requests
+  const apiPreconnect = document.createElement('link');
+  apiPreconnect.rel = 'preconnect';
+  apiPreconnect.href = window.location.origin;
+  document.head.appendChild(apiPreconnect);
 };
 
 export const optimizeImages = () => {
-  // Add loading="lazy" to all images
+  // Add loading="lazy" to all images except first 2 (LCP optimization)
   const images = document.querySelectorAll('img');
-  images.forEach(img => {
-    if (!img.hasAttribute('loading')) {
-      img.setAttribute('loading', 'lazy');
+  images.forEach((img, index) => {
+    // First 2 images are likely above the fold - load eagerly
+    if (index >= 2) {
+      if (!img.hasAttribute('loading')) {
+        img.setAttribute('loading', 'lazy');
+      }
     }
     if (!img.hasAttribute('decoding')) {
       img.setAttribute('decoding', 'async');
     }
+    // Add fetchpriority="high" to LCP candidate (first image)
+    if (index === 0 && !img.hasAttribute('fetchpriority')) {
+      img.setAttribute('fetchpriority', 'high');
+    }
   });
+  
+  // Observe images for lazy loading analytics
+  if ('IntersectionObserver' in window) {
+    const imageObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target as HTMLImageElement;
+          // Image is now visible
+          imageObserver.unobserve(img);
+        }
+      });
+    });
+    
+    images.forEach(img => imageObserver.observe(img));
+  }
 };
