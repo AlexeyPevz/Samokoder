@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging  # FIX: Replace print with logger
 
 from samokoder.core.db.session import get_async_db
 from samokoder.core.db.models.user import User
 from samokoder.core.config import get_config
 from samokoder.api.routers.auth import get_current_user
 
+logger = logging.getLogger(__name__)  # FIX: Logger instance
 router = APIRouter()
 
 class GitHubTokenRequest(BaseModel):
@@ -29,14 +31,14 @@ async def set_github_token(
     Set the user's GitHub access token.
     """
     try:
-        print(f"Setting GitHub token for user {user.id}")
+        logger.info(f"Setting GitHub token for user {user.id}")  # FIX: print → logger
         config = get_config()
         user.set_encrypted_github_token(request.token, config.secret_key)
         await db.commit()
-        print(f"GitHub token set successfully for user {user.id}")
+        logger.info(f"GitHub token set successfully for user {user.id}")  # FIX: print → logger
         return {"message": "GitHub token has been set successfully."}
     except Exception as e:
-        print(f"Error setting GitHub token for user {user.id}: {e}")
+        logger.error(f"Error setting GitHub token for user {user.id}: {e}", exc_info=True)  # FIX: print → logger
         await db.rollback()
         raise HTTPException(status_code=500, detail="Internal server error")
 
