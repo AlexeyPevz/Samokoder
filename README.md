@@ -487,7 +487,7 @@ docker-compose up -d
 
 ### Детали
 
-Полный audit report: [`audit/FINAL_REPORT.md`](audit/FINAL_REPORT.md)
+Полный audit report: см. `PRODUCT_AUDIT_KPI_3E20.md` в корне репозитория
 
 ---
 
@@ -526,4 +526,6 @@ docker-compose ps  # All should be "Up"
 - [Performance Optimization](docs/performance_optimization.md) - Parallel LLM execution
 - [Disaster Recovery](ops/runbooks/disaster_recovery.md) - Backup/restore procedures
 - [Monitoring Operations](ops/runbooks/monitoring_operations.md) - Ops runbook
+- [Architecture](docs/architecture.md) - System architecture and design decisions
+- [Telemetry](docs/TELEMETRY.md) - Telemetry and analytics
 
