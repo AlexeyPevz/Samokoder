@@ -129,6 +129,74 @@ docker_containers_running = Gauge(
 )
 
 
+# ==================== Saturation Metrics (ЧЕТВЕРТЫЙ ЗОЛОТОЙ СИГНАЛ) ====================
+# Connection pool saturation
+db_connection_pool_size = Gauge(
+    'samokoder_db_connection_pool_size',
+    'Database connection pool size',
+    ['state']  # state: in_use, available, max
+)
+
+db_connection_pool_saturation_percent = Gauge(
+    'samokoder_db_connection_pool_saturation_percent',
+    'Database connection pool saturation percentage (0-100)'
+)
+
+# Queue depth (for background tasks)
+worker_queue_depth = Gauge(
+    'samokoder_worker_queue_depth',
+    'Number of tasks in worker queue',
+    ['queue_name']
+)
+
+worker_queue_saturation_percent = Gauge(
+    'samokoder_worker_queue_saturation_percent',
+    'Worker queue saturation percentage (0-100)',
+    ['queue_name']
+)
+
+# File descriptor usage
+file_descriptors_open = Gauge(
+    'samokoder_file_descriptors_open',
+    'Number of open file descriptors'
+)
+
+file_descriptors_max = Gauge(
+    'samokoder_file_descriptors_max',
+    'Maximum file descriptors allowed'
+)
+
+# Network saturation
+network_connections_active = Gauge(
+    'samokoder_network_connections_active',
+    'Number of active network connections',
+    ['state']  # state: established, time_wait, etc.
+)
+
+
+# ==================== SLO/Error Budget Metrics ====================
+error_budget_remaining_percent = Gauge(
+    'samokoder_error_budget_remaining_percent',
+    'Remaining error budget percentage (0-100)',
+    ['slo_type']  # slo_type: availability, latency, errors
+)
+
+availability_slo_target = Gauge(
+    'samokoder_availability_slo_target',
+    'Target availability SLO (0.0-1.0)'
+)
+
+availability_slo_current = Gauge(
+    'samokoder_availability_slo_current',
+    'Current availability (0.0-1.0)'
+)
+
+latency_slo_target_seconds = Gauge(
+    'samokoder_latency_slo_target_seconds',
+    'Target P95 latency SLO in seconds'
+)
+
+
 # ==================== Authentication Metrics ====================
 auth_attempts_total = Counter(
     'samokoder_auth_attempts_total',
@@ -204,3 +272,74 @@ async def metrics_middleware(request: Request, call_next: Callable) -> Response:
         import random
         if random.randint(1, 10) == 1:
             update_system_metrics()
+
+
+def update_saturation_metrics():
+    """Update saturation metrics for monitoring resource exhaustion."""
+    try:
+        # File descriptors (Linux only)
+        try:
+            import resource
+            soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+            file_descriptors_max.set(soft)
+            
+            # Count open file descriptors
+            proc = psutil.Process()
+            file_descriptors_open.set(proc.num_fds())
+        except (AttributeError, ImportError):
+            pass  # Not available on this platform
+            
+        # Network connections
+        try:
+            net_connections = psutil.net_connections()
+            established = sum(1 for conn in net_connections if conn.status == 'ESTABLISHED')
+            time_wait = sum(1 for conn in net_connections if conn.status == 'TIME_WAIT')
+            network_connections_active.labels(state='established').set(established)
+            network_connections_active.labels(state='time_wait').set(time_wait)
+        except (PermissionError, psutil.AccessDenied):
+            pass  # Need elevated permissions
+            
+    except Exception as e:
+        print(f"Error updating saturation metrics: {e}")
+
+
+def update_slo_metrics(current_error_rate: float, current_p95_latency: float):
+    """Update SLO and error budget metrics."""
+    try:
+        # SLO Targets (можно вынести в конфигурацию)
+        AVAILABILITY_TARGET = 0.999  # 99.9% uptime
+        LATENCY_P95_TARGET = 2.0  # 2 seconds
+        ERROR_RATE_TARGET = 0.01  # 1%
+        
+        # Set targets
+        availability_slo_target.set(AVAILABILITY_TARGET)
+        latency_slo_target_seconds.set(LATENCY_P95_TARGET)
+        
+        # Calculate current availability (1 - error_rate)
+        current_availability = 1 - current_error_rate
+        availability_slo_current.set(current_availability)
+        
+        # Calculate error budgets
+        # Availability error budget: (current - target) / (1 - target) * 100
+        if current_availability >= AVAILABILITY_TARGET:
+            avail_budget = 100.0
+        else:
+            avail_budget = max(0, 100 * (current_availability - (1 - AVAILABILITY_TARGET)) / (1 - AVAILABILITY_TARGET))
+        error_budget_remaining_percent.labels(slo_type='availability').set(avail_budget)
+        
+        # Latency error budget
+        if current_p95_latency <= LATENCY_P95_TARGET:
+            latency_budget = 100.0
+        else:
+            latency_budget = max(0, 100 * (1 - (current_p95_latency - LATENCY_P95_TARGET) / LATENCY_P95_TARGET))
+        error_budget_remaining_percent.labels(slo_type='latency').set(latency_budget)
+        
+        # Error rate budget
+        if current_error_rate <= ERROR_RATE_TARGET:
+            error_budget = 100.0
+        else:
+            error_budget = max(0, 100 * (1 - (current_error_rate - ERROR_RATE_TARGET) / ERROR_RATE_TARGET))
+        error_budget_remaining_percent.labels(slo_type='errors').set(error_budget)
+        
+    except Exception as e:
+        print(f"Error updating SLO metrics: {e}")
