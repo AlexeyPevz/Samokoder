@@ -1,0 +1,113 @@
+name: Release
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.1.0)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for changelog
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            # Auto-increment patch version
+            CURRENT=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            VERSION=$(echo $CURRENT | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g' | sed 's/^v//')
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Update version files
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          
+          # Update Python version
+          sed -i "s/^version = .*/version = \"$VERSION\"/" pyproject.toml
+          
+          # Update Frontend version
+          cd frontend
+          npm version $VERSION --no-git-tag-version
+          cd ..
+          
+          # Update API version in main.py
+          sed -i "s/version=\".*\"/version=\"$VERSION\"/" api/main.py
+      
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.tag }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          if [ -z "$PREV_TAG" ]; then
+            RANGE=""
+          else  
+            RANGE="$PREV_TAG..HEAD"
+          fi
+          
+          # Generate changelog
+          echo "# Release $VERSION" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "## Changes" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          
+          # Group by type
+          git log $RANGE --pretty=format:"%s" | grep "^feat:" | sed 's/^/- /' >> RELEASE_NOTES.md || true
+          echo "" >> RELEASE_NOTES.md
+          
+          echo "### Bug Fixes" >> RELEASE_NOTES.md
+          git log $RANGE --pretty=format:"%s" | grep "^fix:" | sed 's/^/- /' >> RELEASE_NOTES.md || true
+          echo "" >> RELEASE_NOTES.md
+          
+          echo "### Other Changes" >> RELEASE_NOTES.md
+          git log $RANGE --pretty=format:"%s" | grep -v "^feat:\|^fix:" | sed 's/^/- /' >> RELEASE_NOTES.md || true
+          
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          title: "Release ${{ steps.version.outputs.tag }}"
+          body: |
+            ## Release ${{ steps.version.outputs.tag }}
+            
+            This PR updates version numbers for the ${{ steps.version.outputs.tag }} release.
+            
+            ### Checklist
+            - [ ] Version numbers updated
+            - [ ] CHANGELOG.md updated
+            - [ ] All tests passing
+            - [ ] Documentation updated
+            
+            ### Release Notes
+            See RELEASE_NOTES.md for details.
+          branch: release/${{ steps.version.outputs.version }}
+          commit-message: "chore: release ${{ steps.version.outputs.tag }}"
+          
+      - name: Create GitHub Release
+        if: github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          body_path: RELEASE_NOTES.md
+          draft: true
+          prerelease: false

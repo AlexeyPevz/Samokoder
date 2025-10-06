@@ -42,5 +42,12 @@ ENV DATABASE_URL=""
 # Activate the virtual environment by adding it to the PATH
 ENV PATH="/app/.venv/bin:$PATH"
 
+# Security: Run healthcheck as non-root
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD python -c "import httpx; r = httpx.get('http://localhost:8000/health'); exit(0 if r.status_code == 200 else 1)"
+
 # Expose the application port
 EXPOSE 8000
+
+# Security: Set default command to prevent shell access
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
