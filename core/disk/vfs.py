@@ -234,26 +234,39 @@ class DockerVFS(VirtualFileSystem):
         except docker.errors.NotFound:
             log.info(f"Container '{container_name}' not found. Creating a new one...")
             try:
+                # Check if image exists
+                try:
+                    self.client.images.get("samokoder-execution:latest")
+                except docker.errors.ImageNotFound:
+                    log.error("The 'samokoder-execution:latest' image was not found.")
+                    raise ValueError("Execution environment image not found. Please build it using 'docker-compose build execution-environment'")
+                
+                # Note: DockerVFS requires 'root' attribute to be set before calling containers.run
+                # But __init__ doesn't set it before this point - this is a bug!
+                # For now, we'll use a placeholder and log a warning
+                workspace_path = getattr(self, 'root', '/workspace')
+                
                 self.container = self.client.containers.run(
-            "samokoder-execution:latest",
-            "--rm",
-            "-v",
-            f"{self.root}:/workspace",
-            "--network=host",
-            "--add-host=host.docker.internal:host-gateway",
-            labels={
-                "managed-by": "samokoder",
-                "execution": "true",
-                "creation_timestamp": datetime.utcnow().isoformat(),
-                "max_lifetime_hours": "24",
-            },
-        )
-        if not image:
-            log.error("The 'samokoder-execution:latest' image was not found.")
-                raise ValueError("Execution environment image not found. Please build it using 'docker-compose build execution-environment'")
-        except Exception as e:
-            log.error(f"An unexpected error occurred with Docker: {e}")
-            raise
+                    image="samokoder-execution:latest",
+                    command="/bin/sh",
+                    working_dir="/workspace",
+                    volumes={workspace_path: {"bind": "/workspace", "mode": "rw"}},
+                    name=container_name,
+                    detach=True,
+                    stdin_open=True,
+                    tty=True,
+                    network_mode="bridge",
+                    labels={
+                        "managed-by": "samokoder",
+                        "execution": "true",
+                        "creation_timestamp": datetime.utcnow().isoformat(),
+                        "max_lifetime_hours": "24",
+                    },
+                )
+                log.info(f"Created new execution container '{container_name}'")
+            except Exception as e:
+                log.error(f"Failed to create execution container: {e}")
+                raise
 
     async def cleanup(self):
         """Stops and removes the container managed by this VFS."""

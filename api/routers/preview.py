@@ -71,8 +71,53 @@ async def start_preview(
     if use_container:
         try:
             client = docker.from_env()
+            
+            # SECURITY: Limit preview containers per user
+            user_containers = client.containers.list(
+                all=True,
+                filters={
+                    "label": [
+                        "managed-by=samokoder",
+                        "preview=true",
+                        f"user_id={user.id}"
+                    ]
+                }
+            )
+            MAX_PREVIEW_CONTAINERS_PER_USER = int(os.getenv("MAX_PREVIEW_CONTAINERS_PER_USER", "5"))
+            if len(user_containers) >= MAX_PREVIEW_CONTAINERS_PER_USER:
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"Maximum number of preview containers ({MAX_PREVIEW_CONTAINERS_PER_USER}) reached. Please stop some preview servers first."
+                )
+            
             container_name = f"samokoder-preview-{project.id}"
             vol_name = f"samokoder_preview_nm_{project.id}"
+            
+            # Check if container already exists
+            try:
+                existing_container = client.containers.get(container_name)
+                # Container exists - stop and remove it first
+                try:
+                    existing_container.stop(timeout=5)
+                except Exception:
+                    pass  # Already stopped
+                existing_container.remove(force=True)
+            except docker.errors.NotFound:
+                pass  # Container doesn't exist, that's fine
+            
+            # Create or get named volume with labels
+            try:
+                volume = client.volumes.get(vol_name)
+            except docker.errors.NotFound:
+                volume = client.volumes.create(
+                    name=vol_name,
+                    labels={
+                        "managed-by": "samokoder",
+                        "project_id": str(project.id),
+                        "creation_timestamp": datetime.utcnow().isoformat(),
+                    }
+                )
+            
             # Compose the command: install deps if needed, then run script
             cmd = f"sh -lc \"[ -d node_modules ] || npm ci; npm run {script_name}\""
             container = client.containers.run(
@@ -90,6 +135,7 @@ async def start_preview(
                     "managed-by": "samokoder",
                     "preview": "true",
                     "project_id": str(project.id),
+                    "user_id": str(user.id),
                     "creation_timestamp": datetime.utcnow().isoformat(),
                     "max_lifetime_hours": "1",
                 },

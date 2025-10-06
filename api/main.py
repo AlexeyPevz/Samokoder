@@ -94,6 +94,28 @@ async def cleanup_orphaned_containers() -> None:
             
             if removed_count > 0:
                 logger.info(f"Cleanup cycle completed: removed {removed_count} containers")
+            
+            # Cleanup orphaned named volumes (preview containers create named volumes)
+            try:
+                volumes = client.volumes.list(filters={"label": "managed-by=samokoder"})
+                volumes_removed = 0
+                for volume in volumes:
+                    # Check if volume is in use
+                    try:
+                        # If volume has no containers using it, remove it
+                        volume.reload()
+                        if not volume.attrs.get('UsageData', {}).get('RefCount', 1):
+                            volume.remove(force=True)
+                            volumes_removed += 1
+                            logger.info(f"Removed orphaned volume: {volume.name}")
+                    except Exception as e:
+                        logger.debug(f"Could not remove volume {volume.name}: {e}")
+                
+                if volumes_removed > 0:
+                    logger.info(f"Removed {volumes_removed} orphaned volumes")
+            except Exception as exc:
+                logger.error(f"Error during volume cleanup: {exc}", exc_info=True)
+                
         except Exception as exc:
             logger.error(f"Error during container cleanup: {exc}", exc_info=True)
 
