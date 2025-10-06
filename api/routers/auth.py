@@ -7,6 +7,7 @@ refresh tokens and GitHub OAuth integration.
 from __future__ import annotations
 
 import logging
+import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 from typing import Annotated
@@ -33,7 +34,10 @@ from samokoder.core.api.models.auth import (
 from samokoder.core.api.models.base import UserResponse
 from samokoder.core.config import get_config
 from samokoder.core.db.models.user import Tier, User
+from samokoder.core.db.models.revoked_tokens import RevokedToken
+from samokoder.core.db.models.login_attempts import LoginAttempt
 from samokoder.core.db.session import get_async_db
+from samokoder.core.security.audit_logger import audit_logger
 
 logger = logging.getLogger(__name__)
 
@@ -44,14 +48,22 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 REFRESH_TOKEN_EXPIRE_DAYS = 7
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_DURATION_MINUTES = 15
 
 
 def _create_token(*, data: dict, secret: str, expires_delta: timedelta, token_type: str) -> str:
-    """Create a signed JWT token."""
+    """Create a signed JWT token with jti for revocation (P1-1)."""
     to_encode = data.copy()
     now = datetime.utcnow()
     expire = now + expires_delta
-    to_encode.update({"exp": expire, "iat": now, "type": token_type})
+    jti = str(uuid.uuid4())  # P1-1: Add jti for token revocation
+    to_encode.update({
+        "exp": expire,
+        "iat": now,
+        "type": token_type,
+        "jti": jti
+    })
     return jwt.encode(to_encode, secret, algorithm="HS256")
 
 
@@ -104,6 +116,16 @@ async def get_current_user(
         payload = jwt.decode(token, config.secret_key, algorithms=["HS256"])
         if payload.get("type") != "access":
             raise credentials_exception
+        
+        # P1-1: Check if token is revoked
+        jti = payload.get("jti")
+        if jti:
+            result = await db.execute(
+                select(RevokedToken).where(RevokedToken.jti == jti)
+            )
+            if result.scalars().first():
+                raise credentials_exception
+        
         email: Optional[str] = payload.get("sub")
         if email is None:
             raise credentials_exception
@@ -160,16 +182,87 @@ async def login(
     except ValidationError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.errors()) from exc
 
+    # P1-3: Check for account lockout due to failed attempts
+    recent_attempts = await db.execute(
+        select(LoginAttempt)
+        .where(
+            LoginAttempt.email == login_payload.email,
+            LoginAttempt.created_at >= datetime.utcnow() - timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+        )
+        .order_by(LoginAttempt.created_at.desc())
+    )
+    attempts = recent_attempts.scalars().all()
+    
+    failed_attempts = [a for a in attempts if not a.success]
+    if len(failed_attempts) >= MAX_LOGIN_ATTEMPTS:
+        logger.warning(f"Account locked for {login_payload.email} due to too many failed attempts")
+        audit_logger.log_account_lockout(login_payload.email, request.client.host if request.client else "unknown", len(failed_attempts))
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Account temporarily locked due to too many failed login attempts. Try again in {LOCKOUT_DURATION_MINUTES} minutes."
+        )
+
     user = await _get_user_by_email(db, email=login_payload.email)
+    client_ip = request.client.host if request.client else "unknown"
+    
     if not user or not verify_password(login_payload.password, user.hashed_password):
+        # P1-3: Record failed attempt
+        attempt = LoginAttempt(
+            email=login_payload.email,
+            ip_address=client_ip,
+            success=False,
+            user_agent=request.headers.get("User-Agent", "")
+        )
+        db.add(attempt)
+        await db.commit()
+        
+        audit_logger.log_authentication(login_payload.email, client_ip, False)
+        logger.warning(f"Failed login attempt for {login_payload.email} from {client_ip}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid credentials")
 
+    # P1-3: Record successful attempt
+    attempt = LoginAttempt(
+        email=login_payload.email,
+        ip_address=client_ip,
+        success=True,
+        user_id=user.id,
+        user_agent=request.headers.get("User-Agent", "")
+    )
+    db.add(attempt)
+    await db.commit()
+    
+    audit_logger.log_authentication(user.email, client_ip, True, user_id=user.id)
+
     config = get_config()
-    return _create_auth_response(user, config)
+    auth_response = _create_auth_response(user, config)
+    
+    # P0-2: Set httpOnly cookies for tokens
+    response.set_cookie(
+        key="access_token",
+        value=auth_response.access_token,
+        httponly=True,
+        secure=config.environment == "production",
+        samesite="strict",
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=auth_response.refresh_token,
+        httponly=True,
+        secure=config.environment == "production",
+        samesite="strict",
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+    )
+    
+    return auth_response
 
 
 @router.post("/auth/refresh", response_model=TokenRefreshResponse)
-async def refresh_token(payload: TokenRefreshRequest):
+@limiter.limit(get_rate_limit("auth"))  # P0-1: Add rate limiting
+async def refresh_token(
+    request: Request,  # P0-1: Required for rate limiting
+    payload: TokenRefreshRequest
+):
     """Issue a new access token based on refresh token."""
     config = get_config()
     try:
@@ -193,6 +286,40 @@ async def refresh_token(payload: TokenRefreshRequest):
         token_type="bearer",
         expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
+
+
+@router.post("/auth/logout")
+async def logout(
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """Revoke the current access token (P1-1)."""
+    try:
+        config = get_config()
+        payload = jwt.decode(token, config.secret_key, algorithms=["HS256"])
+        jti = payload.get("jti")
+        exp = payload.get("exp")
+        user_email = payload.get("sub")
+        
+        if jti and exp:
+            # Store revoked token
+            revoked = RevokedToken(
+                jti=jti,
+                expires_at=datetime.fromtimestamp(exp),
+                reason="logout"
+            )
+            db.add(revoked)
+            await db.commit()
+            
+            # Audit log
+            user = await _get_user_by_email(db, user_email)
+            if user:
+                audit_logger.log_token_revocation(user.id, jti, "logout")
+            
+    except JWTError:
+        pass
+    
+    return {"message": "Successfully logged out"}
 
 
 @router.get("/auth/me", response_model=UserResponse)

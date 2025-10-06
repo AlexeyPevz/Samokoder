@@ -37,15 +37,8 @@ export default function Register() {
       const response = await register({ email: data.email, password: data.password });
       
       if (response.success && response.data) {
-        // Сохраняем токены с валидацией
-        if (response.data.accessToken && typeof response.data.accessToken === 'string') {
-          localStorage.setItem('accessToken', response.data.accessToken)
-        }
-        if (response.data.refreshToken && typeof response.data.refreshToken === 'string') {
-          localStorage.setItem('refreshToken', response.data.refreshToken)
-        }
-        
-        // Устанавливаем пользователя
+        // P0-2: Tokens are now in httpOnly cookies, no localStorage needed
+        // Just set the user in context
         if (response.data.user) {
           setUser(response.data.user)
         }
