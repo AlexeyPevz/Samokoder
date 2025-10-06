@@ -4,6 +4,7 @@ from samokoder.core.db.session import get_db
 from samokoder.core.db.models.user import User
 from samokoder.core.plugins.base import plugin_manager
 from samokoder.api.routers.auth import get_current_user
+from samokoder.core.api.middleware.tier_limits import require_git_push_access
 from typing import Dict, Any, List
 import json
 
@@ -199,7 +200,8 @@ async def create_github_repo(
     plugin_name: str,
     project_id: str,
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _git_check = Depends(require_git_push_access)  # Tier-based git operations access
 ):
     """
     Create a GitHub repository for a project
