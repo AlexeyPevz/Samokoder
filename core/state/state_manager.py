@@ -96,7 +96,7 @@ class StateManager:
             user_id=user_id,
             name=name,
             folder_name=folder_name or Project.get_folder_from_project_name(name),
-            gpt_pilot_state=None,
+            samokoder_state=None,
         )
         branch = Branch(project=project)
         state = ProjectState.create_initial_state(branch)

@@ -10,7 +10,7 @@ export interface ChatSession {
 }
 
 class ChatHistoryService {
-  private storageKey = "gpt_pilot_chat_sessions"
+  private storageKey = "samokoder_chat_sessions"
   
   // Get all chat sessions for a project
   getSessions(projectId: string): ChatSession[] {

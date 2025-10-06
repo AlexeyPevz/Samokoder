@@ -51,7 +51,7 @@ docs/
 # Logs
 *.log
 logs/
-pythagora.log
+samokoder.log
 
 # Temporary files
 *.tmp

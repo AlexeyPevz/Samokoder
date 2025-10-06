@@ -33,7 +33,7 @@ class AnthropicClient(BaseLLMClient):
             base_url=self.config.base_url,
             default_headers={
                 "HTTP-Referer": "https://app.samokoder.com",
-                "X-Title": "GPT Pilot"
+                "X-Title": "самокодер"
             },
             timeout=Timeout(
                 max(self.config.connect_timeout, self.config.read_timeout),

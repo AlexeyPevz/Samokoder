@@ -23,12 +23,6 @@ WARN_SYSTEM_DEPS = ["docker", "kubernetes", "microservices"]
 WARN_FRAMEWORKS = ["next.js", "vue", "vue.js", "svelte", "angular"]
 WARN_FRAMEWORKS_URL = "https://github.com/Samokoder-io/samokoder/wiki/Using-Samokoder-with-frontend-frameworks"
 
-Although the Samokoder database models support multiple projects, this
-
-f"Warning: Samokoder doesn't officially support {', '.join(warn_system_deps)}. "
-
-f"Warning: Samokoder works best with vanilla JavaScript. "
-
 log = get_logger(__name__)
 
 
@@ -121,7 +115,7 @@ class Architect(BaseAgent):
         """
         Select project template(s) to use based on the project description.
 
-        Although the Pythagora database models support multiple projects, this
+        Although the самокодер database models support multiple projects, this
         function will choose at most one project template, as we currently don't
         have templates that could be used together in a single project.
 
@@ -198,7 +192,7 @@ class Architect(BaseAgent):
 
         if warn_system_deps:
             await self.ask_question(
-                f"Warning: Pythagora doesn't officially support {', '.join(warn_system_deps)}. "
+                f"Warning: самокодер doesn't officially support {', '.join(warn_system_deps)}. "
                 f"You can try to use {'it' if len(warn_system_deps) == 1 else 'them'}, but you may run into problems.",
                 buttons={"continue": "Continue"},
                 buttons_only=True,
@@ -207,7 +201,7 @@ class Architect(BaseAgent):
 
         if warn_package_deps:
             await self.ask_question(
-                f"Warning: Pythagora works best with vanilla JavaScript. "
+                f"Warning: самокодер works best with vanilla JavaScript. "
                 f"You can try try to use {', '.join(warn_package_deps)}, but you may run into problems. "
                 f"Visit {WARN_FRAMEWORKS_URL} for more information.",
                 buttons={"continue": "Continue"},

@@ -11,9 +11,7 @@ from samokoder.core.telemetry import telemetry
 # If the project description is less than this, perform an analysis using LLM
 ANALYZE_THRESHOLD = 1500
 # URL to the wiki page with tips on how to write a good project description
-INITIAL_PROJECT_HOWTO_URL = (
-"https://github.com/Samokoder-io/samokoder/wiki/How-to-write-a-good-initial-project-description"\n\n"The better you can describe the project, the better Samokoder will understand what you'd like to build.\n\n"
-)
+INITIAL_PROJECT_HOWTO_URL = "https://github.com/Samokoder-io/samokoder/wiki/How-to-write-a-good-initial-project-description"
 SPEC_STEP_NAME = "Create specification"
 
 log = get_logger(__name__)
@@ -122,7 +120,7 @@ class SpecWriter(BaseAgent):
     async def analyze_spec(self, spec: str) -> str:
         msg = (
             "Your project description seems a bit short. "
-            "The better you can describe the project, the better Pythagora will understand what you'd like to build.\n\n"
+            "The better you can describe the project, the better самокодер will understand what you'd like to build.\n\n"
             f"Here are some tips on how to better describe the project: {INITIAL_PROJECT_HOWTO_URL}\n\n"
             "Let's start by refining your project idea:"
         )

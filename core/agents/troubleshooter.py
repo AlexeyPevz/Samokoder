@@ -16,12 +16,6 @@ from samokoder.core.log import get_logger
 from samokoder.core.telemetry import telemetry
 from samokoder.core.ui.base import ProjectStage, samokoder_source
 
-await self.ui.send_message("Test the app by following these steps:", source=samokoder_source)
-
-"No testing required for this task, moving on to the next one.", source=samokoder_source
-
-If "is_loop" is True, Samokoder is stuck in a loop and needs to consider alternative solutions.
-
 log = get_logger(__name__)
 
 LOOP_THRESHOLD = 3  # number of iterations in task to be considered a loop
@@ -81,7 +75,7 @@ class Troubleshooter(ChatWithBreakdownMixin, IterationPromptMixin, RelevantFiles
             return AgentResponse.done(self)
         else:
             await self.ui.send_project_stage({"stage": ProjectStage.TEST_APP})
-            await self.ui.send_message("Test the app by following these steps:", source=pythagora_source)
+            await self.ui.send_message("Test the app by following these steps:", source=samokoder_source)
 
         await self.send_message("")
         await self.ui.stop_app()
@@ -206,7 +200,7 @@ class Troubleshooter(ChatWithBreakdownMixin, IterationPromptMixin, RelevantFiles
 
         if len(user_instructions.steps) == 0:
             await self.ui.send_message(
-                "No testing required for this task, moving on to the next one.", source=pythagora_source
+                "No testing required for this task, moving on to the next one.", source=samokoder_source
             )
             log.debug(f"Nothing to do for user testing for task {self.current_state.current_task['description']}")
             return None
@@ -241,7 +235,7 @@ class Troubleshooter(ChatWithBreakdownMixin, IterationPromptMixin, RelevantFiles
         If "should_iterate" is False, the user has confirmed that the app works as expected and there's
         nothing for the troubleshooter or problem solver to do.
 
-        If "is_loop" is True, Pythagora is stuck in a loop and needs to consider alternative solutions.
+        If "is_loop" is True, самокодер is stuck in a loop and needs to consider alternative solutions.
 
         The last element in the tuple is the user feedback, which may be empty if the user provided no
         feedback (eg. if they just clicked on "Continue" or "Start Pair Programming").

@@ -66,5 +66,6 @@ class RunLogUI(UIBase):
     async def send_feature_finished(self, app_id: str | None = None, app_name: str | None = None, folder_name: str | None = None):
         await self._append("Feature finished")
 
-    async def ask_question(...):
+    async def ask_question(self, question: str, **kwargs):
+        from samokoder.core.ui.base import UserInput
         return UserInput(cancelled=True)
