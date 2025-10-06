@@ -152,7 +152,12 @@ class LocalDiskVFS(VirtualFileSystem):
         self.ignore_matcher = ignore_matcher
 
     def get_full_path(self, path: str) -> str:
-        return os.path.abspath(os.path.normpath(os.path.join(self.root, path)))
+        full_path = os.path.abspath(os.path.normpath(os.path.join(self.root, path)))
+        root_abs = os.path.abspath(self.root)
+        # Защита от path traversal: путь обязан оставаться внутри корня проекта
+        if not (full_path == root_abs or full_path.startswith(root_abs + os.sep)):
+            raise ValueError("Path traversal outside project root is not allowed")
+        return full_path
 
     def save(self, path: str, content: str):
         full_path = self.get_full_path(path)

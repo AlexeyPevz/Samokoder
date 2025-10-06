@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from cryptography.fernet import Fernet
+from samokoder.core.security.crypto import CryptoService
 from typing import Dict, Any, Optional
 
 from samokoder.core.db.session import get_async_db
@@ -33,15 +33,21 @@ class TokenUsageResponse(BaseModel):
     total_tokens: int
     requests: int
 
-def get_fernet():
+def get_crypto():
     config = get_config()
     if not config.app_secret_key:
         raise HTTPException(status_code=500, detail="Application secret key is not configured")
-    return Fernet(config.app_secret_key.encode())
+    # Используем CryptoService, который сам корректно производит ключ для Fernet
+    return CryptoService(config.app_secret_key)
 
 @router.post("/keys", response_model=ApiKeyResponse)
-async def add_api_key(key_data: ApiKeyCreate, db: AsyncSession = Depends(get_async_db), current_user: User = Depends(get_current_user), f: Fernet = Depends(get_fernet)):
-    encrypted_key = f.encrypt(key_data.api_key.encode()).decode()
+async def add_api_key(
+    key_data: ApiKeyCreate,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user),
+    crypto: CryptoService = Depends(get_crypto),
+):
+    encrypted_key = crypto.encrypt(key_data.api_key)
     display_key = f"...-{key_data.api_key[-4:]}"
     
     # The api_keys field is a JSON field. We need to handle it as a dictionary.
