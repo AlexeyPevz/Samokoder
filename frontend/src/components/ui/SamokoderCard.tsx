@@ -12,13 +12,13 @@ const SamokoderCard: React.FC<SamokoderCardProps> = ({
   children,
   ...props
 }) => {
-  const baseClasses = 'rounded-lg bg-card text-card-foreground shadow-sm';
+  const baseClasses = 'rounded-xl bg-white p-6 transition-all duration-200';
   
   const variantClasses = {
-    default: 'border border-border',
-    bordered: 'border-2 border-samokoder-blue/20',
-    gradient: 'bg-gradient-to-br from-samokoder-blue/5 to-samokoder-green/5 border border-samokoder-blue/10',
-    elevated: 'shadow-lg border border-border/50'
+    default: 'border border-[#E2E8F0] shadow-[0_4px_6px_rgba(0,0,0,0.07)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.1)] hover:transform hover:translate-y-[-2px]',
+    bordered: 'border-2 border-[#0A2E50]/20 shadow-[0_4px_6px_rgba(0,0,0,0.07)]',
+    gradient: 'bg-gradient-to-br from-[#0A2E50]/5 to-[#00A868]/5 border border-[#0A2E50]/10 shadow-[0_4px_6px_rgba(0,0,0,0.07)]',
+    elevated: 'shadow-[0_8px_16px_rgba(0,0,0,0.1)] border border-[#E2E8F0]/50'
   };
 
   return (
@@ -50,7 +50,7 @@ const SamokoderCardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = (
   ...props
 }) => (
   <h3
-    className={cn('text-2xl font-semibold leading-none tracking-tight text-samokoder-blue', className)}
+    className={cn('text-2xl font-bold leading-none tracking-tight text-[#0A2E50] mb-2', className)}
     {...props}
   />
 );
@@ -60,7 +60,7 @@ const SamokoderCardDescription: React.FC<React.HTMLAttributes<HTMLParagraphEleme
   ...props
 }) => (
   <p
-    className={cn('text-sm text-muted-foreground', className)}
+    className={cn('text-base text-[#64748B]', className)}
     {...props}
   />
 );

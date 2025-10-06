@@ -14,16 +14,16 @@ const SamokoderBadge: React.FC<SamokoderBadgeProps> = ({
   children,
   ...props
 }) => {
-  const baseClasses = 'inline-flex items-center rounded-full font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-samokoder-blue focus:ring-offset-2';
+  const baseClasses = 'inline-flex items-center rounded-full font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#0A2E50] focus:ring-offset-2';
   
   const variantClasses = {
-    default: 'bg-samokoder-blue text-white hover:bg-samokoder-blue-dark',
-    secondary: 'bg-samokoder-green text-white hover:bg-samokoder-green-dark',
-    accent: 'bg-accent text-accent-foreground hover:bg-accent/80',
-    outline: 'border border-samokoder-blue text-samokoder-blue hover:bg-samokoder-blue hover:text-white',
-    success: 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900 dark:text-green-200',
-    warning: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-200',
-    error: 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900 dark:text-red-200'
+    default: 'bg-[#0A2E50] text-white hover:bg-[#083247]',
+    secondary: 'bg-[#00A868] text-white hover:bg-[#00946B]',
+    accent: 'bg-[#00A868] text-white hover:bg-[#00946B]',
+    outline: 'border border-[#0A2E50] text-[#0A2E50] hover:bg-[#0A2E50] hover:text-white',
+    success: 'bg-[#10B981]/10 text-[#10B981] hover:bg-[#10B981]/20',
+    warning: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
+    error: 'bg-[#EF4444]/10 text-[#EF4444] hover:bg-[#EF4444]/20'
   };
 
   const sizeClasses = {
