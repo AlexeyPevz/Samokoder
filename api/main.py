@@ -40,36 +40,64 @@ logger = get_logger(__name__)
 
 async def cleanup_orphaned_containers() -> None:
     """Periodically clean up Docker containers left after sessions."""
-    await asyncio.sleep(60)
+    await asyncio.sleep(60)  # Initial delay
     try:
         client = docker.from_env()
     except Exception as exc:
         logger.warning(f"Docker not available for cleanup, skipping: {exc}")
         return
+    
     while True:
         try:
             containers = client.containers.list(
                 all=True, filters={"label": "managed-by=samokoder"}
             )
             now = datetime.utcnow()
+            removed_count = 0
+            
             for container in containers:
                 created_str = container.labels.get("creation_timestamp")
                 if not created_str:
-                    continue
+                    # Fallback: use container created time from Docker API
+                    try:
+                        created_time = datetime.fromisoformat(container.attrs['Created'][:19])
+                    except (KeyError, ValueError):
+                        logger.warning(f"Container {container.id[:12]} has no creation timestamp, skipping")
+                        continue
+                else:
+                    try:
+                        created_time = datetime.fromisoformat(created_str)
+                    except ValueError:
+                        logger.warning(f"Invalid timestamp format for container {container.id[:12]}, skipping")
+                        continue
 
+                # Check lifetime based on container type
+                max_lifetime_str = container.labels.get("max_lifetime_hours", "24")
                 try:
-                    created_time = datetime.fromisoformat(created_str)
+                    max_lifetime_hours = int(max_lifetime_str)
                 except ValueError:
-                    continue
-
-                if now - created_time > timedelta(hours=24):
-                    logger.info(f"Removing orphaned container: {container.id}")
-                    container.stop()
-                    container.remove()
+                    max_lifetime_hours = 24
+                
+                age_hours = (now - created_time).total_seconds() / 3600
+                if age_hours > max_lifetime_hours:
+                    container_type = container.labels.get("preview", "false") == "true" and "preview" or "execution"
+                    logger.info(
+                        f"Removing orphaned {container_type} container {container.id[:12]} "
+                        f"(age: {age_hours:.1f}h, max: {max_lifetime_hours}h)"
+                    )
+                    try:
+                        container.stop(timeout=5)
+                        container.remove(v=True, force=True)
+                        removed_count += 1
+                    except Exception as e:
+                        logger.error(f"Failed to remove container {container.id[:12]}: {e}")
+            
+            if removed_count > 0:
+                logger.info(f"Cleanup cycle completed: removed {removed_count} containers")
         except Exception as exc:
             logger.error(f"Error during container cleanup: {exc}", exc_info=True)
 
-        await asyncio.sleep(3600)
+        await asyncio.sleep(3600)  # Run every hour
 
 
 @asynccontextmanager
@@ -86,9 +114,9 @@ async def lifespan(app: FastAPI):
         logger.info("Database engine initialized")
 
         cleanup_task = None
-        if os.getenv("ENABLE_CONTAINER_CLEANUP", "0") == "1":
+        if os.getenv("ENABLE_CONTAINER_CLEANUP", "1") == "1":  # Enabled by default
             cleanup_task = asyncio.create_task(cleanup_orphaned_containers())
-            logger.info("Container cleanup task started")
+            logger.info("Container cleanup task started (runs every hour)")
     except Exception as exc:
         logger.error(f"Error during startup: {exc}", exc_info=True)
         raise

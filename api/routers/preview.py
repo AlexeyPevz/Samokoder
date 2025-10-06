@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from uuid import UUID
+from datetime import datetime
 import asyncio
 import json
 import os
@@ -85,7 +86,13 @@ async def start_preview(
                 },
                 name=container_name,
                 detach=True,
-                labels={"managed-by": "samokoder", "preview": "true", "project_id": str(project.id)},
+                labels={
+                    "managed-by": "samokoder",
+                    "preview": "true",
+                    "project_id": str(project.id),
+                    "creation_timestamp": datetime.utcnow().isoformat(),
+                    "max_lifetime_hours": "1",
+                },
                 mem_limit="1g",
                 nano_cpus=1_000_000_000,  # ~1 CPU
                 ports={f"{port}/tcp": port},

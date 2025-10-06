@@ -241,7 +241,12 @@ class DockerVFS(VirtualFileSystem):
             f"{self.root}:/workspace",
             "--network=host",
             "--add-host=host.docker.internal:host-gateway",
-            labels={"managed-by": "samokoder"},
+            labels={
+                "managed-by": "samokoder",
+                "execution": "true",
+                "creation_timestamp": datetime.utcnow().isoformat(),
+                "max_lifetime_hours": "24",
+            },
         )
         if not image:
             log.error("The 'samokoder-execution:latest' image was not found.")
