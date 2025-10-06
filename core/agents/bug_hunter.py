@@ -191,7 +191,7 @@ class BugHunter(ChatWithBreakdownMixin, BaseAgent):
                 self.next_state.flag_iterations_as_modified()
                 return AgentResponse.done(self)
 
-            # TODO select only the logs that are new (with PYTHAGORA_DEBUGGING_LOG)
+            # TODO select only the logs that are new (with SAMOKODER_DEBUGGING_LOG)
             self.next_state.current_iteration["bug_hunting_cycles"][-1]["backend_logs"] = None
             self.next_state.current_iteration["bug_hunting_cycles"][-1]["frontend_logs"] = None
             self.next_state.current_iteration["bug_hunting_cycles"][-1]["user_feedback"] = user_feedback.text

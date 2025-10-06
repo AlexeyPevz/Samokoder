@@ -38,7 +38,7 @@ async def execute_project_run(run_id: UUID, db: AsyncSession) -> None:
         ui = RunLogUI(db, run)
 
         sm = StateManager(session_manager, ui)
-        if project.gpt_pilot_state:
+        if project.samokoder_state:
             await sm.load_project(project_id=project.id)
         else:
             await sm.create_project(project.name, user_id=user.id)

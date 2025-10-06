@@ -50,7 +50,7 @@ class Project(Base):
             context.get_current_parameters()["name"]
         )
     )
-    gpt_pilot_state: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    samokoder_state: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # Relationships с оптимизацией
     user: Mapped["User"] = relationship(back_populates="projects")

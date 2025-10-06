@@ -11,7 +11,7 @@ from samokoder.core.config import get_config
 from samokoder.core.db.models.project import Project
 from samokoder.core.db.models.user import User
 from samokoder.core.db.session import get_async_db
-from samokoder.api.routers.gpt_pilot_integration import run_samokoder_for_project
+from samokoder.api.routers.samokoder_integration import run_samokoder_for_project
 
 router = APIRouter()
 
