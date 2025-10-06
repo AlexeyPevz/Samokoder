@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "samokoder-core"
-version = "0.1.0"
+version = "1.0.0"
 description = "Samokoder Core Backend"
 authors = ["Samokoder Team"]
 license = "FSL-1.1-MIT"
