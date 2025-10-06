@@ -82,6 +82,10 @@ async def lifespan(app: FastAPI):
             await cleanup_task
         except asyncio.CancelledError:
             pass
+        
+        # Dispose database engines to cleanly close all connections
+        from samokoder.core.db.session import dispose_engines
+        await dispose_engines()
     except Exception as exc:
         print(f"Error during shutdown: {exc}")
 

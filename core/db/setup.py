@@ -42,7 +42,8 @@ def run_migrations(config: DBConfig):
 
     alembic_cfg = Config(ini_location)
     alembic_cfg.set_main_option("sqlalchemy.url", url)
-            alembic_cfg.set_main_option("samokoder_runtime", "true")    command.upgrade(alembic_cfg, "head")
+    alembic_cfg.set_main_option("samokoder_runtime", "true")
+    command.upgrade(alembic_cfg, "head")
 
 
 __all__ = ["run_migrations"]

@@ -55,7 +55,8 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    # Prefer environment variable over config file for reproducibility
+    url = os.environ.get("SAMOKODER_DATABASE_URL") or config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -77,7 +78,8 @@ def do_run_migrations(connection):
 
 async def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    db_url = config.get_main_option("sqlalchemy.url")
+    # Prefer environment variable over config file for reproducibility
+    db_url = os.environ.get("SAMOKODER_DATABASE_URL") or config.get_main_option("sqlalchemy.url")
     connectable = create_async_engine(db_url)
 
     async with connectable.connect() as connection:
@@ -89,9 +91,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     asyncio.run(run_migrations_online())
-
-
-if context.is_offline_mode():
-    run_migrations_offline()
-else:
-    run_migrations_online()
