@@ -94,7 +94,7 @@ export function ChatHistory({ projectId, currentSessionId, onSessionSelect, onNe
                     key={session.id}
                     className={`cursor-pointer transition-colors ${
                       session.id === currentSessionId 
-                        ? "border-blue-500 bg-blue-50" 
+                        ? "border-primary bg-primary/5" 
                         : "hover:bg-gray-50"
                     }`}
                     onClick={() => handleSessionSelect(session)}

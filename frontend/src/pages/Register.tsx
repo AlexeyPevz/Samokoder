@@ -103,7 +103,7 @@ export default function Register() {
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
             <div 
-              className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center text-white text-xl font-bold"
+              className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-white text-xl font-bold"
               role="img"
               aria-label="Логотип Самокодер"
             >

@@ -21,7 +21,7 @@ export default function HeroSection({ appDescription, setAppDescription, onCreat
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-6">
+          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-6">
             От идеи до приложения за 10 минут
           </h1>
           
@@ -42,13 +42,13 @@ export default function HeroSection({ appDescription, setAppDescription, onCreat
               placeholder="Опишите ваше приложение... (например: интернет-магазин цветов с корзиной и оплатой)"
               value={appDescription}
               onChange={(e) => setAppDescription(e.target.value)}
-              className="min-h-[120px] text-lg p-6 rounded-2xl border-2 border-blue-200 focus:border-blue-500 bg-white/80 backdrop-blur-sm resize-none"
+              className="min-h-[120px] text-lg p-6 rounded-2xl border-2 border-border focus:border-primary bg-white/80 backdrop-blur-sm resize-none"
             />
             
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-4 right-4 text-blue-500 hover:text-blue-600"
+              className="absolute top-4 right-4 text-primary hover:text-primary/80"
             >
               <Mic className="h-5 w-5" />
             </Button>
@@ -57,7 +57,7 @@ export default function HeroSection({ appDescription, setAppDescription, onCreat
           <Button
             onClick={onCreateApp}
             disabled={!appDescription.trim() || isCreating}
-            className="mt-6 h-14 px-8 text-lg bg-gradient-to-r from-primary to-secondary hover:from-blue-700 hover:to-purple-700 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200"
+            className="mt-6 h-14 px-8 text-lg bg-primary hover:bg-primary/90 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200"
           >
             {isCreating ? (
               <>

@@ -219,7 +219,7 @@ export function TokenUsageStats() {
             {Object.entries(summary.providers).map(([provider, data]) => (
               <div key={provider} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
                     <span className="text-white font-bold text-sm uppercase">
                       {provider.charAt(0)}
                     </span>

@@ -188,7 +188,7 @@ export default function ChatInterface({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white text-sm">
+              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm">
                 ИИ
               </AvatarFallback>
             </Avatar>
@@ -220,7 +220,7 @@ export default function ChatInterface({
           >
             {message.role !== 'user' && (
               <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white text-xs">
+                <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-xs">
                   ИИ
                 </AvatarFallback>
               </Avatar>
@@ -230,7 +230,7 @@ export default function ChatInterface({
               <div
                 className={`rounded-2xl px-4 py-3 ${
                   message.role === 'user'
-                    ? 'bg-blue-600 text-white ml-auto'
+                    ? 'bg-primary text-white ml-auto'
                     : message.role === 'system'
                     ? 'bg-gray-100 text-gray-700 text-center'
                     : 'bg-gray-100 text-gray-900'
@@ -280,7 +280,7 @@ export default function ChatInterface({
         {isTyping && (
           <div className="flex gap-3 justify-start">
             <Avatar className="h-8 w-8 flex-shrink-0">
-              <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white text-xs">
+              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-xs">
                 ИИ
               </AvatarFallback>
             </Avatar>
@@ -305,7 +305,7 @@ export default function ChatInterface({
             <Badge
               key={template.id}
               variant="outline"
-              className="cursor-pointer hover:bg-blue-50 flex items-center gap-1"
+              className="cursor-pointer hover:bg-primary/5 flex items-center gap-1"
               onClick={() => handleTemplateClick(template)}
             >
               {template.icon}
@@ -317,14 +317,14 @@ export default function ChatInterface({
           <div className="w-full text-xs text-muted-foreground mb-2">Команды:</div>
           <Badge
             variant="outline"
-            className="cursor-pointer hover:bg-blue-50 flex items-center gap-1"
+            className="cursor-pointer hover:bg-primary/5 flex items-center gap-1"
             onClick={() => onSendCommand('skip-task')}
           >
             Пропустить задачу
           </Badge>
           <Badge
             variant="outline"
-            className="cursor-pointer hover:bg-blue-50 flex items-center gap-1"
+            className="cursor-pointer hover:bg-primary/5 flex items-center gap-1"
             onClick={() => onSendCommand('im-stuck')}
           >
             Я застрял
@@ -359,7 +359,7 @@ export default function ChatInterface({
           <Button
             type="submit"
             disabled={!input.trim() || isTyping}
-            className="h-11 px-4 bg-blue-600 hover:bg-blue-700"
+            className="h-11 px-4 bg-primary hover:bg-primary/90"
           >
             {isTyping ? (
               <Loader2 className="h-4 w-4 animate-spin" />

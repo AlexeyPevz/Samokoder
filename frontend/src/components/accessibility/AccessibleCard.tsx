@@ -145,7 +145,7 @@ export function AccessibleProjectCard({
               aria-label={`Прогресс создания: ${project.progress}%`}
             >
               <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                className="bg-primary h-2 rounded-full transition-all duration-300"
                 style={{ width: `${project.progress}%` }}
               />
             </div>

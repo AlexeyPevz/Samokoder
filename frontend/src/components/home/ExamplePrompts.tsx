@@ -26,7 +26,7 @@ const examples = [
     title: "Трекер привычек",
     description: "Отслеживание ежедневных привычек и прогресса",
     icon: Target,
-    color: "bg-blue-100 text-blue-700",
+    color: "bg-primary/10 text-primary",
     prompt: "Приложение для отслеживания привычек с ежедневными чек-листами и статистикой прогресса"
   },
   {
@@ -47,7 +47,7 @@ const examples = [
     title: "Фото-галерея",
     description: "Галерея с сортировкой и фильтрами",
     icon: Camera,
-    color: "bg-purple-100 text-purple-700",
+    color: "bg-accent/10 text-accent",
     prompt: "Фото-галерея с загрузкой изображений, альбомами и поиском по тегам"
   },
   {

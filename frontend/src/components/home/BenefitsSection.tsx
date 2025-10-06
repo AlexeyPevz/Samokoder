@@ -8,7 +8,7 @@ const benefits = [
     icon: Clock,
     title: "Быстрое создание",
     description: "От идеи до готового приложения за 10 минут",
-    color: "bg-blue-100 text-blue-700"
+    color: "bg-primary/10 text-primary"
   },
   {
     icon: DollarSign,
@@ -20,7 +20,7 @@ const benefits = [
     icon: Smartphone,
     title: "Mobile-first",
     description: "Все приложения адаптированы под мобильные устройства",
-    color: "bg-purple-100 text-purple-700"
+    color: "bg-accent/10 text-accent"
   },
   {
     icon: Zap,
@@ -118,7 +118,7 @@ export default function BenefitsSection() {
                   <thead>
                     <tr className="border-b">
                       <th className="text-left p-4 font-semibold">Критерий</th>
-                      <th className="text-center p-4 font-semibold text-blue-600">Самокодер</th>
+                      <th className="text-center p-4 font-semibold text-primary">Самокодер</th>
                       <th className="text-center p-4 font-semibold text-muted-foreground">Конкуренты</th>
                     </tr>
                   </thead>
@@ -167,7 +167,7 @@ export default function BenefitsSection() {
                 <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-md">
                   <CardContent className="p-6">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white text-sm font-bold">
+                      <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white text-sm font-bold">
                         {testimonial.avatar}
                       </div>
                       <div>

@@ -80,7 +80,7 @@ export function NotificationBell() {
       case 'warning':
         return <BellOff className="h-4 w-4 text-yellow-500" />
       default:
-        return <Bell className="h-4 w-4 text-blue-500" />
+        return <Bell className="h-4 w-4 text-primary" />
     }
   }
 
@@ -127,7 +127,7 @@ export function NotificationBell() {
               {notifications.map((notification) => (
                 <div 
                   key={notification.id}
-                  className={`p-4 hover:bg-gray-50 ${!notification.read ? 'bg-blue-50' : ''}`}
+                  className={`p-4 hover:bg-gray-50 ${!notification.read ? 'bg-primary/5' : ''}`}
                 >
                   <div className="flex items-start gap-3">
                     {getNotificationIcon(notification.type)}

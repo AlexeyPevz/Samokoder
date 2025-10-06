@@ -156,7 +156,7 @@ export function ProjectCard({ project, onOpen, onDelete }: ProjectCardProps) {
               role="img"
               aria-label={`Превью проекта ${project.name}`}
             >
-              <div className="text-4xl font-bold text-blue-300 opacity-50">
+              <div className="text-4xl font-bold text-primary/30 opacity-50">
                 {project.name.charAt(0)}
               </div>
             </div>
