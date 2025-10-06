@@ -1,0 +1,696 @@
+npm error code ELSPROBLEMS
+npm error missing: @babel/preset-env@^7.24.8, required by samokoder-frontend@1.0.0
+npm error missing: @babel/preset-react@^7.24.7, required by samokoder-frontend@1.0.0
+npm error missing: @babel/preset-typescript@^7.24.7, required by samokoder-frontend@1.0.0
+npm error missing: @monaco-editor/react@^4.6.0, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-accordion@^1.2.12, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-alert-dialog@^1.1.15, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-aspect-ratio@^1.1.7, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-avatar@^1.1.10, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-checkbox@^1.3.3, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-collapsible@^1.1.12, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-context-menu@^2.2.16, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-dialog@^1.1.15, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-dropdown-menu@^2.1.16, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-hover-card@^1.1.15, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-label@^2.1.7, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-menubar@^1.1.16, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-navigation-menu@^1.2.14, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-popover@^1.1.15, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-progress@^1.1.7, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-radio-group@^1.3.8, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-scroll-area@^1.2.10, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-select@^2.2.6, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-separator@^1.1.7, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-slider@^1.3.6, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-slot@^1.2.3, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-switch@^1.2.6, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-tabs@^1.1.13, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-toast@^1.2.15, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-toggle-group@^1.1.11, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-toggle@^1.1.10, required by samokoder-frontend@1.0.0
+npm error missing: @radix-ui/react-tooltip@^1.2.8, required by samokoder-frontend@1.0.0
+npm error missing: @tanstack/react-query@^5.59.1, required by samokoder-frontend@1.0.0
+npm error missing: @testing-library/jest-dom@^6.5.0, required by samokoder-frontend@1.0.0
+npm error missing: @testing-library/react@^14.3.1, required by samokoder-frontend@1.0.0
+npm error missing: @testing-library/user-event@^14.5.2, required by samokoder-frontend@1.0.0
+npm error missing: @types/json-bigint@^1.0.4, required by samokoder-frontend@1.0.0
+npm error missing: @types/node@^20.12.12, required by samokoder-frontend@1.0.0
+npm error missing: @types/react-dom@^18.3.0, required by samokoder-frontend@1.0.0
+npm error missing: @types/react@^18.3.3, required by samokoder-frontend@1.0.0
+npm error missing: @typescript-eslint/eslint-plugin@^7.15.0, required by samokoder-frontend@1.0.0
+npm error missing: @typescript-eslint/parser@^7.15.0, required by samokoder-frontend@1.0.0
+npm error missing: @vitejs/plugin-react@^4.3.1, required by samokoder-frontend@1.0.0
+npm error missing: @xterm/addon-fit@^0.10.0, required by samokoder-frontend@1.0.0
+npm error missing: @xterm/xterm@^5.3.0, required by samokoder-frontend@1.0.0
+npm error missing: autoprefixer@^10.4.19, required by samokoder-frontend@1.0.0
+npm error missing: axios@^1.12.2, required by samokoder-frontend@1.0.0
+npm error missing: babel-jest@^29.7.0, required by samokoder-frontend@1.0.0
+npm error missing: class-variance-authority@^0.7.1, required by samokoder-frontend@1.0.0
+npm error missing: clsx@^2.1.1, required by samokoder-frontend@1.0.0
+npm error missing: cmdk@^1.1.1, required by samokoder-frontend@1.0.0
+npm error missing: date-fns@^4.1.0, required by samokoder-frontend@1.0.0
+npm error missing: embla-carousel-react@^8.6.0, required by samokoder-frontend@1.0.0
+npm error missing: eslint-plugin-react-hooks@^4.6.2, required by samokoder-frontend@1.0.0
+npm error missing: eslint-plugin-react-refresh@^0.4.7, required by samokoder-frontend@1.0.0
+npm error missing: eslint-plugin-react@^7.37.5, required by samokoder-frontend@1.0.0
+npm error missing: eslint@^8.57.0, required by samokoder-frontend@1.0.0
+npm error missing: framer-motion@^12.23.15, required by samokoder-frontend@1.0.0
+npm error missing: i18next-browser-languagedetector@^8.2.0, required by samokoder-frontend@1.0.0
+npm error missing: i18next-http-backend@^3.0.2, required by samokoder-frontend@1.0.0
+npm error missing: i18next@^25.5.2, required by samokoder-frontend@1.0.0
+npm error missing: idb@^8.0.1, required by samokoder-frontend@1.0.0
+npm error missing: input-otp@^1.4.2, required by samokoder-frontend@1.0.0
+npm error missing: jest@^29.7.0, required by samokoder-frontend@1.0.0
+npm error missing: json-bigint@^1.0.0, required by samokoder-frontend@1.0.0
+npm error missing: lucide-react@^0.441.0, required by samokoder-frontend@1.0.0
+npm error missing: next-themes@^0.4.6, required by samokoder-frontend@1.0.0
+npm error missing: postcss@^8.4.41, required by samokoder-frontend@1.0.0
+npm error missing: react-day-picker@^9.10.0, required by samokoder-frontend@1.0.0
+npm error missing: react-dom@^18.3.1, required by samokoder-frontend@1.0.0
+npm error missing: react-error-boundary@^6.0.0, required by samokoder-frontend@1.0.0
+npm error missing: react-hook-form@^7.53.0, required by samokoder-frontend@1.0.0
+npm error missing: react-i18next@^15.7.3, required by samokoder-frontend@1.0.0
+npm error missing: react-resizable-panels@^3.0.6, required by samokoder-frontend@1.0.0
+npm error missing: react-router-dom@^6.26.2, required by samokoder-frontend@1.0.0
+npm error missing: react@^18.3.1, required by samokoder-frontend@1.0.0
+npm error missing: recharts@^3.2.1, required by samokoder-frontend@1.0.0
+npm error missing: socket.io-client@^4.8.1, required by samokoder-frontend@1.0.0
+npm error missing: sonner@^2.0.7, required by samokoder-frontend@1.0.0
+npm error missing: tailwind-merge@^2.6.0, required by samokoder-frontend@1.0.0
+npm error missing: tailwindcss@^3.4.4, required by samokoder-frontend@1.0.0
+npm error missing: typescript@^5.2.2, required by samokoder-frontend@1.0.0
+npm error missing: vaul@^1.1.2, required by samokoder-frontend@1.0.0
+npm error missing: vite@^5.4.1, required by samokoder-frontend@1.0.0
+npm error missing: web-vitals@^5.1.0, required by samokoder-frontend@1.0.0
+npm error missing: zod@^3.23.8, required by samokoder-frontend@1.0.0
+{
+  "version": "1.0.0",
+  "name": "samokoder-frontend",
+  "problems": [
+    "missing: @babel/preset-env@^7.24.8, required by samokoder-frontend@1.0.0",
+    "missing: @babel/preset-react@^7.24.7, required by samokoder-frontend@1.0.0",
+    "missing: @babel/preset-typescript@^7.24.7, required by samokoder-frontend@1.0.0",
+    "missing: @monaco-editor/react@^4.6.0, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-accordion@^1.2.12, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-alert-dialog@^1.1.15, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-aspect-ratio@^1.1.7, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-avatar@^1.1.10, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-checkbox@^1.3.3, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-collapsible@^1.1.12, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-context-menu@^2.2.16, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-dialog@^1.1.15, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-dropdown-menu@^2.1.16, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-hover-card@^1.1.15, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-label@^2.1.7, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-menubar@^1.1.16, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-navigation-menu@^1.2.14, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-popover@^1.1.15, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-progress@^1.1.7, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-radio-group@^1.3.8, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-scroll-area@^1.2.10, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-select@^2.2.6, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-separator@^1.1.7, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-slider@^1.3.6, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-slot@^1.2.3, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-switch@^1.2.6, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-tabs@^1.1.13, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-toast@^1.2.15, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-toggle-group@^1.1.11, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-toggle@^1.1.10, required by samokoder-frontend@1.0.0",
+    "missing: @radix-ui/react-tooltip@^1.2.8, required by samokoder-frontend@1.0.0",
+    "missing: @tanstack/react-query@^5.59.1, required by samokoder-frontend@1.0.0",
+    "missing: @testing-library/jest-dom@^6.5.0, required by samokoder-frontend@1.0.0",
+    "missing: @testing-library/react@^14.3.1, required by samokoder-frontend@1.0.0",
+    "missing: @testing-library/user-event@^14.5.2, required by samokoder-frontend@1.0.0",
+    "missing: @types/json-bigint@^1.0.4, required by samokoder-frontend@1.0.0",
+    "missing: @types/node@^20.12.12, required by samokoder-frontend@1.0.0",
+    "missing: @types/react-dom@^18.3.0, required by samokoder-frontend@1.0.0",
+    "missing: @types/react@^18.3.3, required by samokoder-frontend@1.0.0",
+    "missing: @typescript-eslint/eslint-plugin@^7.15.0, required by samokoder-frontend@1.0.0",
+    "missing: @typescript-eslint/parser@^7.15.0, required by samokoder-frontend@1.0.0",
+    "missing: @vitejs/plugin-react@^4.3.1, required by samokoder-frontend@1.0.0",
+    "missing: @xterm/addon-fit@^0.10.0, required by samokoder-frontend@1.0.0",
+    "missing: @xterm/xterm@^5.3.0, required by samokoder-frontend@1.0.0",
+    "missing: autoprefixer@^10.4.19, required by samokoder-frontend@1.0.0",
+    "missing: axios@^1.12.2, required by samokoder-frontend@1.0.0",
+    "missing: babel-jest@^29.7.0, required by samokoder-frontend@1.0.0",
+    "missing: class-variance-authority@^0.7.1, required by samokoder-frontend@1.0.0",
+    "missing: clsx@^2.1.1, required by samokoder-frontend@1.0.0",
+    "missing: cmdk@^1.1.1, required by samokoder-frontend@1.0.0",
+    "missing: date-fns@^4.1.0, required by samokoder-frontend@1.0.0",
+    "missing: embla-carousel-react@^8.6.0, required by samokoder-frontend@1.0.0",
+    "missing: eslint-plugin-react-hooks@^4.6.2, required by samokoder-frontend@1.0.0",
+    "missing: eslint-plugin-react-refresh@^0.4.7, required by samokoder-frontend@1.0.0",
+    "missing: eslint-plugin-react@^7.37.5, required by samokoder-frontend@1.0.0",
+    "missing: eslint@^8.57.0, required by samokoder-frontend@1.0.0",
+    "missing: framer-motion@^12.23.15, required by samokoder-frontend@1.0.0",
+    "missing: i18next-browser-languagedetector@^8.2.0, required by samokoder-frontend@1.0.0",
+    "missing: i18next-http-backend@^3.0.2, required by samokoder-frontend@1.0.0",
+    "missing: i18next@^25.5.2, required by samokoder-frontend@1.0.0",
+    "missing: idb@^8.0.1, required by samokoder-frontend@1.0.0",
+    "missing: input-otp@^1.4.2, required by samokoder-frontend@1.0.0",
+    "missing: jest@^29.7.0, required by samokoder-frontend@1.0.0",
+    "missing: json-bigint@^1.0.0, required by samokoder-frontend@1.0.0",
+    "missing: lucide-react@^0.441.0, required by samokoder-frontend@1.0.0",
+    "missing: next-themes@^0.4.6, required by samokoder-frontend@1.0.0",
+    "missing: postcss@^8.4.41, required by samokoder-frontend@1.0.0",
+    "missing: react-day-picker@^9.10.0, required by samokoder-frontend@1.0.0",
+    "missing: react-dom@^18.3.1, required by samokoder-frontend@1.0.0",
+    "missing: react-error-boundary@^6.0.0, required by samokoder-frontend@1.0.0",
+    "missing: react-hook-form@^7.53.0, required by samokoder-frontend@1.0.0",
+    "missing: react-i18next@^15.7.3, required by samokoder-frontend@1.0.0",
+    "missing: react-resizable-panels@^3.0.6, required by samokoder-frontend@1.0.0",
+    "missing: react-router-dom@^6.26.2, required by samokoder-frontend@1.0.0",
+    "missing: react@^18.3.1, required by samokoder-frontend@1.0.0",
+    "missing: recharts@^3.2.1, required by samokoder-frontend@1.0.0",
+    "missing: socket.io-client@^4.8.1, required by samokoder-frontend@1.0.0",
+    "missing: sonner@^2.0.7, required by samokoder-frontend@1.0.0",
+    "missing: tailwind-merge@^2.6.0, required by samokoder-frontend@1.0.0",
+    "missing: tailwindcss@^3.4.4, required by samokoder-frontend@1.0.0",
+    "missing: typescript@^5.2.2, required by samokoder-frontend@1.0.0",
+    "missing: vaul@^1.1.2, required by samokoder-frontend@1.0.0",
+    "missing: vite@^5.4.1, required by samokoder-frontend@1.0.0",
+    "missing: web-vitals@^5.1.0, required by samokoder-frontend@1.0.0",
+    "missing: zod@^3.23.8, required by samokoder-frontend@1.0.0"
+  ],
+  "dependencies": {
+    "@babel/preset-env": {
+      "required": "^7.24.8",
+      "missing": true,
+      "problems": [
+        "missing: @babel/preset-env@^7.24.8, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@babel/preset-react": {
+      "missing": true,
+      "problems": [
+        "missing: @babel/preset-react@^7.24.7, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@babel/preset-typescript": {
+      "missing": true,
+      "problems": [
+        "missing: @babel/preset-typescript@^7.24.7, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@monaco-editor/react": {
+      "missing": true,
+      "problems": [
+        "missing: @monaco-editor/react@^4.6.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-accordion": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-accordion@^1.2.12, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-alert-dialog": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-alert-dialog@^1.1.15, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-aspect-ratio": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-aspect-ratio@^1.1.7, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-avatar": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-avatar@^1.1.10, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-checkbox": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-checkbox@^1.3.3, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-collapsible": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-collapsible@^1.1.12, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-context-menu": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-context-menu@^2.2.16, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-dialog": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-dialog@^1.1.15, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-dropdown-menu": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-dropdown-menu@^2.1.16, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-hover-card": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-hover-card@^1.1.15, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-label": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-label@^2.1.7, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-menubar": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-menubar@^1.1.16, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-navigation-menu": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-navigation-menu@^1.2.14, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-popover": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-popover@^1.1.15, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-progress": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-progress@^1.1.7, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-radio-group": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-radio-group@^1.3.8, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-scroll-area": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-scroll-area@^1.2.10, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-select": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-select@^2.2.6, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-separator": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-separator@^1.1.7, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-slider": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-slider@^1.3.6, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-slot": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-slot@^1.2.3, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-switch": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-switch@^1.2.6, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-tabs": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-tabs@^1.1.13, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-toast": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-toast@^1.2.15, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-toggle-group": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-toggle-group@^1.1.11, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-toggle": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-toggle@^1.1.10, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@radix-ui/react-tooltip": {
+      "missing": true,
+      "problems": [
+        "missing: @radix-ui/react-tooltip@^1.2.8, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@tanstack/react-query": {
+      "missing": true,
+      "problems": [
+        "missing: @tanstack/react-query@^5.59.1, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@testing-library/jest-dom": {
+      "missing": true,
+      "problems": [
+        "missing: @testing-library/jest-dom@^6.5.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@testing-library/react": {
+      "missing": true,
+      "problems": [
+        "missing: @testing-library/react@^14.3.1, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@testing-library/user-event": {
+      "missing": true,
+      "problems": [
+        "missing: @testing-library/user-event@^14.5.2, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@types/json-bigint": {
+      "missing": true,
+      "problems": [
+        "missing: @types/json-bigint@^1.0.4, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@types/node": {
+      "missing": true,
+      "problems": [
+        "missing: @types/node@^20.12.12, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@types/react-dom": {
+      "missing": true,
+      "problems": [
+        "missing: @types/react-dom@^18.3.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@types/react": {
+      "missing": true,
+      "problems": [
+        "missing: @types/react@^18.3.3, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@typescript-eslint/eslint-plugin": {
+      "missing": true,
+      "problems": [
+        "missing: @typescript-eslint/eslint-plugin@^7.15.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@typescript-eslint/parser": {
+      "missing": true,
+      "problems": [
+        "missing: @typescript-eslint/parser@^7.15.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@vitejs/plugin-react": {
+      "missing": true,
+      "problems": [
+        "missing: @vitejs/plugin-react@^4.3.1, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@xterm/addon-fit": {
+      "missing": true,
+      "problems": [
+        "missing: @xterm/addon-fit@^0.10.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "@xterm/xterm": {
+      "missing": true,
+      "problems": [
+        "missing: @xterm/xterm@^5.3.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "autoprefixer": {
+      "missing": true,
+      "problems": [
+        "missing: autoprefixer@^10.4.19, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "axios": {
+      "missing": true,
+      "problems": [
+        "missing: axios@^1.12.2, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "babel-jest": {
+      "missing": true,
+      "problems": [
+        "missing: babel-jest@^29.7.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "class-variance-authority": {
+      "missing": true,
+      "problems": [
+        "missing: class-variance-authority@^0.7.1, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "clsx": {
+      "missing": true,
+      "problems": [
+        "missing: clsx@^2.1.1, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "cmdk": {
+      "missing": true,
+      "problems": [
+        "missing: cmdk@^1.1.1, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "date-fns": {
+      "missing": true,
+      "problems": [
+        "missing: date-fns@^4.1.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "embla-carousel-react": {
+      "missing": true,
+      "problems": [
+        "missing: embla-carousel-react@^8.6.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "eslint-plugin-react-hooks": {
+      "missing": true,
+      "problems": [
+        "missing: eslint-plugin-react-hooks@^4.6.2, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "eslint-plugin-react-refresh": {
+      "missing": true,
+      "problems": [
+        "missing: eslint-plugin-react-refresh@^0.4.7, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "eslint-plugin-react": {
+      "missing": true,
+      "problems": [
+        "missing: eslint-plugin-react@^7.37.5, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "eslint": {
+      "missing": true,
+      "problems": [
+        "missing: eslint@^8.57.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "framer-motion": {
+      "missing": true,
+      "problems": [
+        "missing: framer-motion@^12.23.15, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "i18next-browser-languagedetector": {
+      "missing": true,
+      "problems": [
+        "missing: i18next-browser-languagedetector@^8.2.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "i18next-http-backend": {
+      "missing": true,
+      "problems": [
+        "missing: i18next-http-backend@^3.0.2, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "i18next": {
+      "missing": true,
+      "problems": [
+        "missing: i18next@^25.5.2, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "idb": {
+      "missing": true,
+      "problems": [
+        "missing: idb@^8.0.1, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "input-otp": {
+      "missing": true,
+      "problems": [
+        "missing: input-otp@^1.4.2, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "jest": {
+      "missing": true,
+      "problems": [
+        "missing: jest@^29.7.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "json-bigint": {
+      "missing": true,
+      "problems": [
+        "missing: json-bigint@^1.0.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "lucide-react": {
+      "missing": true,
+      "problems": [
+        "missing: lucide-react@^0.441.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "next-themes": {
+      "missing": true,
+      "problems": [
+        "missing: next-themes@^0.4.6, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "postcss": {
+      "missing": true,
+      "problems": [
+        "missing: postcss@^8.4.41, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "react-day-picker": {
+      "missing": true,
+      "problems": [
+        "missing: react-day-picker@^9.10.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "react-dom": {
+      "missing": true,
+      "problems": [
+        "missing: react-dom@^18.3.1, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "react-error-boundary": {
+      "missing": true,
+      "problems": [
+        "missing: react-error-boundary@^6.0.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "react-hook-form": {
+      "missing": true,
+      "problems": [
+        "missing: react-hook-form@^7.53.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "react-i18next": {
+      "missing": true,
+      "problems": [
+        "missing: react-i18next@^15.7.3, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "react-resizable-panels": {
+      "missing": true,
+      "problems": [
+        "missing: react-resizable-panels@^3.0.6, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "react-router-dom": {
+      "missing": true,
+      "problems": [
+        "missing: react-router-dom@^6.26.2, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "react": {
+      "missing": true,
+      "problems": [
+        "missing: react@^18.3.1, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "recharts": {
+      "missing": true,
+      "problems": [
+        "missing: recharts@^3.2.1, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "socket.io-client": {
+      "missing": true,
+      "problems": [
+        "missing: socket.io-client@^4.8.1, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "sonner": {
+      "missing": true,
+      "problems": [
+        "missing: sonner@^2.0.7, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "tailwind-merge": {
+      "missing": true,
+      "problems": [
+        "missing: tailwind-merge@^2.6.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "tailwindcss": {
+      "missing": true,
+      "problems": [
+        "missing: tailwindcss@^3.4.4, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "typescript": {
+      "missing": true,
+      "problems": [
+        "missing: typescript@^5.2.2, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "vaul": {
+      "missing": true,
+      "problems": [
+        "missing: vaul@^1.1.2, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "vite": {
+      "missing": true,
+      "problems": [
+        "missing: vite@^5.4.1, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "web-vitals": {
+      "missing": true,
+      "problems": [
+        "missing: web-vitals@^5.1.0, required by samokoder-frontend@1.0.0"
+      ]
+    },
+    "zod": {
+      "missing": true,
+      "problems": [
+        "missing: zod@^3.23.8, required by samokoder-frontend@1.0.0"
+      ]
+    }
+  },
+  "error": {
+    "code": "ELSPROBLEMS",
+    "summary": "missing: @babel/preset-env@^7.24.8, required by samokoder-frontend@1.0.0\nmissing: @babel/preset-react@^7.24.7, required by samokoder-frontend@1.0.0\nmissing: @babel/preset-typescript@^7.24.7, required by samokoder-frontend@1.0.0\nmissing: @monaco-editor/react@^4.6.0, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-accordion@^1.2.12, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-alert-dialog@^1.1.15, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-aspect-ratio@^1.1.7, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-avatar@^1.1.10, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-checkbox@^1.3.3, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-collapsible@^1.1.12, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-context-menu@^2.2.16, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-dialog@^1.1.15, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-dropdown-menu@^2.1.16, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-hover-card@^1.1.15, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-label@^2.1.7, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-menubar@^1.1.16, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-navigation-menu@^1.2.14, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-popover@^1.1.15, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-progress@^1.1.7, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-radio-group@^1.3.8, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-scroll-area@^1.2.10, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-select@^2.2.6, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-separator@^1.1.7, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-slider@^1.3.6, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-slot@^1.2.3, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-switch@^1.2.6, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-tabs@^1.1.13, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-toast@^1.2.15, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-toggle-group@^1.1.11, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-toggle@^1.1.10, required by samokoder-frontend@1.0.0\nmissing: @radix-ui/react-tooltip@^1.2.8, required by samokoder-frontend@1.0.0\nmissing: @tanstack/react-query@^5.59.1, required by samokoder-frontend@1.0.0\nmissing: @testing-library/jest-dom@^6.5.0, required by samokoder-frontend@1.0.0\nmissing: @testing-library/react@^14.3.1, required by samokoder-frontend@1.0.0\nmissing: @testing-library/user-event@^14.5.2, required by samokoder-frontend@1.0.0\nmissing: @types/json-bigint@^1.0.4, required by samokoder-frontend@1.0.0\nmissing: @types/node@^20.12.12, required by samokoder-frontend@1.0.0\nmissing: @types/react-dom@^18.3.0, required by samokoder-frontend@1.0.0\nmissing: @types/react@^18.3.3, required by samokoder-frontend@1.0.0\nmissing: @typescript-eslint/eslint-plugin@^7.15.0, required by samokoder-frontend@1.0.0\nmissing: @typescript-eslint/parser@^7.15.0, required by samokoder-frontend@1.0.0\nmissing: @vitejs/plugin-react@^4.3.1, required by samokoder-frontend@1.0.0\nmissing: @xterm/addon-fit@^0.10.0, required by samokoder-frontend@1.0.0\nmissing: @xterm/xterm@^5.3.0, required by samokoder-frontend@1.0.0\nmissing: autoprefixer@^10.4.19, required by samokoder-frontend@1.0.0\nmissing: axios@^1.12.2, required by samokoder-frontend@1.0.0\nmissing: babel-jest@^29.7.0, required by samokoder-frontend@1.0.0\nmissing: class-variance-authority@^0.7.1, required by samokoder-frontend@1.0.0\nmissing: clsx@^2.1.1, required by samokoder-frontend@1.0.0\nmissing: cmdk@^1.1.1, required by samokoder-frontend@1.0.0\nmissing: date-fns@^4.1.0, required by samokoder-frontend@1.0.0\nmissing: embla-carousel-react@^8.6.0, required by samokoder-frontend@1.0.0\nmissing: eslint-plugin-react-hooks@^4.6.2, required by samokoder-frontend@1.0.0\nmissing: eslint-plugin-react-refresh@^0.4.7, required by samokoder-frontend@1.0.0\nmissing: eslint-plugin-react@^7.37.5, required by samokoder-frontend@1.0.0\nmissing: eslint@^8.57.0, required by samokoder-frontend@1.0.0\nmissing: framer-motion@^12.23.15, required by samokoder-frontend@1.0.0\nmissing: i18next-browser-languagedetector@^8.2.0, required by samokoder-frontend@1.0.0\nmissing: i18next-http-backend@^3.0.2, required by samokoder-frontend@1.0.0\nmissing: i18next@^25.5.2, required by samokoder-frontend@1.0.0\nmissing: idb@^8.0.1, required by samokoder-frontend@1.0.0\nmissing: input-otp@^1.4.2, required by samokoder-frontend@1.0.0\nmissing: jest@^29.7.0, required by samokoder-frontend@1.0.0\nmissing: json-bigint@^1.0.0, required by samokoder-frontend@1.0.0\nmissing: lucide-react@^0.441.0, required by samokoder-frontend@1.0.0\nmissing: next-themes@^0.4.6, required by samokoder-frontend@1.0.0\nmissing: postcss@^8.4.41, required by samokoder-frontend@1.0.0\nmissing: react-day-picker@^9.10.0, required by samokoder-frontend@1.0.0\nmissing: react-dom@^18.3.1, required by samokoder-frontend@1.0.0\nmissing: react-error-boundary@^6.0.0, required by samokoder-frontend@1.0.0\nmissing: react-hook-form@^7.53.0, required by samokoder-frontend@1.0.0\nmissing: react-i18next@^15.7.3, required by samokoder-frontend@1.0.0\nmissing: react-resizable-panels@^3.0.6, required by samokoder-frontend@1.0.0\nmissing: react-router-dom@^6.26.2, required by samokoder-frontend@1.0.0\nmissing: react@^18.3.1, required by samokoder-frontend@1.0.0\nmissing: recharts@^3.2.1, required by samokoder-frontend@1.0.0\nmissing: socket.io-client@^4.8.1, required by samokoder-frontend@1.0.0\nmissing: sonner@^2.0.7, required by samokoder-frontend@1.0.0\nmissing: tailwind-merge@^2.6.0, required by samokoder-frontend@1.0.0\nmissing: tailwindcss@^3.4.4, required by samokoder-frontend@1.0.0\nmissing: typescript@^5.2.2, required by samokoder-frontend@1.0.0\nmissing: vaul@^1.1.2, required by samokoder-frontend@1.0.0\nmissing: vite@^5.4.1, required by samokoder-frontend@1.0.0\nmissing: web-vitals@^5.1.0, required by samokoder-frontend@1.0.0\nmissing: zod@^3.23.8, required by samokoder-frontend@1.0.0",
+    "detail": ""
+  }
+}
+npm error A complete log of this run can be found in: /home/ubuntu/.npm/_logs/2025-10-06T17_12_01_539Z-debug-0.log

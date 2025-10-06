@@ -1,0 +1,5 @@
+=== Code Metrics ===
+Total source files: 480
+Python LOC: 29,805
+TypeScript LOC: 13,389
+Total LOC: ~43,194
