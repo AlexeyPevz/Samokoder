@@ -30,11 +30,11 @@ class TierFeature(str, Enum):
     DEPLOY = "deploy"
     EXPORT = "export"
     GIT_PUSH = "git_push"
-    ADVANCED_MODELS = "advanced_models"  # GPT-4, Claude, etc.
     CUSTOM_TEMPLATES = "custom_templates"
     TEAM_COLLABORATION = "team_collaboration"
     PRIORITY_SUPPORT = "priority_support"
     CUSTOM_BRANDING = "custom_branding"
+    # Note: No model restrictions - we use BYOK (Bring Your Own Key) model
 
 
 # Tier configuration with all limits and features
@@ -54,13 +54,11 @@ TIER_CONFIG: Dict[Tier, Dict] = {
             TierFeature.DEPLOY: False,
             TierFeature.EXPORT: True,
             TierFeature.GIT_PUSH: True,
-            TierFeature.ADVANCED_MODELS: False,
             TierFeature.CUSTOM_TEMPLATES: False,
             TierFeature.TEAM_COLLABORATION: False,
             TierFeature.PRIORITY_SUPPORT: False,
             TierFeature.CUSTOM_BRANDING: False,
         },
-        "allowed_models": ["gpt-3.5-turbo", "gpt-4o-mini"],
         "rate_limits": {
             "requests_per_minute": 30,
             "requests_per_hour": 1000,
@@ -82,13 +80,11 @@ TIER_CONFIG: Dict[Tier, Dict] = {
             TierFeature.DEPLOY: True,
             TierFeature.EXPORT: True,
             TierFeature.GIT_PUSH: True,
-            TierFeature.ADVANCED_MODELS: True,
             TierFeature.CUSTOM_TEMPLATES: True,
             TierFeature.TEAM_COLLABORATION: False,
             TierFeature.PRIORITY_SUPPORT: False,
             TierFeature.CUSTOM_BRANDING: False,
         },
-        "allowed_models": ["gpt-3.5-turbo", "gpt-4o-mini", "gpt-4o", "gpt-4-turbo"],
         "rate_limits": {
             "requests_per_minute": 100,
             "requests_per_hour": 5000,
@@ -110,16 +106,11 @@ TIER_CONFIG: Dict[Tier, Dict] = {
             TierFeature.DEPLOY: True,
             TierFeature.EXPORT: True,
             TierFeature.GIT_PUSH: True,
-            TierFeature.ADVANCED_MODELS: True,
             TierFeature.CUSTOM_TEMPLATES: True,
             TierFeature.TEAM_COLLABORATION: True,
             TierFeature.PRIORITY_SUPPORT: True,
             TierFeature.CUSTOM_BRANDING: False,
         },
-        "allowed_models": [
-            "gpt-3.5-turbo", "gpt-4o-mini", "gpt-4o", "gpt-4-turbo",
-            "claude-3-opus", "claude-3-sonnet", "claude-3-haiku"
-        ],
         "rate_limits": {
             "requests_per_minute": 200,
             "requests_per_hour": 10000,
@@ -141,17 +132,11 @@ TIER_CONFIG: Dict[Tier, Dict] = {
             TierFeature.DEPLOY: True,
             TierFeature.EXPORT: True,
             TierFeature.GIT_PUSH: True,
-            TierFeature.ADVANCED_MODELS: True,
             TierFeature.CUSTOM_TEMPLATES: True,
             TierFeature.TEAM_COLLABORATION: True,
             TierFeature.PRIORITY_SUPPORT: True,
             TierFeature.CUSTOM_BRANDING: True,
         },
-        "allowed_models": [
-            "gpt-3.5-turbo", "gpt-4o-mini", "gpt-4o", "gpt-4-turbo",
-            "claude-3-opus", "claude-3-sonnet", "claude-3-haiku",
-            "claude-3.5-sonnet"
-        ],
         "rate_limits": {
             "requests_per_minute": 500,
             "requests_per_hour": 20000,
@@ -174,18 +159,6 @@ class TierLimitService:
         """Check if user's tier has access to a feature."""
         config = TierLimitService.get_tier_config(user.tier)
         return config["features"].get(feature, False)
-
-    @staticmethod
-    def get_allowed_models(user: User) -> List[str]:
-        """Get list of allowed LLM models for user's tier."""
-        config = TierLimitService.get_tier_config(user.tier)
-        return config["allowed_models"]
-
-    @staticmethod
-    def is_model_allowed(user: User, model: str) -> bool:
-        """Check if a specific model is allowed for user's tier."""
-        allowed = TierLimitService.get_allowed_models(user)
-        return model in allowed
 
     @staticmethod
     async def get_monthly_usage(
@@ -347,20 +320,6 @@ async def require_git_push_access(
     )
 
 
-def require_model_access(model: str):
-    """Dependency factory to check LLM model access."""
-    async def _check(current_user: User = Depends(get_current_user)) -> None:
-        if not TierLimitService.is_model_allowed(current_user, model):
-            allowed = TierLimitService.get_allowed_models(current_user)
-            raise HTTPException(
-                status_code=403,
-                detail=f"Model '{model}' is not available in your plan ({current_user.tier.value}). "
-                       f"Available models: {', '.join(allowed)}. "
-                       f"Upgrade to access more advanced models."
-            )
-    return _check
-
-
 async def get_tier_info(current_user: User = Depends(get_current_user)) -> Dict:
     """Get tier information for current user."""
     config = TierLimitService.get_tier_config(current_user.tier)
@@ -370,5 +329,5 @@ async def get_tier_info(current_user: User = Depends(get_current_user)) -> Dict:
         "price": config["price"],
         "limits": config["limits"],
         "features": {k.value: v for k, v in config["features"].items()},
-        "allowed_models": config["allowed_models"],
+        "rate_limits": config["rate_limits"],
     }

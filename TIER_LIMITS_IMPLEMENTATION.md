@@ -4,6 +4,8 @@
 
 Была полностью реализована комплексная система tier-based ограничений для монетизации проекта. Теперь все тиры имеют чёткие ограничения и пользователи не могут использовать функции, недоступные в их плане.
 
+**Важно:** Проект использует модель BYOK (Bring Your Own Key) - пользователи предоставляют собственные API ключи для LLM провайдеров. Поэтому ограничений на использование конкретных моделей НЕТ - все модели доступны всем пользователям. Монетизация основана на платформенных функциях (деплой, количество проектов, git операции и т.д.).
+
 ## Структура тиров
 
 ### 1. FREE (Бесплатный)
@@ -20,17 +22,13 @@
 - ❌ Деплой
 - ✅ Экспорт
 - ✅ Git push
-- ❌ Продвинутые модели
 - ❌ Кастомные шаблоны
 - ❌ Командная работа
 - ❌ Приоритетная поддержка
 - ❌ Кастомный брендинг
 
 **Доступные модели:**
-- gpt-3.5-turbo
-- gpt-4o-mini
-- Llama 3.x (через Groq)
-- Mixtral
+- ✅ Все модели доступны (BYOK - используйте свои API ключи)
 
 **Rate limits:**
 - 30 запросов/минуту
@@ -53,17 +51,13 @@
 - ✅ Деплой
 - ✅ Экспорт
 - ✅ Git push
-- ✅ Продвинутые модели
 - ✅ Кастомные шаблоны
 - ❌ Командная работа
 - ❌ Приоритетная поддержка
 - ❌ Кастомный брендинг
 
 **Доступные модели:**
-- Все из FREE +
-- gpt-4o
-- gpt-4-turbo
-- gpt-4
+- ✅ Все модели доступны (BYOK - используйте свои API ключи)
 
 **Rate limits:**
 - 100 запросов/минуту
@@ -86,18 +80,13 @@
 - ✅ Деплой
 - ✅ Экспорт
 - ✅ Git push
-- ✅ Продвинутые модели
 - ✅ Кастомные шаблоны
 - ✅ Командная работа
 - ✅ Приоритетная поддержка
 - ❌ Кастомный брендинг
 
 **Доступные модели:**
-- Все из STARTER +
-- Claude 3 Opus
-- Claude 3 Sonnet
-- Claude 3 Haiku
-- Google Gemini Pro 1.5
+- ✅ Все модели доступны (BYOK - используйте свои API ключи)
 
 **Rate limits:**
 - 200 запросов/минуту
@@ -119,8 +108,7 @@
 - ✅ Все функции включены
 
 **Доступные модели:**
-- Все из PRO +
-- Claude 3.5 Sonnet (новая)
+- ✅ Все модели доступны (BYOK - используйте свои API ключи)
 
 **Rate limits:**
 - 500 запросов/минуту
@@ -151,13 +139,35 @@ async def create_project(
     ...
 ```
 
-### 3. `api/routers/models.py` (обновлен)
-Добавлена фильтрация моделей по тирам:
-- Каждая модель имеет поле `tier` с минимальным требуемым тиром
-- API `/v1/models` возвращает модели с полем `available: true/false`
-- Для недоступных моделей указывается `required_tier`
+### 3. `api/routers/models.py` (без изменений)
+Модели остаются доступными для всех пользователей (BYOK модель).
+- API `/v1/models` возвращает все доступные модели
+- Не требует авторизации
+- Пользователи используют свои API ключи для доступа к моделям
 
-### 4. `api/routers/user.py` (обновлен)
+### 4. `api/routers/preview.py` (обновлен)
+Добавлена проверка доступа к деплою/preview:
+```python
+@router.post("/projects/{project_id}/preview/start")
+async def start_preview(
+    ...,
+    _deploy_check = Depends(require_deploy_access)  # Проверка доступа
+):
+    ...
+```
+
+### 5. `api/routers/plugins.py` (обновлен)
+Добавлена проверка доступа к git операциям:
+```python
+@router.post("/plugins/{plugin_name}/github/create-repo")
+async def create_github_repo(
+    ...,
+    _git_check = Depends(require_git_push_access)  # Проверка доступа
+):
+    ...
+```
+
+### 6. `api/routers/user.py` (обновлен)
 Добавлен эндпоинт для получения информации о тире:
 ```python
 @router.get("/user/tier")
@@ -166,7 +176,7 @@ async def get_user_tier_info(tier_info: Dict = Depends(get_tier_info)):
     return tier_info
 ```
 
-### 5. `tests/api/test_tier_limits.py` (создан)
+### 7. `tests/api/test_tier_limits.py` (создан)
 Полный набор тестов для проверки:
 - Корректности конфигурации тиров
 - Проверки доступа к функциям
@@ -201,27 +211,24 @@ Authorization: Bearer <token>
     "deploy": true,
     "export": true,
     "git_push": true,
-    "advanced_models": true,
     "custom_templates": true,
     "team_collaboration": false,
     "priority_support": false,
     "custom_branding": false
   },
-  "allowed_models": [
-    "gpt-3.5-turbo",
-    "gpt-4o-mini",
-    "gpt-4o",
-    "gpt-4-turbo",
-    "gpt-4"
-  ]
+  "rate_limits": {
+    "requests_per_minute": 100,
+    "requests_per_hour": 5000,
+    "requests_per_day": 50000
+  }
 }
 ```
 
 ### Получить доступные модели
 ```http
 GET /v1/models
-Authorization: Bearer <token>
 ```
+(Не требует авторизации - BYOK модель)
 
 **Ответ:**
 ```json
@@ -231,16 +238,12 @@ Authorization: Bearer <token>
       {
         "id": "gpt-4o",
         "name": "GPT-4o",
-        "context": 128000,
-        "tier": "starter",
-        "available": true
+        "context": 128000
       },
       {
         "id": "gpt-4o-mini",
         "name": "GPT-4o Mini",
-        "context": 128000,
-        "tier": "free",
-        "available": true
+        "context": 128000
       }
     ],
     "default": "gpt-4o-mini"
@@ -250,10 +253,7 @@ Authorization: Bearer <token>
       {
         "id": "claude-3-opus-20240229",
         "name": "Claude 3 Opus",
-        "context": 200000,
-        "tier": "pro",
-        "available": false,
-        "required_tier": "pro"
+        "context": 200000
       }
     ],
     "default": "claude-3-5-sonnet-20241022"
@@ -305,8 +305,8 @@ Content-Type: application/json
 
 ### 403 Forbidden
 Возвращается когда функция недоступна в текущем тире:
-- Попытка деплоя на FREE тире
-- Попытка использовать модель Claude на FREE/STARTER тире
+- Попытка деплоя/preview на FREE тире
+- Попытка создать GitHub репозиторий при превышении лимита git операций
 - Попытка использовать командные функции на FREE/STARTER тире
 
 ---
@@ -328,20 +328,6 @@ async def deploy_project(
     ...
 ```
 
-### Проверка доступа к модели
-```python
-from samokoder.core.api.middleware.tier_limits import require_model_access
-
-@router.post("/generate")
-async def generate_code(
-    model: str,
-    current_user: User = Depends(get_current_user),
-    _model_check = Depends(require_model_access(model))  # Проверка доступа к модели
-):
-    # Код генерации
-    ...
-```
-
 ### Получение информации о тире в коде
 ```python
 from samokoder.core.api.middleware.tier_limits import TierLimitService
@@ -351,13 +337,9 @@ if TierLimitService.has_feature(user, TierFeature.DEPLOY):
     # Пользователь может деплоить
     ...
 
-# Получить доступные модели
-allowed_models = TierLimitService.get_allowed_models(user)
-
-# Проверить конкретную модель
-if TierLimitService.is_model_allowed(user, "gpt-4o"):
-    # Можно использовать gpt-4o
-    ...
+# Получить информацию о тире
+config = TierLimitService.get_tier_config(user.tier)
+print(config["name"], config["price"])
 ```
 
 ---

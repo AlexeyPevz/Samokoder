@@ -28,7 +28,8 @@ class TestTierConfig:
             assert "price" in config
             assert "limits" in config
             assert "features" in config
-            assert "allowed_models" in config
+            assert "rate_limits" in config
+            # Note: No "allowed_models" because we use BYOK model
 
     def test_tier_hierarchy(self):
         """Test that higher tiers have more features than lower tiers."""
@@ -41,10 +42,9 @@ class TestTierConfig:
         assert free_config["limits"]["projects_monthly"] < starter_config["limits"]["projects_monthly"]
         assert starter_config["limits"]["projects_monthly"] < pro_config["limits"]["projects_monthly"]
 
-        # Check model access increases
-        assert len(free_config["allowed_models"]) <= len(starter_config["allowed_models"])
-        assert len(starter_config["allowed_models"]) <= len(pro_config["allowed_models"])
-        assert len(pro_config["allowed_models"]) <= len(team_config["allowed_models"])
+        # Check rate limits increase
+        assert free_config["rate_limits"]["requests_per_minute"] < starter_config["rate_limits"]["requests_per_minute"]
+        assert starter_config["rate_limits"]["requests_per_minute"] < pro_config["rate_limits"]["requests_per_minute"]
 
     def test_free_tier_limitations(self):
         """Free tier should have basic limitations."""
@@ -55,8 +55,10 @@ class TestTierConfig:
         
         # No advanced features
         assert free_config["features"][TierFeature.DEPLOY] == False
-        assert free_config["features"][TierFeature.ADVANCED_MODELS] == False
         assert free_config["features"][TierFeature.TEAM_COLLABORATION] == False
+        
+        # But all models are available (BYOK)
+        # No "allowed_models" field because we use BYOK model
 
 
 class TestTierLimitService:
@@ -83,7 +85,6 @@ class TestTierLimitService:
 
         # But not premium features
         assert not TierLimitService.has_feature(user, TierFeature.DEPLOY)
-        assert not TierLimitService.has_feature(user, TierFeature.ADVANCED_MODELS)
         assert not TierLimitService.has_feature(user, TierFeature.TEAM_COLLABORATION)
 
     def test_has_feature_starter_tier(self):
@@ -91,9 +92,9 @@ class TestTierLimitService:
         user = Mock(spec=User)
         user.tier = Tier.STARTER
 
-        # Starter has deployment
+        # Starter has deployment and custom templates
         assert TierLimitService.has_feature(user, TierFeature.DEPLOY)
-        assert TierLimitService.has_feature(user, TierFeature.ADVANCED_MODELS)
+        assert TierLimitService.has_feature(user, TierFeature.CUSTOM_TEMPLATES)
         
         # But not team features
         assert not TierLimitService.has_feature(user, TierFeature.TEAM_COLLABORATION)
@@ -105,7 +106,7 @@ class TestTierLimitService:
 
         # Pro has all features except custom branding
         assert TierLimitService.has_feature(user, TierFeature.DEPLOY)
-        assert TierLimitService.has_feature(user, TierFeature.ADVANCED_MODELS)
+        assert TierLimitService.has_feature(user, TierFeature.CUSTOM_TEMPLATES)
         assert TierLimitService.has_feature(user, TierFeature.TEAM_COLLABORATION)
         assert not TierLimitService.has_feature(user, TierFeature.CUSTOM_BRANDING)
 
@@ -116,45 +117,9 @@ class TestTierLimitService:
 
         # Team has all features
         assert TierLimitService.has_feature(user, TierFeature.DEPLOY)
-        assert TierLimitService.has_feature(user, TierFeature.ADVANCED_MODELS)
+        assert TierLimitService.has_feature(user, TierFeature.CUSTOM_TEMPLATES)
         assert TierLimitService.has_feature(user, TierFeature.TEAM_COLLABORATION)
         assert TierLimitService.has_feature(user, TierFeature.CUSTOM_BRANDING)
-
-    def test_get_allowed_models_free(self):
-        """Test allowed models for free tier."""
-        user = Mock(spec=User)
-        user.tier = Tier.FREE
-
-        allowed = TierLimitService.get_allowed_models(user)
-        assert "gpt-3.5-turbo" in allowed
-        assert "gpt-4o-mini" in allowed
-        assert "gpt-4o" not in allowed  # Not available in free tier
-
-    def test_get_allowed_models_starter(self):
-        """Test allowed models for starter tier."""
-        user = Mock(spec=User)
-        user.tier = Tier.STARTER
-
-        allowed = TierLimitService.get_allowed_models(user)
-        assert "gpt-3.5-turbo" in allowed
-        assert "gpt-4o" in allowed
-        assert "gpt-4-turbo" in allowed
-
-    def test_is_model_allowed(self):
-        """Test checking if specific model is allowed."""
-        free_user = Mock(spec=User)
-        free_user.tier = Tier.FREE
-
-        starter_user = Mock(spec=User)
-        starter_user.tier = Tier.STARTER
-
-        # Free user can use basic models
-        assert TierLimitService.is_model_allowed(free_user, "gpt-3.5-turbo")
-        assert not TierLimitService.is_model_allowed(free_user, "gpt-4o")
-
-        # Starter user can use advanced models
-        assert TierLimitService.is_model_allowed(starter_user, "gpt-3.5-turbo")
-        assert TierLimitService.is_model_allowed(starter_user, "gpt-4o")
 
     @pytest.mark.asyncio
     async def test_check_feature_access_allowed(self):
@@ -198,43 +163,24 @@ class TestTierLimitService:
         assert "limit reached" in str(exc_info.value.detail).lower()
 
 
-class TestModelTierFiltering:
-    """Test model tier filtering in models endpoint."""
+class TestBYOKModel:
+    """Test BYOK (Bring Your Own Key) model - all models available to all users."""
 
-    def test_filter_basic_models(self):
-        """Test that basic models are available to all tiers."""
-        from api.routers.models import filter_models_by_tier
+    def test_models_available_to_all(self):
+        """Test that all models are available regardless of tier (BYOK)."""
+        from api.routers.models import PROVIDER_MODELS
 
-        models = [
-            {"id": "gpt-3.5-turbo", "name": "GPT-3.5 Turbo", "tier": "free"},
-            {"id": "gpt-4o", "name": "GPT-4o", "tier": "starter"},
-        ]
-
-        # Free tier user should see gpt-3.5-turbo as available
-        free_filtered = filter_models_by_tier(models, "free")
-        assert free_filtered[0]["available"] == True
-        assert free_filtered[1]["available"] == False
-        assert free_filtered[1]["required_tier"] == "starter"
-
-    def test_filter_advanced_models(self):
-        """Test that advanced models are filtered correctly."""
-        from api.routers.models import filter_models_by_tier
-
-        models = [
-            {"id": "gpt-3.5-turbo", "name": "GPT-3.5 Turbo", "tier": "free"},
-            {"id": "claude-3-opus", "name": "Claude 3 Opus", "tier": "pro"},
-        ]
-
-        # Starter tier user should not see Claude as available
-        starter_filtered = filter_models_by_tier(models, "starter")
-        assert starter_filtered[0]["available"] == True
-        assert starter_filtered[1]["available"] == False
-        assert starter_filtered[1]["required_tier"] == "pro"
-
-        # Pro tier user should see both as available
-        pro_filtered = filter_models_by_tier(models, "pro")
-        assert pro_filtered[0]["available"] == True
-        assert pro_filtered[1]["available"] == True
+        # Check that models don't have tier restrictions
+        for provider, provider_data in PROVIDER_MODELS.items():
+            for model in provider_data["models"]:
+                # Models should not have 'tier' field in BYOK model
+                assert "tier" not in model, f"Model {model['id']} should not have tier restriction in BYOK model"
+                
+    def test_no_auth_required_for_models(self):
+        """Test that models endpoint doesn't require authentication (BYOK)."""
+        # This is a documentation test - the actual endpoint should work without auth
+        # In BYOK model, users use their own API keys, so model list is public
+        pass
 
 
 if __name__ == "__main__":
