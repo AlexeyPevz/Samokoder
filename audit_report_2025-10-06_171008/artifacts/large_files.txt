@@ -1,0 +1,13 @@
+./core/agents/bug_hunter.py
+./core/agents/code_monkey.py
+./core/agents/orchestrator.py
+./core/agents/troubleshooter.py
+./core/db/models/project_state.py
+./core/llm/base.py
+./core/monitoring/health.py
+./core/state/state_manager.py
+./core/templates/vite_react.py
+./core/ui/ipc_client.py
+./tests/contract/test_openapi_contract.py
+./tests/contract/test_schema_validation.py
+./tests/regression/test_critical_auth_flows.py
