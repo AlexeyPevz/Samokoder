@@ -20,6 +20,7 @@ from samokoder.core.db.models.project import Project
 from samokoder.core.db.models.user import User
 from samokoder.core.db.session import get_async_db
 from samokoder.api.routers.auth import get_current_user
+from samokoder.core.api.middleware.tier_limits import require_project_limits
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -29,8 +30,9 @@ async def create_project(
     payload: ProjectCreateRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
+    _limits_check = Depends(require_project_limits),  # Tier-based limits enforcement
 ):
-    """Create a new project for the current user."""
+    """Create a new project for the current user with tier-based limits."""
     project = Project(
         name=payload.name,
         description=payload.description,
