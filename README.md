@@ -29,20 +29,22 @@
 git clone https://github.com/your-org/samokoder.git
 cd samokoder
 
-# 2. Копирование .env
+# 2. Копирование .env (см. .env.example:1-72)
 cp .env.example .env
 
-# 3. Генерация секретных ключей
+# 3. Генерация секретных ключей (см. .env.example:22-23)
 python3 -c "import secrets; print('SECRET_KEY=' + secrets.token_urlsafe(64))" >> .env
 python3 -c "import secrets; print('APP_SECRET_KEY=' + secrets.token_urlsafe(64))" >> .env
 
-# 4. Запуск через Docker Compose
+# 4. Запуск через Docker Compose (см. docker-compose.yml:1-231)
 docker-compose up -d
 
 # 5. Открыть в браузере
 # Frontend: http://localhost:5173
 # API: http://localhost:8000/docs
 ```
+
+**Полная инструкция:** См. [`QUICK_START.md`](QUICK_START.md) для детального пошагового руководства с решением проблем.
 
 ---
 
@@ -63,23 +65,23 @@ docker-compose up -d
 
 ## 💻 Установка для разработки
 
-### Backend
+### Backend (см. pyproject.toml:25-54)
 
 ```bash
-# Создание виртуального окружения
-python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# или
-venv\Scripts\activate  # Windows
+# Установка Poetry
+curl -sSL https://install.python-poetry.org | python3 -
 
 # Установка зависимостей
-pip install -r requirements.txt
+poetry install
+
+# Активация виртуального окружения
+poetry shell
 
 # Установка pre-commit hooks
-pre-commit install
+poetry run pre-commit install
 ```
 
-### Frontend
+### Frontend (см. frontend/package.json)
 
 ```bash
 cd frontend
@@ -89,12 +91,14 @@ npm install
 ### Базы данных
 
 ```bash
-# Запуск PostgreSQL и Redis через Docker
-docker-compose up -d pg redis
+# Запуск PostgreSQL и Redis через Docker (см. docker-compose.yml:80-113)
+docker-compose up -d db redis
 
-# Применение миграций
-alembic upgrade head
+# Применение миграций (см. alembic/env.py:79-88)
+poetry run alembic upgrade head
 ```
+
+**Детальная инструкция:** См. [`QUICK_START.md#установка-для-разработки`](QUICK_START.md#установка-для-разработки)
 
 ---
 
@@ -102,22 +106,22 @@ alembic upgrade head
 
 ### Development Mode
 
-#### Backend (API)
+#### Backend (API) (см. api/main.py)
 ```bash
-# Активировать venv
-source venv/bin/activate
+# Активировать окружение
+poetry shell
 
 # Запустить API
 uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-#### Frontend
+#### Frontend (см. frontend/vite.config.ts)
 ```bash
 cd frontend
 npm run dev
 ```
 
-### Production Mode
+### Production Mode (см. docker-compose.yml:1-231)
 
 ```bash
 # Запуск всех сервисов
@@ -129,6 +133,8 @@ docker-compose ps
 # Логи
 docker-compose logs -f api frontend
 ```
+
+**Полное руководство:** См. [`QUICK_START.md#запуск-приложения`](QUICK_START.md#запуск-приложения)
 
 ---
 
@@ -252,33 +258,40 @@ curl https://api.mas.ai-touragent.store/health
 
 ### Environment Variables
 
-**Обязательные:**
+**Обязательные (см. .env.example:18-26, core/config/config.py:147-169):**
 ```bash
-SECRET_KEY=<64+ chars random string>
-APP_SECRET_KEY=<64+ chars random string>
-DATABASE_URL=postgresql+asyncpg://user:password@host:5432/db
+SECRET_KEY=<64+ chars random string>        # .env.example:25
+APP_SECRET_KEY=<64+ chars random string>    # .env.example:26
+DATABASE_URL=postgresql+asyncpg://user:password@host:5432/db  # .env.example:13
+SAMOKODER_DATABASE_URL=<same as DATABASE_URL>  # для миграций, alembic/env.py:59
 ```
 
 **Опциональные:**
 ```bash
-REDIS_HOST=localhost
-REDIS_PORT=6379
-ENVIRONMENT=production  # development | staging | production
-OPENROUTER_API_KEY=<your-key>
+REDIS_HOST=localhost                        # .env.example:14
+REDIS_PORT=6379                            # .env.example:15
+ENVIRONMENT=production                      # .env.example:43, development|staging|production
+OPENROUTER_API_KEY=<your-key>             # .env.example:54, core/config/config.py:181
+TELEGRAM_BOT_TOKEN=<token>                # .env.example:63, для alerting
+GRAFANA_ADMIN_PASSWORD=<password>         # .env.example:60, для Grafana
 ```
 
-### Backups
+**Справка:** Полный список в [`.env.example`](.env.example) | Валидация в [`core/config/validator.py`](core/config/validator.py)
+
+### Backups (см. ops/scripts/)
 
 ```bash
-# Создание бэкапа
+# Создание бэкапа (см. ops/scripts/backup.sh)
 ./ops/scripts/backup.sh
 
-# Восстановление
+# Восстановление (см. ops/scripts/restore.sh)
 ./ops/scripts/restore.sh /path/to/backup.sql.gz
 
 # Настройка автоматических бэкапов (каждые 6 часов)
 sudo ./ops/scripts/setup-backup-cron.sh
 ```
+
+**Детали:** См. [`ops/runbooks/disaster_recovery.md`](ops/runbooks/disaster_recovery.md)
 
 ---
 
@@ -520,12 +533,35 @@ docker-compose ps  # All should be "Up"
 
 ---
 
-## 📚 Documentation
+## 📚 Документация
 
-- [Monitoring & Alerting](docs/monitoring.md) - Prometheus, Grafana, AlertManager
-- [Performance Optimization](docs/performance_optimization.md) - Parallel LLM execution
-- [Disaster Recovery](ops/runbooks/disaster_recovery.md) - Backup/restore procedures
-- [Monitoring Operations](ops/runbooks/monitoring_operations.md) - Ops runbook
-- [Architecture](docs/architecture.md) - System architecture and design decisions
-- [Telemetry](docs/TELEMETRY.md) - Telemetry and analytics
+### 🚀 Начало работы
+- **[QUICK_START.md](QUICK_START.md)** - Пошаговое руководство от установки до запуска
+- **[ENV_REFERENCE.md](ENV_REFERENCE.md)** - Полный справочник переменных окружения
+- **[MIGRATIONS.md](MIGRATIONS.md)** - Руководство по миграциям базы данных
+- **[CHANGELOG.md](CHANGELOG.md)** - История изменений версий
+- **[.env.example](.env.example)** - Пример конфигурации
+
+### 📖 Техническая документация
+- **[docs/architecture.md](docs/architecture.md)** - Архитектура системы
+- **[docs/domain-model.md](docs/domain-model.md)** - Доменная модель
+- **[docs/monitoring.md](docs/monitoring.md)** - Мониторинг и алертинг
+- **[docs/performance_optimization.md](docs/performance_optimization.md)** - Оптимизация производительности
+- **[docs/TELEMETRY.md](docs/TELEMETRY.md)** - Телеметрия и аналитика
+- **[docs/adr/](docs/adr/)** - Architectural Decision Records
+
+### 🔧 Операционная документация
+- **[ops/runbooks/disaster_recovery.md](ops/runbooks/disaster_recovery.md)** - Процедуры восстановления
+- **[ops/runbooks/monitoring_operations.md](ops/runbooks/monitoring_operations.md)** - Операционное руководство
+- **[ops/runbooks/rollback-procedure.md](ops/runbooks/rollback-procedure.md)** - Процедуры отката
+
+### 📘 Руководства
+- **[docs/guides/CLIENT_MIGRATION_GUIDE_v1.0.0.md](docs/guides/CLIENT_MIGRATION_GUIDE_v1.0.0.md)** - Миграция клиентов на v1.0.0
+- **[docs/guides/MONITORING_DASHBOARD_GUIDE.md](docs/guides/MONITORING_DASHBOARD_GUIDE.md)** - Руководство по дашбордам Grafana
+
+### 🚢 Deployment
+- **[docs/deployment/DEPLOY_YANDEX_CLOUD.md](docs/deployment/DEPLOY_YANDEX_CLOUD.md)** - Деплой в Yandex Cloud
+
+### 📊 Отчеты и аудиты
+- **[docs/reports/](docs/reports/)** - Отчеты по аудитам, оптимизациям, релизам ([индекс](docs/reports/README.md))
 

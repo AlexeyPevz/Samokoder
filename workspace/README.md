@@ -1,0 +1,1 @@
+# Workspace Directory\n\nThis directory stores generated project workspaces.\nEach project gets its own isolated directory.\n\n**Note:** This directory should be mounted as a volume in production deployments.
