@@ -41,6 +41,8 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-query": "^5.59.1",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.3.0",
     "autoprefixer": "^10.4.19",
     "axios": "^1.12.2",
     "class-variance-authority": "^0.7.1",
@@ -72,8 +74,7 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss": "^3.4.4",
     "vaul": "^1.1.2",
-    "@xterm/xterm": "^5.3.0",
-    "@xterm/addon-fit": "^0.10.0",
+    "web-vitals": "^5.1.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

@@ -2,6 +2,18 @@
 /* Import critical CSS first */
 @import './styles/critical.css';
 
+/* Font optimization - system font stack for instant rendering */
+@layer base {
+  /* Ensure font-display: swap for any custom fonts to prevent FOIT (Flash of Invisible Text) */
+  @font-face {
+    font-family: 'System';
+    font-style: normal;
+    font-weight: 300 900;
+    font-display: swap;
+    src: local('system-ui'), local('-apple-system'), local('BlinkMacSystemFont');
+  }
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
