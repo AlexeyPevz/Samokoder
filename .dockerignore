@@ -75,6 +75,7 @@ azure-pipelines.yml
 
 # Audit reports
 audit/
+audit_report_*/
 
 # Environment
 .env.local
@@ -93,3 +94,24 @@ data/
 *.db
 *.sqlite
 *.sqlite3
+
+# Reports and documentation artifacts
+*_REPORT.md
+BRANDBOOK_*.md
+DOCUMENTATION_UPDATE_REPORT.md
+FINAL_BRANDBOOK_*.md
+PR_DESCRIPTION.md
+
+# Poetry cache
+.poetry/
+poetry.toml
+
+# Development scripts
+deploy.sh
+deploy_yc.sh
+
+# Monitoring (keep config, exclude data)
+monitoring/**/*.data
+
+# Operations
+ops/
