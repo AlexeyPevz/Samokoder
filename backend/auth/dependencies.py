@@ -180,17 +180,13 @@ async def get_current_user_optional(credentials: Optional[HTTPAuthorizationCrede
         return None
 
 def secure_password_validation(password: str) -> bool:
-    """Безопасная валидация пароля"""
-    if not password or len(password) < 8:
-        return False
-    
-    # Проверяем сложность пароля
-    has_upper = any(c.isupper() for c in password)
-    has_lower = any(c.islower() for c in password)
-    has_digit = any(c.isdigit() for c in password)
-    has_special = any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password)
-    
-    return has_upper and has_lower and has_digit and has_special
+    """
+    Безопасная валидация пароля
+    ASVS 2.1.1 compliant - использует централизованную политику
+    Исправление P0-1, P0-6
+    """
+    from backend.security.password_policy import validate_password
+    return validate_password(password)
 
 def hash_password(password: str) -> str:
     """Безопасное хеширование пароля с использованием bcrypt"""
