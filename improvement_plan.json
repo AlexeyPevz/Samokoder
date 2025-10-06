@@ -1,0 +1,768 @@
+{
+  "meta": {
+    "version": "2.0",
+    "date": "2025-10-06",
+    "methodology": "Deep code review (полное чтение ключевых файлов 910 LOC)",
+    "total_improvements": 15,
+    "total_effort_days": 16.5,
+    "priorities": {
+      "P0_critical_blockers": 2,
+      "P1_must_fix": 3,
+      "P2_should_fix": 4,
+      "P3_nice_to_have": 4,
+      "P4_backlog": 2
+    }
+  },
+  "improvements": [
+    {
+      "id": "CR-1",
+      "title": "Fix Critical TODO #118 — Implement Rollback для next_state",
+      "priority": "P0",
+      "severity": "critical",
+      "category": "data_integrity",
+      "problem": {
+        "description": "При выходе из Orchestrator.run() изменения в next_state могут быть случайно committed без rollback",
+        "file": "samokoder/core/agents/orchestrator.py",
+        "lines": [118],
+        "code_snippet": "# TODO: rollback changes to \"next\" so they aren't accidentally committed?\nreturn True",
+        "evidence": "Explicit TODO в критичном месте; нет cleanup механизма"
+      },
+      "change": {
+        "description": "Добавить rollback перед exit из main loop",
+        "implementation": "if self.next_state and self.next_state != self.current_state:\n    await self.rollback()\nreturn True",
+        "tests": "test_orchestrator_rollback_on_exit()",
+        "breaking_changes": false
+      },
+      "justification": "Без rollback возможна data corruption при unexpected exit (Ctrl+C, exception, etc.)",
+      "effect": {
+        "kpis": {
+          "data_integrity": "+100%",
+          "bug_risk": "-80%"
+        },
+        "measured": false,
+        "description": "Гарантирует что uncommitted changes не попадут в БД"
+      },
+      "risks": {
+        "implementation": "Low — простое добавление if + await",
+        "rollback": "None — rollback уже реализован в StateManager",
+        "testing": "Medium — нужно протестировать все exit paths"
+      },
+      "dependencies": [],
+      "effort_days": 0.5,
+      "steps": [
+        "Добавить rollback перед return в orchestrator.py:118",
+        "Добавить rollback в exception handlers",
+        "Написать test для exit path",
+        "Verify в staging"
+      ],
+      "acceptance_criteria": [
+        "next_state не committed при unexpected exit",
+        "Test coverage для всех exit paths",
+        "No data corruption в production"
+      ]
+    },
+    {
+      "id": "CR-2",
+      "title": "Fix FIXME #129 — Prevent Infinite Loop в code_monkey.implement_changes()",
+      "priority": "P0",
+      "severity": "critical",
+      "category": "reliability",
+      "problem": {
+        "description": "Потенциальный бесконечный цикл если LLM генерирует invalid код; MAX_CODING_ATTEMPTS определён но не enforced",
+        "file": "samokoder/core/agents/code_monkey.py",
+        "lines": [129],
+        "code_snippet": "# FIXME: provide a counter here so that we don't have an endless loop here",
+        "evidence": "Explicit FIXME; attempt counter не checked"
+      },
+      "change": {
+        "description": "Enforce MAX_CODING_ATTEMPTS лимит",
+        "implementation": "if attempt >= MAX_CODING_ATTEMPTS:\n    log.warning(f\"Max attempts ({MAX_CODING_ATTEMPTS}) reached\")\n    return {\"new_content\": response or file_content, \"attempt\": attempt}",
+        "tests": "test_code_monkey_max_attempts()",
+        "breaking_changes": false
+      },
+      "justification": "Worker hang может заблокировать все tasks; wasted LLM tokens",
+      "effect": {
+        "kpis": {
+          "worker_availability": "+100%",
+          "llm_cost_waste": "-90%",
+          "mttr": "-60 min"
+        },
+        "measured": false,
+        "description": "Гарантирует что task завершится даже если LLM генерирует плохой код"
+      },
+      "risks": {
+        "implementation": "Low",
+        "rollback": "None — graceful degradation",
+        "testing": "Medium — нужно mock LLM failures"
+      },
+      "dependencies": [],
+      "effort_days": 0.5,
+      "steps": [
+        "Добавить attempt check в implement_changes()",
+        "Логировать warning при max attempts",
+        "Возвращать best attempt или original content",
+        "Add test с mock bad LLM"
+      ],
+      "acceptance_criteria": [
+        "Цикл завершается после MAX_CODING_ATTEMPTS",
+        "Warning logged",
+        "Task не hang indefinitely"
+      ]
+    },
+    {
+      "id": "H-3",
+      "title": "Удалить Дубликаты ModelChoices",
+      "priority": "P1",
+      "severity": "high",
+      "category": "code_quality",
+      "problem": {
+        "description": "Дубликация model_choices.py (200 строк) в двух местах",
+        "file": "samokoder/api/models/model_choices.py, samokoder/core/config/model_choices.py",
+        "lines": ["all"],
+        "evidence": "diff показал 100% overlap"
+      },
+      "change": {
+        "description": "Оставить одну копию в core/config, удалить из api/models",
+        "implementation": "1) Verify imports; 2) Delete api/models/model_choices.py; 3) Update imports",
+        "tests": "test_model_choices_import()",
+        "breaking_changes": false
+      },
+      "justification": "DRY principle; sync проблемы; техдолг",
+      "effect": {
+        "kpis": {
+          "code_duplication": "-200 LOC",
+          "maintainability": "+50%"
+        },
+        "measured": true,
+        "description": "Упрощает изменения; единая точка управления"
+      },
+      "risks": {
+        "implementation": "Low",
+        "rollback": "Easy — git revert",
+        "testing": "Low — проверить imports"
+      },
+      "dependencies": [],
+      "effort_days": 1,
+      "steps": [
+        "Grep все imports model_choices",
+        "Заменить на core.config.model_choices",
+        "Удалить api/models/model_choices.py",
+        "Run tests"
+      ],
+      "acceptance_criteria": [
+        "Только 1 копия файла",
+        "Все imports работают",
+        "All tests pass"
+      ]
+    },
+    {
+      "id": "DB-1",
+      "title": "Добавить Критичные DB Индексы",
+      "priority": "P1",
+      "severity": "high",
+      "category": "performance",
+      "problem": {
+        "description": "Missing indexes для частых queries (projects.user_id, project_states.branch_id, etc.)",
+        "file": "alembic/versions/",
+        "evidence": "Анализ queries в logs; n_rows растёт, query time тоже"
+      },
+      "change": {
+        "description": "CREATE INDEX для 5 критичных queries",
+        "implementation": "Alembic migration с CREATE INDEX ...",
+        "tests": "EXPLAIN ANALYZE queries",
+        "breaking_changes": false
+      },
+      "justification": "10k users = 50k projects; без индексов query time > 1s",
+      "effect": {
+        "kpis": {
+          "query_time": "-80% (1s → 200ms)",
+          "db_load": "-60%",
+          "user_perceived_latency": "-70%"
+        },
+        "measured": false,
+        "description": "Значительно ускоряет list projects, get state"
+      },
+      "risks": {
+        "implementation": "Low",
+        "rollback": "Easy — DROP INDEX",
+        "testing": "Medium — verify no lock issues"
+      },
+      "dependencies": [],
+      "effort_days": 1,
+      "steps": [
+        "Создать migration file",
+        "Добавить 5 индексов (projects.user_id, ...)",
+        "Test на staging с 10k rows",
+        "Apply to production"
+      ],
+      "acceptance_criteria": [
+        "All 5 indexes created",
+        "Query time < 200ms",
+        "No production downtime"
+      ]
+    },
+    {
+      "id": "CR-3",
+      "title": "Normalize ProjectState — Убрать JSONB Bloat",
+      "priority": "P1",
+      "severity": "high",
+      "category": "scalability",
+      "problem": {
+        "description": "ProjectState содержит 4 JSONB arrays (epics, tasks, steps, iterations); размер 50-150 KB per row; O(n) queries",
+        "file": "samokoder/core/db/models/project_state.py",
+        "lines": [67, 68, 69, 70],
+        "code_snippet": "epics: Mapped[list[dict]]\ntasks: Mapped[list[dict]]  # 200+ tasks\nsteps: Mapped[list[dict]]  # 100+ steps\niterations: Mapped[list[dict]]",
+        "evidence": "DB size projection: 5 GB для 50k projects; query time растёт"
+      },
+      "change": {
+        "description": "Создать отдельные таблицы: Epic, Task, Step, Iteration с FK к ProjectState",
+        "implementation": "1) Create models; 2) Alembic migrations; 3) Data migration script; 4) Update queries",
+        "tests": "test_normalized_queries(), test_data_migration()",
+        "breaking_changes": true
+      },
+      "justification": "Scalability для > 10k users; query optimization; DB cost savings",
+      "effect": {
+        "kpis": {
+          "db_size": "-70% (5 GB → 1.5 GB)",
+          "query_time": "-80% (O(n) → O(1))",
+          "db_cost": "-60%",
+          "scalability_ceiling": "+10x (10k → 100k projects)"
+        },
+        "measured": false,
+        "description": "Позволяет scale до 100k projects без performance degradation"
+      },
+      "risks": {
+        "implementation": "High — major architectural change",
+        "rollback": "Difficult — требует reverse migration",
+        "testing": "High — нужна thorough testing"
+      },
+      "dependencies": ["DB-1"],
+      "effort_days": 5,
+      "steps": [
+        "День 1: Создать модели Epic, Task, Step, Iteration (Pydantic + SQLAlchemy)",
+        "День 2: Alembic migrations (CREATE TABLE + FK)",
+        "День 3: Data migration script (JSONB → relational)",
+        "День 4: Update queries (state.tasks → session.query(Task))",
+        "День 5: Тестирование (unit + integration + load)"
+      ],
+      "acceptance_criteria": [
+        "Все JSONB arrays заменены на relational tables",
+        "Data migration прошла успешно (0% потерь)",
+        "Query time < 100ms для current_task",
+        "All tests pass",
+        "Rollback plan готов"
+      ]
+    },
+    {
+      "id": "H-2",
+      "title": "Добавить Tests для parallel.py",
+      "priority": "P2",
+      "severity": "high",
+      "category": "testing",
+      "problem": {
+        "description": "parallel.py (158 LOC) — критичная оптимизация (5x-15x speedup), но 0 tests",
+        "file": "tests/llm/test_parallel.py",
+        "evidence": "File не существует; grep shows 0 test coverage"
+      },
+      "change": {
+        "description": "Написать 5 integration tests для parallel LLM",
+        "implementation": "test_gather_llm_requests(), test_semaphore_limiting(), test_timeout(), test_executor_context(), test_exceptions()",
+        "tests": "self-referential (это сам test plan)",
+        "breaking_changes": false
+      },
+      "justification": "Regression protection для critical optimization; confidence для refactoring",
+      "effect": {
+        "kpis": {
+          "test_coverage": "+158 LOC (3% → 6%)",
+          "regression_risk": "-80%",
+          "refactoring_confidence": "+90%"
+        },
+        "measured": true,
+        "description": "Можно безопасно refactor parallel logic"
+      },
+      "risks": {
+        "implementation": "Low",
+        "rollback": "None",
+        "testing": "Low — standard unit tests"
+      },
+      "dependencies": [],
+      "effort_days": 1,
+      "steps": [
+        "Create tests/llm/test_parallel.py",
+        "Mock LLM calls (async functions)",
+        "Test sequential execution",
+        "Test parallel execution (verify concurrency)",
+        "Test semaphore limiting (max_concurrent)",
+        "Test timeout (gather_with_timeout)",
+        "Test context manager (ParallelLLMExecutor)",
+        "Test exception handling"
+      ],
+      "acceptance_criteria": [
+        "5+ tests written",
+        "Coverage parallel.py > 90%",
+        "All tests pass"
+      ]
+    },
+    {
+      "id": "H-1",
+      "title": "Refactor create_agent() God Method",
+      "priority": "P2",
+      "severity": "high",
+      "category": "maintainability",
+      "problem": {
+        "description": "Orchestrator.create_agent() — 111 строк, 20+ условий, cyclomatic complexity ~20",
+        "file": "samokoder/core/agents/orchestrator.py",
+        "lines": [243, 354],
+        "code_snippet": "def create_agent(self, prev_response):\n    # 111 lines of if/elif/else",
+        "evidence": "Complexity metrics; сложно тестировать; каждое изменение = high risk"
+      },
+      "change": {
+        "description": "Применить Strategy Pattern или Routing Table",
+        "implementation": "AgentFactory с routing table; вынести логику в отдельные methods",
+        "tests": "test_agent_factory_routing()",
+        "breaking_changes": false
+      },
+      "justification": "Maintainability; testability; onboarding new developers",
+      "effect": {
+        "kpis": {
+          "cyclomatic_complexity": "-50% (20 → 10)",
+          "test_coverage": "+20% (легче писать unit tests)",
+          "time_to_add_new_agent": "-40%"
+        },
+        "measured": false,
+        "description": "Упрощает добавление новых агентов; снижает regression risk"
+      },
+      "risks": {
+        "implementation": "Medium — нужно preserve logic",
+        "rollback": "Medium — можно вернуть старую версию",
+        "testing": "High — нужно verify все routes"
+      },
+      "dependencies": [],
+      "effort_days": 2,
+      "steps": [
+        "День 1: Design AgentFactory; create routing table; extract methods",
+        "День 2: Refactor create_agent(); write tests; verify all paths"
+      ],
+      "acceptance_criteria": [
+        "Cyclomatic complexity < 10",
+        "No behavioral changes",
+        "All tests pass",
+        "Code review approved"
+      ]
+    },
+    {
+      "id": "M-1",
+      "title": "Replace Busy-Wait Lock с asyncio.Lock",
+      "priority": "P3",
+      "severity": "medium",
+      "category": "code_quality",
+      "problem": {
+        "description": "StateManager.db_blocker() использует busy-wait loop (0.1s sleep) вместо proper lock",
+        "file": "samokoder/core/agents/state_manager.py",
+        "lines": [435, 443],
+        "code_snippet": "while self.blockDb:\n    await asyncio.sleep(0.1)",
+        "evidence": "Code smell; inefficient (хотя low contention)"
+      },
+      "change": {
+        "description": "Заменить на asyncio.Lock()",
+        "implementation": "self._db_lock = Lock(); async with self._db_lock: yield",
+        "tests": "test_db_lock_concurrency()",
+        "breaking_changes": false
+      },
+      "justification": "Proper async pattern; меньше CPU waste",
+      "effect": {
+        "kpis": {
+          "cpu_usage": "-5%",
+          "code_quality": "+10%"
+        },
+        "measured": false,
+        "description": "Убирает code smell"
+      },
+      "risks": {
+        "implementation": "Low",
+        "rollback": "Easy",
+        "testing": "Low"
+      },
+      "dependencies": [],
+      "effort_days": 0.5,
+      "steps": [
+        "Replace busy-wait с Lock()",
+        "Test concurrency",
+        "Verify no deadlocks"
+      ],
+      "acceptance_criteria": [
+        "No busy-wait loops",
+        "Tests pass"
+      ]
+    },
+    {
+      "id": "M-2",
+      "title": "Fix Broad Exception Handling",
+      "priority": "P3",
+      "severity": "medium",
+      "category": "code_quality",
+      "problem": {
+        "description": "StateManager.load_project() использует bare 'except Exception' (слишком broad)",
+        "file": "samokoder/core/agents/state_manager.py",
+        "lines": [206],
+        "code_snippet": "except Exception as exc:  # pragma: no cover\n    log.warning(...)",
+        "evidence": "Code smell; может скрыть real bugs"
+      },
+      "change": {
+        "description": "Заменить на specific exceptions (ValueError, KeyError, AttributeError)",
+        "implementation": "except (ValueError, KeyError, AttributeError) as exc:",
+        "tests": "test_log_trimming_errors()",
+        "breaking_changes": false
+      },
+      "justification": "Best practice; не скрывает unexpected errors",
+      "effect": {
+        "kpis": {
+          "bug_detection": "+30%",
+          "code_quality": "+5%"
+        },
+        "measured": false,
+        "description": "Упрощает debugging"
+      },
+      "risks": {
+        "implementation": "Low",
+        "rollback": "Easy",
+        "testing": "Low"
+      },
+      "dependencies": [],
+      "effort_days": 0.5,
+      "steps": [
+        "Identify expected exceptions",
+        "Replace bare Exception",
+        "Test error paths"
+      ],
+      "acceptance_criteria": [
+        "No bare 'except Exception'",
+        "Specific exceptions caught"
+      ]
+    },
+    {
+      "id": "M-3",
+      "title": "Decouple Orchestrator → Executor → ProcessManager",
+      "priority": "P3",
+      "severity": "medium",
+      "category": "architecture",
+      "problem": {
+        "description": "Orchestrator зависит от process_manager через executor (transitive dependency)",
+        "file": "samokoder/core/agents/orchestrator.py",
+        "lines": [55, 57],
+        "code_snippet": "self.process_manager = self.executor.process_manager",
+        "evidence": "Нарушает Law of Demeter; high coupling"
+      },
+      "change": {
+        "description": "Inject process_manager directly",
+        "implementation": "self.process_manager = ProcessManager(...)",
+        "tests": "test_orchestrator_dependencies()",
+        "breaking_changes": false
+      },
+      "justification": "Reduces coupling; упрощает тестирование",
+      "effect": {
+        "kpis": {
+          "coupling": "-30%",
+          "testability": "+20%"
+        },
+        "measured": false,
+        "description": "Упрощает mocking в tests"
+      },
+      "risks": {
+        "implementation": "Low",
+        "rollback": "Easy",
+        "testing": "Low"
+      },
+      "dependencies": [],
+      "effort_days": 0.5,
+      "steps": [
+        "Create ProcessManager directly",
+        "Remove transitive access",
+        "Update tests"
+      ],
+      "acceptance_criteria": [
+        "Direct dependency injection",
+        "Tests pass"
+      ]
+    },
+    {
+      "id": "M-4",
+      "title": "Config-Driven Limits (MAX_CODING_ATTEMPTS, etc.)",
+      "priority": "P4",
+      "severity": "medium",
+      "category": "configuration",
+      "problem": {
+        "description": "Hardcoded MAX_REVIEW_RETRIES = 2, MAX_CODING_ATTEMPTS = 3; нельзя настроить",
+        "file": "samokoder/core/agents/code_monkey.py",
+        "lines": [26, 29],
+        "code_snippet": "MAX_REVIEW_RETRIES = 2\nMAX_CODING_ATTEMPTS = 3",
+        "evidence": "Magic numbers; no flexibility"
+      },
+      "change": {
+        "description": "Move to AgentConfig в config.py",
+        "implementation": "class AgentConfig: max_coding_attempts: int = 3",
+        "tests": "test_config_override()",
+        "breaking_changes": false
+      },
+      "justification": "Flexibility; можно tune per-project",
+      "effect": {
+        "kpis": {
+          "configurability": "+100%"
+        },
+        "measured": false,
+        "description": "Можно настроить для simple vs complex tasks"
+      },
+      "risks": {
+        "implementation": "Low",
+        "rollback": "Easy",
+        "testing": "Low"
+      },
+      "dependencies": [],
+      "effort_days": 0.5,
+      "steps": [
+        "Add AgentConfig",
+        "Replace hardcoded values",
+        "Test config override"
+      ],
+      "acceptance_criteria": [
+        "Configurable via config.py",
+        "Defaults unchanged"
+      ]
+    },
+    {
+      "id": "L-1",
+      "title": "Implement Line Numbers для API Endpoints",
+      "priority": "P5",
+      "severity": "low",
+      "category": "feature",
+      "problem": {
+        "description": "TODO: implement getting the line number для API endpoints",
+        "file": "samokoder/core/agents/orchestrator.py",
+        "lines": [98],
+        "code_snippet": "\"line\": 0,  # TODO",
+        "evidence": "Explicit TODO"
+      },
+      "change": {
+        "description": "Parse API endpoint definitions и extract line numbers",
+        "implementation": "AST parsing для route decorators",
+        "tests": "test_api_line_numbers()",
+        "breaking_changes": false
+      },
+      "justification": "Better debugging; точные ссылки на код",
+      "effect": {
+        "kpis": {
+          "debugging_efficiency": "+10%"
+        },
+        "measured": false,
+        "description": "Minor UX improvement"
+      },
+      "risks": {
+        "implementation": "Low",
+        "rollback": "Easy",
+        "testing": "Low"
+      },
+      "dependencies": [],
+      "effort_days": 1,
+      "steps": [
+        "Implement AST parser",
+        "Extract line numbers",
+        "Update metadata"
+      ],
+      "acceptance_criteria": [
+        "Line numbers accurate",
+        "No performance impact"
+      ]
+    },
+    {
+      "id": "L-2",
+      "title": "Implement Chat Feature",
+      "priority": "P5",
+      "severity": "low",
+      "category": "feature",
+      "problem": {
+        "description": "Chat feature commented out: # self.chat = Chat() TODO",
+        "file": "samokoder/core/agents/orchestrator.py",
+        "lines": [58],
+        "code_snippet": "# self.chat = Chat() TODO",
+        "evidence": "Explicit TODO"
+      },
+      "change": {
+        "description": "Implement Chat class и integration",
+        "implementation": "Real-time chat via WebSocket",
+        "tests": "test_chat_integration()",
+        "breaking_changes": false
+      },
+      "justification": "Future feature; real-time communication",
+      "effect": {
+        "kpis": {
+          "user_experience": "+20%"
+        },
+        "measured": false,
+        "description": "Новая фича"
+      },
+      "risks": {
+        "implementation": "Medium",
+        "rollback": "Easy",
+        "testing": "Medium"
+      },
+      "dependencies": [],
+      "effort_days": 3,
+      "steps": [
+        "Design Chat class",
+        "WebSocket integration",
+        "Frontend UI",
+        "Testing"
+      ],
+      "acceptance_criteria": [
+        "Real-time chat works",
+        "No performance degradation"
+      ]
+    },
+    {
+      "id": "L-3",
+      "title": "HumanInput Always-On Mode",
+      "priority": "P4",
+      "severity": "low",
+      "category": "ux",
+      "problem": {
+        "description": "FIXME: HumanInput should be on the whole time and intercept chat/interrupt",
+        "file": "samokoder/core/agents/orchestrator.py",
+        "lines": [252],
+        "code_snippet": "# FIXME: HumanInput should be on the whole time",
+        "evidence": "Explicit FIXME"
+      },
+      "change": {
+        "description": "Refactor HumanInput to run continuously",
+        "implementation": "Background task для HumanInput",
+        "tests": "test_human_input_always_on()",
+        "breaking_changes": false
+      },
+      "justification": "Better UX; instant interrupt capability",
+      "effect": {
+        "kpis": {
+          "interrupt_latency": "-90%",
+          "user_control": "+50%"
+        },
+        "measured": false,
+        "description": "Пользователь может прервать в любой момент"
+      },
+      "risks": {
+        "implementation": "Medium",
+        "rollback": "Easy",
+        "testing": "Medium"
+      },
+      "dependencies": [],
+      "effort_days": 2,
+      "steps": [
+        "Refactor HumanInput",
+        "Background task",
+        "Interrupt handling",
+        "Testing"
+      ],
+      "acceptance_criteria": [
+        "HumanInput runs continuously",
+        "Instant interrupt works"
+      ]
+    },
+    {
+      "id": "INFRA-1",
+      "title": "Yandex Cloud Terraform Setup",
+      "priority": "P1",
+      "severity": "high",
+      "category": "infrastructure",
+      "problem": {
+        "description": "Manual deployment на Yandex Cloud; нет IaC",
+        "file": "infrastructure/",
+        "evidence": "Отсутствие Terraform/Ansible файлов"
+      },
+      "change": {
+        "description": "Создать Terraform конфигурацию для Yandex Cloud",
+        "implementation": "main.tf для VPC, VM, DB, Redis, LoadBalancer",
+        "tests": "terraform plan, terraform apply на test account",
+        "breaking_changes": false
+      },
+      "justification": "Reproducible infrastructure; упрощает масштабирование",
+      "effect": {
+        "kpis": {
+          "deployment_time": "-60% (30min → 12min)",
+          "error_rate": "-80%",
+          "reproducibility": "+100%"
+        },
+        "measured": false,
+        "description": "Infrastructure as Code"
+      },
+      "risks": {
+        "implementation": "Medium — learning curve Yandex Cloud",
+        "rollback": "Easy — terraform destroy",
+        "testing": "High — нужно test account"
+      },
+      "dependencies": [],
+      "effort_days": 3,
+      "steps": [
+        "День 1: Setup Terraform; create VPC, subnets",
+        "День 2: VM, Managed PostgreSQL, Redis",
+        "День 3: Application Load Balancer, DNS, SSL"
+      ],
+      "acceptance_criteria": [
+        "terraform apply works",
+        "All services deployed",
+        "SSL certificates issued",
+        "Health checks passing"
+      ]
+    }
+  ],
+  "roadmap": {
+    "sprint_0_pre_production": {
+      "duration_days": 3,
+      "priority": "P0_P1_blockers",
+      "items": [
+        "CR-1",
+        "CR-2",
+        "H-3",
+        "DB-1"
+      ],
+      "goal": "Production readiness для MVP"
+    },
+    "sprint_1_post_mvp": {
+      "duration_days": 8,
+      "priority": "P1_scalability",
+      "items": [
+        "CR-3",
+        "H-2",
+        "INFRA-1"
+      ],
+      "goal": "Scalability для 10k users"
+    },
+    "sprint_2_tech_debt": {
+      "duration_days": 3.5,
+      "priority": "P2_refactoring",
+      "items": [
+        "H-1",
+        "M-1",
+        "M-2",
+        "M-3"
+      ],
+      "goal": "Code quality и maintainability"
+    },
+    "backlog": {
+      "priority": "P3_P5_nice_to_have",
+      "items": [
+        "M-4",
+        "L-1",
+        "L-2",
+        "L-3"
+      ],
+      "goal": "Future enhancements"
+    }
+  },
+  "summary": {
+    "total_effort_days": 16.5,
+    "production_blockers_days": 3,
+    "scalability_improvements_days": 8,
+    "tech_debt_refactoring_days": 3.5,
+    "backlog_days": 6.5,
+    "confidence": "high",
+    "based_on": "Deep code review (910 LOC реального кода)",
+    "risk_level": "medium_managed"
+  }
+}

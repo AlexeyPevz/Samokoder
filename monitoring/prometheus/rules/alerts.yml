@@ -1,0 +1,203 @@
+groups:
+  - name: samokoder_api
+    interval: 30s
+    rules:
+      # API is down
+      - alert: APIDown
+        expr: up{job="samokoder-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "Samokoder API is down"
+          description: "The Samokoder API has been down for more than 1 minute."
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(samokoder_http_requests_total{status=~"5.."}[5m])
+            /
+            rate(samokoder_http_requests_total[5m])
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High HTTP error rate"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      # High latency
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(samokoder_http_request_duration_seconds_bucket[5m])
+          ) > 5
+        for: 10m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High API latency"
+          description: "95th percentile latency is {{ $value }}s (threshold: 5s)"
+
+      # Rate limiting threshold
+      - alert: HighRateLimitHits
+        expr: |
+          rate(samokoder_rate_limit_hits_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: info
+          component: rate_limiter
+        annotations:
+          summary: "High rate limit hits"
+          description: "Rate limit hits: {{ $value | humanize }} req/s"
+
+  - name: samokoder_llm
+    interval: 30s
+    rules:
+      # LLM request errors
+      - alert: HighLLMErrorRate
+        expr: |
+          (
+            rate(samokoder_llm_request_errors_total[10m])
+            /
+            rate(samokoder_llm_requests_total[10m])
+          ) > 0.10
+        for: 10m
+        labels:
+          severity: warning
+          component: llm
+        annotations:
+          summary: "High LLM error rate"
+          description: "LLM error rate is {{ $value | humanizePercentage }} for provider {{ $labels.provider }}"
+
+      # LLM high latency
+      - alert: HighLLMLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(samokoder_llm_request_duration_seconds_bucket[10m])
+          ) > 30
+        for: 15m
+        labels:
+          severity: warning
+          component: llm
+        annotations:
+          summary: "High LLM request latency"
+          description: "95th percentile LLM latency is {{ $value }}s for {{ $labels.provider }}"
+
+      # LLM cost spike (tokens consumed)
+      - alert: LLMCostSpike
+        expr: |
+          rate(samokoder_llm_tokens_consumed_total[1h]) > 1000000
+        for: 30m
+        labels:
+          severity: warning
+          component: llm
+        annotations:
+          summary: "LLM cost spike detected"
+          description: "Token consumption rate: {{ $value | humanize }} tokens/s"
+
+  - name: samokoder_database
+    interval: 30s
+    rules:
+      # Database connection errors
+      - alert: DatabaseErrors
+        expr: |
+          rate(samokoder_db_errors_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database errors detected"
+          description: "Database error rate: {{ $value }} errors/s"
+
+      # Slow database queries
+      - alert: SlowDatabaseQueries
+        expr: |
+          histogram_quantile(0.95,
+            rate(samokoder_db_query_duration_seconds_bucket[5m])
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Slow database queries"
+          description: "95th percentile query time is {{ $value }}s"
+
+  - name: samokoder_system
+    interval: 30s
+    rules:
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: samokoder_system_cpu_usage_percent > 80
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}%"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            samokoder_system_memory_usage_bytes{type="used"}
+            /
+            samokoder_system_memory_usage_bytes{type="total"}
+          ) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+
+      # Low disk space
+      - alert: LowDiskSpace
+        expr: |
+          (
+            samokoder_system_disk_usage_bytes{type="free"}
+            /
+            samokoder_system_disk_usage_bytes{type="total"}
+          ) < 0.10
+        for: 5m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space on {{ $labels.path }} is {{ $value | humanizePercentage }} free"
+
+  - name: samokoder_business
+    interval: 60s
+    rules:
+      # No projects created (possible issue)
+      - alert: NoProjectsCreated
+        expr: |
+          rate(samokoder_projects_created_total[1h]) == 0
+        for: 2h
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "No projects created"
+          description: "No projects have been created in the last 2 hours"
+
+      # Failed authentication spike
+      - alert: AuthenticationFailureSpike
+        expr: |
+          rate(samokoder_auth_attempts_total{result="failure"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: security
+        annotations:
+          summary: "Authentication failure spike"
+          description: "High number of failed auth attempts: {{ $value }} attempts/s"

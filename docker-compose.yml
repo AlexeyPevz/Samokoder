@@ -1,0 +1,119 @@
+services:
+  frontend:
+    image: ${YC_DOCKER_REGISTRY}/${FRONTEND_IMAGE_NAME}:${APP_VERSION:-latest}
+    container_name: samokoder-frontend
+    restart: unless-stopped
+    networks:
+      - samokoder
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.samokoder-frontend.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.samokoder-frontend.priority=5"
+      - "traefik.http.routers.samokoder-frontend.entrypoints=websecure"
+      - "traefik.http.routers.samokoder-frontend.tls.certresolver=myresolver"
+      - "traefik.http.services.samokoder-frontend.loadbalancer.server.port=80"
+      - "traefik.docker.network=web"
+
+  api:
+    image: ${YC_DOCKER_REGISTRY}/${API_IMAGE_NAME}:${APP_VERSION:-latest}
+    container_name: samokoder-api
+    restart: unless-stopped
+    command: /app/.venv/bin/uvicorn samokoder.api.main:app --host 0.0.0.0 --port 8000
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=
+      - PYTHONPATH=/app
+      - SAMOKODER_DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ENVIRONMENT=development
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./workspace:/app/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - samokoder
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.samokoder-api.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.samokoder-api.priority=10"
+      - "traefik.http.routers.samokoder-api.entrypoints=websecure"
+      - "traefik.http.routers.samokoder-api.tls.certresolver=myresolver"
+      - "traefik.http.routers.samokoder-api.middlewares=samokoder-stripprefix"
+      - "traefik.http.middlewares.samokoder-stripprefix.stripprefix.prefixes=/api"
+      - "traefik.http.services.samokoder-api.loadbalancer.server.port=8000"
+      - "traefik.docker.network=web"
+
+  worker:
+    image: ${YC_DOCKER_REGISTRY}/${WORKER_IMAGE_NAME}:${APP_VERSION:-latest}
+    container_name: samokoder-worker
+    command: /app/.venv/bin/arq samokoder.worker.main.WorkerSettings
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/app
+      - SAMOKODER_DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ENVIRONMENT=development
+      - SAMOKODER_CONFIG_DIR=/app/config
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./workspace:/app/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - samokoder
+      - web
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: samokoder-db
+    ports:
+      - "5433:5432"
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - samokoder
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: samokoder-redis
+    ports:
+      - "6380:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - samokoder
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  samokoder:
+    driver: bridge
+  web:
+    external: true
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,17 @@
+You are a DevOps specialist. Your task is to create a GitHub Actions workflow file (`ci.yml`) for a new project.
+
+The project has the following architecture:
+{{ architecture }}
+
+And the following dependencies:
+{{ dependencies }}
+
+Based on this information, generate a standard, robust `ci.yml` file that does the following:
+1. Triggers on push to the `main` branch.
+2. Sets up the appropriate environment (e.g., Node.js, Python).
+3. Installs dependencies.
+4. Runs linters (if applicable).
+5. Runs tests (if applicable).
+6. (Optional) Builds the project.
+
+Output ONLY the raw YAML content for the `ci.yml` file. Do not include any other text, explanations, or markdown code blocks.

@@ -1,0 +1,18 @@
+services:
+  api:
+    env_file: .env.prod
+    environment:
+      - SAMOKODER_DATABASE_URL=${PROD_DATABASE_URL}
+      - REDIS_HOST=${PROD_REDIS_HOST}
+      - ENVIRONMENT=production
+    depends_on: [] # В production-режиме не зависим от локальных db и redis
+
+  worker:
+    env_file: .env.prod
+    environment:
+      - SAMOKODER_DATABASE_URL=${PROD_DATABASE_URL}
+      - REDIS_HOST=${PROD_REDIS_HOST}
+      - ENVIRONMENT=production
+    depends_on: []
+
+  # Сервисы db и redis не определены, так как мы используем управляемые сервисы Yandex Cloud

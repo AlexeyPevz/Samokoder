@@ -1,0 +1,95 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv/
+ENV/
+env/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+.npm
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+tests/
+.pytest_cache/
+.tox/
+coverage/
+*.cover
+.hypothesis/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Logs
+*.log
+logs/
+pythagora.log
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+.cache/
+tmp/
+
+# Workspace (generated code)
+workspace/
+
+# Backups
+*.sql.gz
+backups/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+azure-pipelines.yml
+
+# Audit reports
+audit/
+
+# Environment
+.env.local
+.env.*.local
+
+# Frontend build artifacts (if in root)
+frontend/dist/
+frontend/build/
+frontend/node_modules/
+
+# Alembic (keep migrations but not pycache)
+alembic/__pycache__/
+
+# Data
+data/
+*.db
+*.sqlite
+*.sqlite3

@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/root/workspace/samokoder/samokoder/logs/.28c68aad4e609da65eb63b62c04f15359035c191-audit.json",
+    "files": [
+        {
+            "date": 1759306261973,
+            "name": "/root/workspace/samokoder/samokoder/logs/mcp-puppeteer-2025-10-01.log",
+            "hash": "11f7acc261e042e4582fa79fea37a9e5a460459550c2ee443bbb756caf63e136"
+        }
+    ],
+    "hashType": "sha256"
+}

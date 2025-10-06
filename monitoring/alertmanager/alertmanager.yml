@@ -1,0 +1,125 @@
+global:
+  resolve_timeout: 5m
+  # Telegram Bot настройки (заполнить в production)
+  telegram_api_url: 'https://api.telegram.org'
+
+# Шаблоны маршрутизации
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  
+  routes:
+    # Critical alerts - немедленная отправка
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 0s
+      repeat_interval: 4h
+    
+    # Warning alerts - группируем
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      repeat_interval: 12h
+    
+    # Info alerts - только в рабочее время
+    - match:
+        severity: info
+      receiver: 'info-alerts'
+      repeat_interval: 24h
+
+# Получатели (receivers)
+receivers:
+  - name: 'default'
+    telegram_configs:
+      - bot_token: '${TELEGRAM_BOT_TOKEN}'
+        chat_id: ${TELEGRAM_CHAT_ID}
+        parse_mode: 'HTML'
+        message: |
+          <b>{{ .GroupLabels.alertname }}</b>
+          {{ range .Alerts }}
+          Status: {{ .Status }}
+          {{ .Annotations.summary }}
+          {{ .Annotations.description }}
+          {{ end }}
+
+  - name: 'critical-alerts'
+    telegram_configs:
+      - bot_token: '${TELEGRAM_BOT_TOKEN}'
+        chat_id: ${TELEGRAM_CHAT_ID}
+        parse_mode: 'HTML'
+        message: |
+          🚨 <b>CRITICAL ALERT</b> 🚨
+          
+          <b>Alert:</b> {{ .GroupLabels.alertname }}
+          <b>Environment:</b> {{ .GroupLabels.environment }}
+          <b>Component:</b> {{ .GroupLabels.component }}
+          
+          {{ range .Alerts }}
+          <b>Status:</b> {{ .Status }}
+          <b>Summary:</b> {{ .Annotations.summary }}
+          <b>Description:</b> {{ .Annotations.description }}
+          <b>Started:</b> {{ .StartsAt }}
+          {{ end }}
+    # Дублируем в email (если настроен)
+    email_configs:
+      - to: '${ALERT_EMAIL}'
+        from: 'alertmanager@samokoder.com'
+        smarthost: '${SMTP_HOST}:${SMTP_PORT}'
+        auth_username: '${SMTP_USER}'
+        auth_password: '${SMTP_PASS}'
+        headers:
+          Subject: '[CRITICAL] Samokoder Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          <h2>Critical Alert: {{ .GroupLabels.alertname }}</h2>
+          {{ range .Alerts }}
+          <p><strong>Status:</strong> {{ .Status }}</p>
+          <p><strong>Summary:</strong> {{ .Annotations.summary }}</p>
+          <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+          <p><strong>Started:</strong> {{ .StartsAt }}</p>
+          {{ end }}
+
+  - name: 'warning-alerts'
+    telegram_configs:
+      - bot_token: '${TELEGRAM_BOT_TOKEN}'
+        chat_id: ${TELEGRAM_CHAT_ID}
+        parse_mode: 'HTML'
+        message: |
+          ⚠️ <b>WARNING</b>
+          
+          <b>Alert:</b> {{ .GroupLabels.alertname }}
+          <b>Component:</b> {{ .GroupLabels.component }}
+          
+          {{ range .Alerts }}
+          {{ .Annotations.summary }}
+          {{ .Annotations.description }}
+          {{ end }}
+
+  - name: 'info-alerts'
+    telegram_configs:
+      - bot_token: '${TELEGRAM_BOT_TOKEN}'
+        chat_id: ${TELEGRAM_CHAT_ID}
+        parse_mode: 'HTML'
+        message: |
+          ℹ️ <b>INFO</b>
+          
+          {{ .GroupLabels.alertname }}: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+
+# Подавление (inhibition rules)
+inhibit_rules:
+  # Если API down, не слать алерты о latency/errors
+  - source_match:
+      alertname: 'APIDown'
+    target_match:
+      component: 'api'
+    equal: ['instance']
+  
+  # Если critical alert, подавить warnings для того же компонента
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['component']
