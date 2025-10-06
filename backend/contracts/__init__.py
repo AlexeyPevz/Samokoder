@@ -12,6 +12,8 @@ from .ai_service import AIServiceProtocol, AIProviderProtocol
 from .auth import AuthServiceProtocol, PasswordServiceProtocol, TokenServiceProtocol
 from .file_service import FileServiceProtocol, FileRepositoryProtocol
 from .supabase_service import SupabaseServiceProtocol
+from .rbac import RBACServiceProtocol
+from .mfa import MFAServiceProtocol
 
 __all__ = [
     # Database contracts
@@ -30,5 +32,9 @@ __all__ = [
     "FileServiceProtocol",
     "FileRepositoryProtocol",
     # Supabase contracts
-    "SupabaseServiceProtocol"
+    "SupabaseServiceProtocol",
+    # RBAC contracts
+    "RBACServiceProtocol",
+    # MFA contracts
+    "MFAServiceProtocol"
 ]
