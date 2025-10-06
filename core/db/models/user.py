@@ -26,6 +26,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String, nullable=False)
     tier: Mapped[Tier] = mapped_column(SQLAlchemyEnum(Tier), default=Tier.FREE, nullable=False)
+    is_admin: Mapped[bool] = mapped_column(Integer, default=False, nullable=False)  # P0-1: Admin role flag
     projects_monthly_count: Mapped[int] = mapped_column(Integer, default=0)
     projects_total: Mapped[int] = mapped_column(Integer, default=0)
     api_keys: Mapped[dict] = mapped_column(JSON, default=dict)
@@ -164,5 +165,16 @@ class User(Base):
         from samokoder.core.security.crypto import CryptoService
         crypto = CryptoService(secret_key)
         return crypto.decrypt(self._github_token_encrypted)
+    
+    def set_encrypted_gitverse_token(self, token: str, secret_key: bytes) -> None:
+        """
+        Encrypt and store GitVerse token.
+        
+        :param token: GitVerse access token
+        :param secret_key: Encryption key
+        """
+        from samokoder.core.security.crypto import CryptoService
+        crypto = CryptoService(secret_key)
+        self.gitverse_token = crypto.encrypt(token)
 
 

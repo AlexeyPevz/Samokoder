@@ -20,7 +20,11 @@ class UserProfileResponse(BaseModel):
     projects_total: int
 
 @router.post("/user/github-token")
-async def set_github_token(request: GitHubTokenRequest, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_async_db)):
+async def set_github_token(
+    request: GitHubTokenRequest, 
+    user: User = Depends(get_current_user), 
+    db: AsyncSession = Depends(get_async_db)
+):
     """
     Set the user's GitHub access token.
     """
@@ -37,7 +41,7 @@ async def set_github_token(request: GitHubTokenRequest, user: User = Depends(get
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/user/profile", response_model=UserProfileResponse)
-def get_user_profile(user: User = Depends(get_current_user)):
+async def get_user_profile(user: User = Depends(get_current_user)):  # P2-1: FIXED - now async
     """
     Get the current user's profile.
     """
