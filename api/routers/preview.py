@@ -7,6 +7,7 @@ import asyncio
 import json
 import os
 from pathlib import Path
+import docker
 
 from samokoder.core.db.session import get_async_db
 from samokoder.core.db.models.project import Project
@@ -64,29 +65,89 @@ async def start_preview(
         "NODE_ENV": "development",
     }
 
-    # Start the preview server in background (local; isolation via container planned)
-    cmd = f"npm run {script_name}"
-    process = await process_manager.start_process(cmd, cwd=".", env=env, bg=True)
-
-    # TTL auto-stop task
-    async def _ttl_guard(proc, key: str):
-        try:
-            await asyncio.sleep(PREVIEW_MAX_DURATION_SECONDS)
-            if proc.is_running:
-                await proc.terminate()
-        finally:
-            preview_processes.pop(key, None)
-
+    use_container = os.getenv("ENABLE_PREVIEW_CONTAINER", "1") == "1"
     key = str(project_id)
-    asyncio.create_task(_ttl_guard(process, key))
+    if use_container:
+        try:
+            client = docker.from_env()
+            container_name = f"samokoder-preview-{project.id}"
+            vol_name = f"samokoder_preview_nm_{project.id}"
+            # Compose the command: install deps if needed, then run script
+            cmd = f"sh -lc \"[ -d node_modules ] || npm ci; npm run {script_name}\""
+            container = client.containers.run(
+                image="node:20-alpine",
+                command=cmd,
+                working_dir="/workspace",
+                environment=env,
+                volumes={
+                    project_root: {"bind": "/workspace", "mode": "ro"},
+                    vol_name: {"bind": "/workspace/node_modules", "mode": "rw"},
+                },
+                name=container_name,
+                detach=True,
+                labels={"managed-by": "samokoder", "preview": "true", "project_id": str(project.id)},
+                mem_limit="1g",
+                nano_cpus=1_000_000_000,  # ~1 CPU
+                ports={f"{port}/tcp": port},
+                network_mode="bridge",
+                tty=False,
+            )
 
-    # Store process info
-    preview_processes[key] = {
-        "process": process,
-        "port": port,
-        "status": "running",
-        "started_at": asyncio.get_event_loop().time()
-    }
+            async def _ttl_guard_container(cid: str, k: str):
+                await asyncio.sleep(PREVIEW_MAX_DURATION_SECONDS)
+                try:
+                    c = client.containers.get(cid)
+                    c.stop(timeout=5)
+                    c.remove(v=True, force=True)
+                except Exception:
+                    pass
+                finally:
+                    preview_processes.pop(k, None)
+
+            asyncio.create_task(_ttl_guard_container(container.id, key))
+            preview_processes[key] = {
+                "container_id": container.id,
+                "port": port,
+                "status": "running",
+                "started_at": asyncio.get_event_loop().time(),
+            }
+        except Exception as e:
+            # Fallback to local process if containerization fails
+            cmd = f"npm run {script_name}"
+            process = await process_manager.start_process(cmd, cwd=".", env=env, bg=True)
+            async def _ttl_guard(proc, k: str):
+                try:
+                    await asyncio.sleep(PREVIEW_MAX_DURATION_SECONDS)
+                    if proc.is_running:
+                        await proc.terminate()
+                finally:
+                    preview_processes.pop(k, None)
+            asyncio.create_task(_ttl_guard(process, key))
+            preview_processes[key] = {
+                "process": process,
+                "port": port,
+                "status": "running",
+                "started_at": asyncio.get_event_loop().time(),
+                "warning": f"container_fallback:{str(e)}",
+            }
+    else:
+        # Local process mode
+        cmd = f"npm run {script_name}"
+        process = await process_manager.start_process(cmd, cwd=".", env=env, bg=True)
+        async def _ttl_guard(proc, k: str):
+            try:
+                await asyncio.sleep(PREVIEW_MAX_DURATION_SECONDS)
+                if proc.is_running:
+                    await proc.terminate()
+            finally:
+                preview_processes.pop(k, None)
+        asyncio.create_task(_ttl_guard(process, key))
+        preview_processes[key] = {
+            "process": process,
+            "port": port,
+            "status": "running",
+            "started_at": asyncio.get_event_loop().time(),
+        }
     
     return {"url": f"http://localhost:{port}", "status": "running", "process_id": str(project_id)}
 
@@ -109,10 +170,23 @@ async def stop_preview(
     project_key = str(project_id)
     if project_key in preview_processes:
         process_info = preview_processes[project_key]
-        process = process_info.get("process")
-        # No tracked process in this simplified path; mark stopped
-        process_info["status"] = "stopped"
-        del preview_processes[project_key]
+        try:
+            if cid := process_info.get("container_id"):
+                client = docker.from_env()
+                try:
+                    c = client.containers.get(cid)
+                    c.stop(timeout=5)
+                    c.remove(v=True, force=True)
+                except Exception:
+                    pass
+            elif proc := process_info.get("process"):
+                try:
+                    await proc.terminate()
+                except Exception:
+                    pass
+        finally:
+            process_info["status"] = "stopped"
+            del preview_processes[project_key]
         return {
             "success": True,
             "message": "Preview stopped successfully",

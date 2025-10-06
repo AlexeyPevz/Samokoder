@@ -15,7 +15,6 @@ from samokoder.api.routers.gpt_pilot_integration import run_samokoder_for_projec
 from samokoder.api.routers.auth import get_current_user
 from datetime import datetime, timedelta
 from fastapi import Header
-from samokoder.core.config import get_config
 
 router = APIRouter()
 
