@@ -29,6 +29,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - ENVIRONMENT=development
+      - ENABLE_PREVIEW_CONTAINER=0
     depends_on:
       db:
         condition: service_healthy
@@ -36,7 +37,6 @@ services:
         condition: service_healthy
     volumes:
       - ./workspace:/app/workspace
-      - /var/run/docker.sock:/var/run/docker.sock:ro  # FIX: Read-only для снижения RCE риска
     networks:
       - samokoder
       - web
@@ -89,7 +89,6 @@ services:
         condition: service_healthy
     volumes:
       - ./workspace:/app/workspace
-      - /var/run/docker.sock:/var/run/docker.sock:ro  # FIX: Read-only для снижения RCE риска
     networks:
       - samokoder
       - web
