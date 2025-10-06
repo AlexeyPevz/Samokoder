@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Фон -->
+  <rect width="100" height="100" rx="20" fill="#F8FAFC"/>
+  
+  <!-- Левая фигурная скобка -->
+  <path d="M20 25 C15 25, 10 30, 10 35 L10 65 C10 70, 15 75, 20 75" 
+        stroke="#0A2E50" stroke-width="4" fill="none" stroke-linecap="round"/>
+  
+  <!-- Правая фигурная скобка -->
+  <path d="M80 25 C85 25, 90 30, 90 35 L90 65 C90 70, 85 75, 80 75" 
+        stroke="#0A2E50" stroke-width="4" fill="none" stroke-linecap="round"/>
+  
+  <!-- Молния в центре -->
+  <path d="M45 30 L35 50 L45 50 L40 70 L60 45 L50 45 L55 30 Z" 
+        fill="#00A868" stroke="#00A868" stroke-width="1"/>
+</svg>

@@ -71,7 +71,7 @@ export function CreateProjectDialog({ open, onOpenChange, onProjectCreated }: Cr
             id="create-project-title"
             className="flex items-center gap-2"
           >
-            <Sparkles className="h-5 w-5 text-blue-600" aria-hidden="true" />
+            <Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />
             Создать новый проект
           </DialogTitle>
           <p id="create-project-description" className="text-sm text-muted-foreground">
@@ -104,7 +104,7 @@ export function CreateProjectDialog({ open, onOpenChange, onProjectCreated }: Cr
             <Button
               type="submit"
               disabled={isCreating || !name.trim()}
-              className="flex-1 bg-gradient-to-r from-primary to-secondary hover:from-blue-700 hover:to-purple-700"
+              className="flex-1 bg-primary hover:bg-primary/90"
             >
               {isCreating ? (
                 <>

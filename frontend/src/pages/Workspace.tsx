@@ -112,7 +112,7 @@ export default function Workspace() {
     return (
       <div className="h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-muted-foreground">Загрузка проекта...</p>
         </div>
       </div>
@@ -139,7 +139,7 @@ export default function Workspace() {
               <h1 className="font-semibold text-lg">{project.name}</h1>
               <button 
                 onClick={() => setShowProviderSelector(false)}
-                className="text-blue-600 hover:text-blue-800"
+                className="text-primary hover:text-primary/80"
               >
                 Назад к проекту
               </button>

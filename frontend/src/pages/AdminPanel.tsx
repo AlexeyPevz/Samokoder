@@ -233,7 +233,7 @@ export default function AdminPanel() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg">
                     <div>
                       <h4 className="font-medium">Плановое обслуживание</h4>
                       <p className="text-sm text-muted-foreground">

@@ -13,7 +13,7 @@ const templates = [
     image: "https://picsum.photos/seed/ecommerce/300/200",
     rating: 4.8,
     downloads: 1200,
-    color: "bg-blue-500"
+    color: "bg-primary"
   },
   {
     id: 2,
@@ -33,7 +33,7 @@ const templates = [
     image: "https://picsum.photos/seed/tasks/300/200",
     rating: 4.7,
     downloads: 2100,
-    color: "bg-purple-500"
+    color: "bg-accent"
   },
   {
     id: 4,

@@ -17,6 +17,17 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Open Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+      },
+      fontSize: {
+        'h1': '2.5rem',
+        'h2': '2rem', 
+        'h3': '1.5rem',
+      },
+      letterSpacing: {
+        'logo': '0.05em',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -50,6 +61,22 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        // SAMOKODER brand colors from brandbook
+        samokoder: {
+          primary: '#0A2E50',
+          accent: '#00A868',
+          'light-bg': '#F8FAFC',
+          'light-ui': '#FFFFFF',
+          'dark-text': '#0F172A',
+          'secondary-text': '#64748B',
+          'border-color': '#E2E8F0',
+          success: '#10B981',
+          error: '#EF4444',
+          blue: 'hsl(var(--samokoder-blue))',
+          green: 'hsl(var(--samokoder-green))',
+          'blue-dark': 'hsl(var(--samokoder-blue-dark))',
+          'green-dark': 'hsl(var(--samokoder-green-dark))',
         },
       },
       borderRadius: {

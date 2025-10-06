@@ -107,7 +107,7 @@ export function Header() {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-samokoder-primary focus-visible:ring-offset-2"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Открыть меню навигации"
             aria-expanded={mobileMenuOpen}

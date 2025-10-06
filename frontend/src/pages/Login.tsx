@@ -102,7 +102,7 @@ export default function Login() {
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
             <div 
-              className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center text-white text-xl font-bold"
+              className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-white text-xl font-bold"
               role="img"
               aria-label="Логотип Самокодер"
             >
@@ -146,7 +146,7 @@ export default function Login() {
             
             <Button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-primary to-secondary hover:from-blue-700 hover:to-purple-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="w-full bg-primary hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               disabled={isLoading}
               aria-describedby="login-help"
             >
@@ -170,7 +170,7 @@ export default function Login() {
             <span>Нет аккаунта? </span>
             <Link 
               to="/register" 
-              className="text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+              className="text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
               aria-label="Перейти к странице регистрации"
             >
               Зарегистрироваться

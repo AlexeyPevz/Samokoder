@@ -2,15 +2,34 @@
 /* Import critical CSS first */
 @import './styles/critical.css';
 
-/* Font optimization - system font stack for instant rendering */
+/* Import Open Sans font as required by brandbook */
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');
+
+/* Font optimization */
 @layer base {
-  /* Ensure font-display: swap for any custom fonts to prevent FOIT (Flash of Invisible Text) */
-  @font-face {
-    font-family: 'System';
-    font-style: normal;
-    font-weight: 300 900;
-    font-display: swap;
-    src: local('system-ui'), local('-apple-system'), local('BlinkMacSystemFont');
+  body {
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
+    font-weight: var(--font-weight-normal);
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: var(--font-weight-bold);
+    line-height: 1.2;
+    color: var(--samokoder-dark-text);
+  }
+  
+  h1 {
+    font-size: 2.5rem;
+  }
+  
+  h2 {
+    font-size: 2rem;
+  }
+  
+  h3 {
+    font-size: 1.5rem;
   }
 }
 
@@ -20,63 +39,101 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    /* Brandbook colors */
+    --background: 220 25% 98%; /* #F8FAFC */
+    --foreground: 223 47% 11%; /* #0F172A */
+    --card: 0 0% 100%; /* #FFFFFF */
+    --card-foreground: 223 47% 11%; /* #0F172A */
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 199 100% 45%; /* SAMOKODER Blue #00A2E5 */
+    --popover-foreground: 223 47% 11%;
+    --primary: 209 67% 18%; /* SAMOKODER Primary #0A2E50 */
     --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 30%;
-    --accent: 150 100% 33%; /* SAMOKODER Green #00A868 */
+    --secondary: 220 25% 98%; /* Light background */
+    --secondary-foreground: 223 47% 11%;
+    --muted: 220 14% 96%; /* Similar to border */
+    --muted-foreground: 215 20% 45%; /* #64748B */
+    --accent: 151 100% 33%; /* SAMOKODER Accent #00A868 */
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 70% 58%; /* #EF4444 */
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 199 100% 45%; /* SAMOKODER Blue for focus rings */
-    --chart-1: 199 100% 45%; /* SAMOKODER Blue */
-    --chart-2: 150 100% 33%; /* SAMOKODER Green */
+    --border: 215 20% 91%; /* #E2E8F0 */
+    --input: 215 20% 91%;
+    --ring: 209 67% 18%; /* SAMOKODER Primary for focus rings */
+    --success: 157 72% 40%; /* #10B981 */
+    --error: 0 70% 58%; /* #EF4444 */
+    --chart-1: 209 67% 18%; /* SAMOKODER Primary */
+    --chart-2: 151 100% 33%; /* SAMOKODER Accent */
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --radius: 0.5rem; /* 8px */
+    --radius-lg: 0.75rem; /* 12px */
     
-    /* SAMOKODER Brand Colors */
-    --samokoder-blue: 199 100% 45%; /* #00A2E5 */
-    --samokoder-green: 150 100% 33%; /* #00A868 */
-    --samokoder-blue-dark: 199 100% 35%; /* Darker blue for hover states */
-    --samokoder-green-dark: 150 100% 25%; /* Darker green for hover states */
+    /* SAMOKODER Brand Colors - exact from brandbook */
+    --samokoder-primary: #0A2E50;
+    --samokoder-accent: #00A868;
+    --samokoder-light-bg: #F8FAFC;
+    --samokoder-light-ui: #FFFFFF;
+    --samokoder-dark-text: #0F172A;
+    --samokoder-secondary-text: #64748B;
+    --samokoder-border-color: #E2E8F0;
+    --samokoder-success: #10B981;
+    --samokoder-error: #EF4444;
+    
+    /* For Tailwind compatibility */
+    --samokoder-blue: 209 67% 18%; /* #0A2E50 */
+    --samokoder-green: 151 100% 33%; /* #00A868 */
+    --samokoder-blue-dark: 209 67% 14%; /* Darker blue for hover states */
+    --samokoder-green-dark: 151 100% 25%; /* Darker green for hover states */
+    
+    /* Typography */
+    --font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-size-base: 16px;
+    --line-height-base: 1.6;
+    --font-weight-normal: 400;
+    --font-weight-medium: 600;
+    --font-weight-bold: 700;
+    
+    /* Spacing */
+    --spacing-xs: 8px;
+    --spacing-sm: 12px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
   }
   .dark {
-    --background: 0 0% 3.9%;
+    --background: 223 47% 11%; /* Dark background */
     --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
+    --card: 223 47% 13%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
+    --popover: 223 47% 13%;
     --popover-foreground: 0 0% 98%;
-    --primary: 199 100% 55%; /* Brighter SAMOKODER Blue for dark theme */
+    --primary: 209 67% 25%; /* Brighter SAMOKODER Primary for dark theme */
     --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 14.9%;
+    --secondary: 223 47% 15%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 150 100% 43%; /* Brighter SAMOKODER Green for dark theme */
+    --muted: 223 20% 20%;
+    --muted-foreground: 215 15% 65%;
+    --accent: 151 100% 40%; /* Brighter SAMOKODER Accent for dark theme */
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 199 100% 55%; /* SAMOKODER Blue for focus rings in dark theme */
-    --chart-1: 199 100% 55%; /* SAMOKODER Blue */
-    --chart-2: 150 100% 43%; /* SAMOKODER Green */
+    --border: 223 20% 25%;
+    --input: 223 20% 25%;
+    --ring: 209 67% 25%; /* SAMOKODER Primary for focus rings in dark theme */
+    --success: 157 65% 45%;
+    --error: 0 62% 50%;
+    --chart-1: 209 67% 25%; /* SAMOKODER Primary */
+    --chart-2: 151 100% 40%; /* SAMOKODER Accent */
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    
+    /* Dark theme brand colors */
+    --samokoder-blue: 209 67% 25%;
+    --samokoder-green: 151 100% 40%;
+    --samokoder-blue-dark: 209 67% 20%;
+    --samokoder-green-dark: 151 100% 30%;
   }
 }
 

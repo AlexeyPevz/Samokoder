@@ -17,7 +17,7 @@ export function EmptyState({ onCreateProject }: EmptyStateProps) {
     >
       <Card className="max-w-md text-center bg-white/80 backdrop-blur-sm border-0 shadow-lg">
         <CardContent className="p-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Sparkles className="h-8 w-8 text-white" />
           </div>
           
@@ -28,7 +28,7 @@ export function EmptyState({ onCreateProject }: EmptyStateProps) {
           
           <Button
             onClick={onCreateProject}
-            className="bg-gradient-to-r from-primary to-secondary hover:from-blue-700 hover:to-purple-700"
+            className="bg-primary hover:bg-primary/90"
           >
             <Plus className="mr-2 h-4 w-4" />
             Начать

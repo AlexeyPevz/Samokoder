@@ -31,7 +31,7 @@ export function AccessibleButton({
       size={size}
       disabled={isDisabled}
       className={cn(
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
         className
       )}
       aria-describedby={description ? `${props.id || 'button'}-description` : undefined}

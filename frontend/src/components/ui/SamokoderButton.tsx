@@ -14,19 +14,19 @@ const SamokoderButton: React.FC<SamokoderButtonProps> = ({
   children,
   ...props
 }) => {
-  const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-samokoder-blue disabled:pointer-events-none disabled:opacity-50';
+  const baseClasses = 'inline-flex items-center justify-center rounded-lg font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
   
   const variantClasses = {
-    primary: 'bg-samokoder-blue text-white hover:bg-samokoder-blue-dark shadow-sm',
-    secondary: 'bg-samokoder-green text-white hover:bg-samokoder-green-dark shadow-sm',
-    accent: 'bg-accent text-accent-foreground hover:bg-accent/90',
-    outline: 'border border-samokoder-blue text-samokoder-blue hover:bg-samokoder-blue hover:text-white',
-    ghost: 'text-samokoder-blue hover:bg-samokoder-blue/10'
+    primary: 'bg-[#0A2E50] text-white hover:bg-[#083247] hover:transform hover:translate-y-[-1px] shadow-sm focus-visible:ring-[#0A2E50]',
+    secondary: 'bg-transparent text-[#0A2E50] border-2 border-[#0A2E50] hover:bg-[#0A2E50] hover:text-white focus-visible:ring-[#0A2E50]',
+    accent: 'bg-[#00A868] text-white hover:bg-[#00946B] hover:transform hover:translate-y-[-1px] shadow-sm focus-visible:ring-[#00A868]',
+    outline: 'border-2 border-[#0A2E50] text-[#0A2E50] hover:bg-[#0A2E50] hover:text-white focus-visible:ring-[#0A2E50]',
+    ghost: 'text-[#0A2E50] hover:bg-[#0A2E50]/10 focus-visible:ring-[#0A2E50]'
   };
 
   const sizeClasses = {
-    sm: 'h-8 px-3 text-sm',
-    md: 'h-10 px-4 py-2',
+    sm: 'h-8 px-3 text-sm rounded-md',
+    md: 'h-10 px-6 py-2 text-base',
     lg: 'h-12 px-8 text-lg'
   };
 

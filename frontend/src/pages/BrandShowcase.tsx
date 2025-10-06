@@ -11,17 +11,17 @@ const BrandShowcase: React.FC = () => {
       <div className="max-w-6xl mx-auto space-y-12">
         {/* Header */}
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-samokoder-blue">
-            SAMOKODER Brand Showcase
+          <h1 className="text-4xl font-bold text-[#0A2E50]">
+            САМОКОДЕР Brand Showcase
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg text-[#64748B]">
             Демонстрация фирменного стиля и компонентов
           </p>
         </div>
 
         {/* Logo Variations */}
         <section className="space-y-6">
-          <h2 className="text-2xl font-semibold text-samokoder-blue">Логотип и его варианты</h2>
+          <h2 className="text-2xl font-semibold text-[#0A2E50]">Логотип и его варианты</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Основной логотип</h3>
@@ -58,7 +58,7 @@ const BrandShowcase: React.FC = () => {
 
         {/* Icons */}
         <section className="space-y-6">
-          <h2 className="text-2xl font-semibold text-samokoder-blue">Иконки</h2>
+          <h2 className="text-2xl font-semibold text-[#0A2E50]">Иконки</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
             <div className="text-center space-y-2">
               <SamokoderIcon size={48} />
@@ -89,7 +89,7 @@ const BrandShowcase: React.FC = () => {
 
         {/* Buttons */}
         <section className="space-y-6">
-          <h2 className="text-2xl font-semibold text-samokoder-blue">Кнопки</h2>
+          <h2 className="text-2xl font-semibold text-[#0A2E50]">Кнопки</h2>
           <div className="space-y-4">
             <div className="flex flex-wrap gap-4">
               <SamokoderButton variant="primary">Основная кнопка</SamokoderButton>
@@ -108,7 +108,7 @@ const BrandShowcase: React.FC = () => {
 
         {/* Cards */}
         <section className="space-y-6">
-          <h2 className="text-2xl font-semibold text-samokoder-blue">Карточки</h2>
+          <h2 className="text-2xl font-semibold text-[#0A2E50]">Карточки</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <SamokoderCard variant="default">
               <SamokoderCardHeader>
@@ -150,7 +150,7 @@ const BrandShowcase: React.FC = () => {
 
         {/* Badges */}
         <section className="space-y-6">
-          <h2 className="text-2xl font-semibold text-samokoder-blue">Значки</h2>
+          <h2 className="text-2xl font-semibold text-[#0A2E50]">Значки</h2>
           <div className="flex flex-wrap gap-4">
             <SamokoderBadge variant="default">Основной</SamokoderBadge>
             <SamokoderBadge variant="secondary">Вторичный</SamokoderBadge>
@@ -169,22 +169,22 @@ const BrandShowcase: React.FC = () => {
 
         {/* Color Palette */}
         <section className="space-y-6">
-          <h2 className="text-2xl font-semibold text-samokoder-blue">Цветовая палитра</h2>
+          <h2 className="text-2xl font-semibold text-[#0A2E50]">Цветовая палитра</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Основные цвета</h3>
               <div className="space-y-2">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-samokoder-blue rounded-lg"></div>
+                  <div className="w-16 h-16 bg-[#0A2E50] rounded-lg"></div>
                   <div>
-                    <p className="font-medium">SAMOKODER Blue</p>
-                    <p className="text-sm text-muted-foreground">#00A2E5</p>
+                    <p className="font-medium">SAMOKODER Primary</p>
+                    <p className="text-sm text-muted-foreground">#0A2E50</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-samokoder-green rounded-lg"></div>
+                  <div className="w-16 h-16 bg-[#00A868] rounded-lg"></div>
                   <div>
-                    <p className="font-medium">SAMOKODER Green</p>
+                    <p className="font-medium">SAMOKODER Accent</p>
                     <p className="text-sm text-muted-foreground">#00A868</p>
                   </div>
                 </div>
