@@ -1,0 +1,2900 @@
+openapi: 3.1.0
+info:
+  title: Samokoder SaaS API
+  version: 1.0.0
+  description: |
+    Полнофункциональный API для платформы Samokoder - AI-powered генератор кода.
+    
+    ## Аутентификация
+    API использует JWT токены с Bearer схемой аутентификации. Токены передаются в заголовке:
+    ```
+    Authorization: Bearer <access_token>
+    ```
+    
+    ## Безопасность
+    - JWT токены с ротацией (access: 15 минут, refresh: 7 дней)
+    - Rate limiting на критических эндпоинтах
+    - Защита от brute-force атак
+    - CORS с белым списком доменов
+    - Валидация всех входных данных
+    
+    ## Версионирование
+    API версионируется через префикс `/v1`. Мы гарантируем обратную совместимость в рамках мажорной версии.
+    
+  contact:
+    name: Samokoder Support
+    email: support@samokoder.io
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.samokoder.io
+    description: Production сервер
+  - url: https://staging-api.samokoder.io
+    description: Staging сервер
+  - url: http://localhost:8000
+    description: Локальная разработка
+
+tags:
+  - name: auth
+    description: Аутентификация и авторизация
+  - name: projects
+    description: Управление проектами
+  - name: keys
+    description: Управление API ключами провайдеров
+  - name: models
+    description: Информация о доступных моделях LLM
+  - name: workspace
+    description: WebSocket подключение для работы с проектами
+  - name: preview
+    description: Управление превью проектов
+  - name: notifications
+    description: Система уведомлений
+  - name: plugins
+    description: Управление плагинами
+  - name: analytics
+    description: Аналитика и метрики
+  - name: usage
+    description: Использование токенов
+  - name: user
+    description: Профиль пользователя
+  - name: gitverse
+    description: Интеграция с GitVerse
+  - name: health
+    description: Мониторинг здоровья системы
+
+paths:
+  /:
+    get:
+      summary: Корневой эндпоинт
+      description: Возвращает информацию о API
+      operationId: getRoot
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Samokoder SaaS API ready"
+                  version:
+                    type: string
+                    example: "1.0"
+                required:
+                  - message
+                  - version
+
+  /health:
+    get:
+      summary: Простая проверка здоровья
+      description: Минимальная проверка работоспособности API
+      operationId: getHealthCheck
+      responses:
+        '200':
+          description: API работает
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                required:
+                  - status
+
+  /v1/auth/register:
+    post:
+      tags:
+        - auth
+      summary: Регистрация нового пользователя
+      description: |
+        Создает нового пользователя с валидацией пароля согласно ASVS 2.1.1:
+        - Минимум 8 символов
+        - Минимум 1 заглавная буква
+        - Минимум 1 строчная буква
+        - Минимум 1 цифра
+        - Минимум 1 специальный символ
+        - Не должен быть в списке распространенных паролей
+        
+        **Реализация:** `api/routers/auth.py:141-168`
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Пользователь успешно зарегистрирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Пользователь уже существует или невалидные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Ошибка валидации данных
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+
+  /v1/auth/login:
+    post:
+      tags:
+        - auth
+      summary: Вход в систему
+      description: |
+        Аутентификация пользователя с email и паролем.
+        
+        **Защита:**
+        - Rate limiting: 5 запросов в минуту
+        - Блокировка после 5 неудачных попыток на 15 минут
+        - Аудит лог всех попыток входа
+        - HttpOnly cookies для токенов
+        
+        **Реализация:** `api/routers/auth.py:171-257`
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  format: email
+                  description: Email пользователя
+                password:
+                  type: string
+                  format: password
+                  description: Пароль пользователя
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Успешная аутентификация
+          headers:
+            Set-Cookie:
+              description: HttpOnly cookies с access_token и refresh_token
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Невалидные учетные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '429':
+          description: Слишком много попыток входа - аккаунт заблокирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+      x-rate-limit:
+        limit: 5
+        window: 60
+
+  /v1/auth/refresh:
+    post:
+      tags:
+        - auth
+      summary: Обновление access токена
+      description: |
+        Выдает новый access токен на основе refresh токена.
+        
+        **Реализация:** `api/routers/auth.py:260-288`
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+      responses:
+        '200':
+          description: Токен успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefreshResponse'
+        '401':
+          description: Невалидный refresh токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+      x-rate-limit:
+        limit: 10
+        window: 60
+
+  /v1/auth/logout:
+    post:
+      tags:
+        - auth
+      summary: Выход из системы
+      description: |
+        Отзывает текущий access токен (добавляет jti в черный список).
+        
+        **Реализация:** `api/routers/auth.py:291-322`
+      operationId: logout
+      responses:
+        '200':
+          description: Успешный выход
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Successfully logged out"
+      security:
+        - BearerAuth: []
+
+  /v1/auth/me:
+    get:
+      tags:
+        - auth
+      summary: Получить профиль текущего пользователя
+      description: |
+        Возвращает базовую информацию о текущем пользователе.
+        
+        **Реализация:** `api/routers/auth.py:325-334`
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: Профиль пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/auth/github:
+    get:
+      tags:
+        - auth
+      summary: Инициировать GitHub OAuth
+      description: |
+        Перенаправляет на GitHub для OAuth авторизации.
+        
+        **Реализация:** `api/routers/auth.py:337-349`
+      operationId: initiateGitHubAuth
+      responses:
+        '302':
+          description: Перенаправление на GitHub
+        '400':
+          description: GitHub OAuth не настроен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/auth/github/callback:
+    get:
+      tags:
+        - auth
+      summary: GitHub OAuth callback
+      description: |
+        Обрабатывает callback от GitHub OAuth и сохраняет токен.
+        
+        **Реализация:** `api/routers/auth.py:352-393`
+      operationId: handleGitHubCallback
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Код авторизации от GitHub
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+          description: JWT токен с user_id
+      responses:
+        '302':
+          description: Перенаправление на страницу настроек
+        '400':
+          description: Невалидный state или ошибка получения токена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+
+  /v1/projects:
+    get:
+      tags:
+        - projects
+      summary: Получить список проектов
+      description: |
+        Возвращает все проекты текущего пользователя, отсортированные по дате создания (новые первыми).
+        
+        **Реализация:** `api/routers/projects.py:48-63`
+      operationId: listProjects
+      responses:
+        '200':
+          description: Список проектов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectListResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+    post:
+      tags:
+        - projects
+      summary: Создать новый проект
+      description: |
+        Создает новый проект для текущего пользователя.
+        
+        **Реализация:** `api/routers/projects.py:27-45`
+      operationId: createProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreateRequest'
+      responses:
+        '201':
+          description: Проект успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDetailResponse'
+        '400':
+          description: Невалидные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+      security:
+        - BearerAuth: []
+
+  /v1/projects/{project_id}:
+    get:
+      tags:
+        - projects
+      summary: Получить детали проекта
+      description: |
+        Возвращает детальную информацию о конкретном проекте.
+        
+        **Реализация:** `api/routers/projects.py:66-84`
+      operationId: getProject
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Детали проекта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDetailResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Нет доступа к проекту
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Проект не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+    put:
+      tags:
+        - projects
+      summary: Обновить проект
+      description: |
+        Обновляет название и/или описание проекта.
+        
+        **Реализация:** `api/routers/projects.py:87-116`
+      operationId: updateProject
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectUpdateRequest'
+      responses:
+        '200':
+          description: Проект успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDetailResponse'
+        '400':
+          description: Нет данных для обновления
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Нет доступа к проекту
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Проект не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+    delete:
+      tags:
+        - projects
+      summary: Удалить проект
+      description: |
+        Удаляет проект. Операция необратима.
+        
+        **Реализация:** `api/routers/projects.py:119-137`
+      operationId: deleteProject
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '204':
+          description: Проект успешно удален
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Нет доступа к проекту
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Проект не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/keys:
+    get:
+      tags:
+        - keys
+      summary: Получить список API ключей
+      description: |
+        Возвращает список всех сохраненных API ключей с маскированными значениями.
+        
+        **Реализация:** `api/routers/keys.py:81-97`
+      operationId: listApiKeys
+      responses:
+        '200':
+          description: Список API ключей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApiKeyResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+    post:
+      tags:
+        - keys
+      summary: Добавить API ключ
+      description: |
+        Добавляет новый API ключ для провайдера (OpenAI, Anthropic, Groq, OpenRouter).
+        Ключ шифруется перед сохранением.
+        
+        **Реализация:** `api/routers/keys.py:42-79`
+      operationId: addApiKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiKeyCreate'
+      responses:
+        '200':
+          description: API ключ успешно добавлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Ошибка шифрования
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/keys/{provider}:
+    delete:
+      tags:
+        - keys
+      summary: Удалить API ключ
+      description: |
+        Удаляет API ключ для указанного провайдера.
+        
+        **Реализация:** `api/routers/keys.py:99-117`
+      operationId: deleteApiKey
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [openai, anthropic, groq, openrouter]
+          description: Название провайдера
+      responses:
+        '204':
+          description: API ключ успешно удален
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: API ключ для провайдера не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/keys/{provider}/settings:
+    put:
+      tags:
+        - keys
+      summary: Обновить настройки API ключа
+      description: |
+        Обновляет модель и настройки для API ключа провайдера.
+        
+        **Реализация:** `api/routers/keys.py:119-147`
+      operationId: updateApiKeySettings
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [openai, anthropic, groq, openrouter]
+          description: Название провайдера
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiKeySettingsUpdate'
+      responses:
+        '200':
+          description: Настройки обновлены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: API ключ для провайдера не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/keys/{provider}/usage:
+    get:
+      tags:
+        - keys
+      summary: Получить статистику использования токенов для провайдера
+      description: |
+        Возвращает статистику использования токенов по моделям для указанного провайдера.
+        
+        **Реализация:** `api/routers/keys.py:149-165`
+      operationId: getProviderTokenUsage
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Название провайдера
+      responses:
+        '200':
+          description: Статистика использования
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TokenUsageResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/keys/usage:
+    get:
+      tags:
+        - keys
+      summary: Получить полную статистику использования токенов
+      description: |
+        Возвращает статистику использования токенов по всем провайдерам и моделям.
+        
+        **Реализация:** `api/routers/keys.py:167-182`
+      operationId: getAllTokenUsage
+      responses:
+        '200':
+          description: Полная статистика использования
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties:
+                    $ref: '#/components/schemas/TokenUsageResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/models:
+    get:
+      tags:
+        - models
+      summary: Получить список всех доступных моделей
+      description: |
+        Возвращает информацию о всех доступных моделях для всех провайдеров.
+        Эндпоинт не требует авторизации.
+        
+        **Реализация:** `api/routers/models.py:49-52`
+      operationId: getAvailableModels
+      responses:
+        '200':
+          description: Словарь моделей по провайдерам
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/ProviderModels'
+      security: []
+
+  /v1/models/{provider}:
+    get:
+      tags:
+        - models
+      summary: Получить модели для конкретного провайдера
+      description: |
+        Возвращает информацию о моделях для указанного провайдера.
+        Эндпоинт не требует авторизации.
+        
+        **Реализация:** `api/routers/models.py:54-59`
+      operationId: getProviderModels
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [openai, anthropic, groq, openrouter]
+          description: Название провайдера
+      responses:
+        '200':
+          description: Информация о моделях провайдера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderModels'
+        '404':
+          description: Провайдер не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+
+  /v1/ws/{project_id}:
+    get:
+      tags:
+        - workspace
+      summary: WebSocket подключение для проекта
+      description: |
+        Открывает WebSocket соединение для работы с проектом в реальном времени.
+        Токен передается через query параметр.
+        
+        **Реализация:** `api/routers/workspace.py:72-91`
+      operationId: connectWorkspace
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID проекта
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: JWT access token
+      responses:
+        '101':
+          description: Switching Protocols - WebSocket установлен
+        '401':
+          description: Невалидный токен
+        '404':
+          description: Проект не найден
+      security: []
+
+  /v1/projects/{project_id}/preview/start:
+    post:
+      tags:
+        - preview
+      summary: Запустить превью проекта
+      description: |
+        Запускает dev сервер для превью проекта.
+        
+        **Реализация:** `api/routers/preview.py:13-25`
+        
+        **⚠️ ВНИМАНИЕ:** Использует синхронный get_db вместо async get_async_db
+      operationId: startPreview
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Превью запущено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    example: "http://localhost:3001"
+                  status:
+                    type: string
+                    example: "running"
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Проект не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/projects/{project_id}/preview/stop:
+    post:
+      tags:
+        - preview
+      summary: Остановить превью проекта
+      description: |
+        Останавливает dev сервер превью.
+        
+        **Реализация:** `api/routers/preview.py:27-35`
+        
+        **⚠️ TODO:** Реализация не завершена
+      operationId: stopPreview
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Превью остановлено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Проект не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/projects/{project_id}/preview/status:
+    get:
+      tags:
+        - preview
+      summary: Получить статус превью
+      description: |
+        Возвращает текущий статус превью проекта.
+        
+        **Реализация:** `api/routers/preview.py:37-45`
+        
+        **⚠️ TODO:** Реализация возвращает хардкоженные данные
+      operationId: getPreviewStatus
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Статус превью
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                        format: uri
+                      status:
+                        type: string
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Проект не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/notifications/subscribe:
+    post:
+      tags:
+        - notifications
+      summary: Подписаться на уведомления
+      description: |
+        Подписывает пользователя на указанные типы уведомлений.
+        
+        **Реализация:** `api/routers/notifications.py:12-33`
+      operationId: subscribeToNotifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notification_types:
+                  type: array
+                  items:
+                    type: string
+              required:
+                - notification_types
+      responses:
+        '200':
+          description: Успешная подписка
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка подписки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/notifications/unsubscribe:
+    post:
+      tags:
+        - notifications
+      summary: Отписаться от уведомлений
+      description: |
+        Отписывает пользователя от указанных типов уведомлений.
+        
+        **Реализация:** `api/routers/notifications.py:36-57`
+      operationId: unsubscribeFromNotifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notification_types:
+                  type: array
+                  items:
+                    type: string
+              required:
+                - notification_types
+      responses:
+        '200':
+          description: Успешная отписка
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка отписки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/notifications:
+    get:
+      tags:
+        - notifications
+      summary: Получить уведомления пользователя
+      description: |
+        Возвращает список уведомлений для текущего пользователя.
+        
+        **Реализация:** `api/routers/notifications.py:60-78`
+      operationId: getUserNotifications
+      responses:
+        '200':
+          description: Список уведомлений
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notifications:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка получения уведомлений
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/notifications/{notification_id}/read:
+    post:
+      tags:
+        - notifications
+      summary: Отметить уведомление как прочитанное
+      description: |
+        Помечает уведомление как прочитанное.
+        
+        **Реализация:** `api/routers/notifications.py:81-102`
+      operationId: markNotificationAsRead
+      parameters:
+        - name: notification_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID уведомления
+      responses:
+        '200':
+          description: Уведомление отмечено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/notifications/test:
+    post:
+      tags:
+        - notifications
+      summary: Отправить тестовое уведомление
+      description: |
+        Отправляет тестовое уведомление пользователю.
+        
+        **Реализация:** `api/routers/notifications.py:105-137`
+      operationId: sendTestNotification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notification_type:
+                  type: string
+                title:
+                  type: string
+                message:
+                  type: string
+                data:
+                  type: object
+              required:
+                - notification_type
+                - title
+                - message
+      responses:
+        '200':
+          description: Тестовое уведомление отправлено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка отправки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/plugins:
+    get:
+      tags:
+        - plugins
+      summary: Получить список плагинов
+      description: |
+        Возвращает список всех доступных плагинов.
+        
+        **Реализация:** `api/routers/plugins.py:12-38`
+      operationId: getPlugins
+      responses:
+        '200':
+          description: Список плагинов
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plugins:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PluginInfo'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка получения плагинов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/plugins/{plugin_name}:
+    get:
+      tags:
+        - plugins
+      summary: Получить информацию о плагине
+      description: |
+        Возвращает детальную информацию о конкретном плагине.
+        
+        **Реализация:** `api/routers/plugins.py:41-69`
+      operationId: getPluginInfo
+      parameters:
+        - name: plugin_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Название плагина
+      responses:
+        '200':
+          description: Информация о плагине
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginInfo'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Плагин не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка получения информации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/plugins/{plugin_name}/enable:
+    post:
+      tags:
+        - plugins
+      summary: Включить плагин
+      description: |
+        Включает указанный плагин.
+        
+        **Реализация:** `api/routers/plugins.py:72-99`
+      operationId: enablePlugin
+      parameters:
+        - name: plugin_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Название плагина
+      responses:
+        '200':
+          description: Плагин включен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Плагин не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка включения плагина
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/plugins/{plugin_name}/disable:
+    post:
+      tags:
+        - plugins
+      summary: Отключить плагин
+      description: |
+        Отключает указанный плагин.
+        
+        **Реализация:** `api/routers/plugins.py:102-129`
+      operationId: disablePlugin
+      parameters:
+        - name: plugin_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Название плагина
+      responses:
+        '200':
+          description: Плагин отключен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Плагин не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка отключения плагина
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/plugins/{plugin_name}/settings:
+    get:
+      tags:
+        - plugins
+      summary: Получить настройки плагина
+      description: |
+        Возвращает пользовательские настройки для плагина.
+        
+        **Реализация:** `api/routers/plugins.py:132-159`
+      operationId: getPluginSettings
+      parameters:
+        - name: plugin_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Название плагина
+      responses:
+        '200':
+          description: Настройки плагина
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plugin:
+                    type: string
+                  settings:
+                    type: object
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Плагин не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка получения настроек
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+    post:
+      tags:
+        - plugins
+      summary: Обновить настройки плагина
+      description: |
+        Обновляет пользовательские настройки для плагина.
+        
+        **Реализация:** `api/routers/plugins.py:162-194`
+      operationId: updatePluginSettings
+      parameters:
+        - name: plugin_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Название плагина
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Настройки обновлены
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Плагин не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка обновления настроек
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/plugins/{plugin_name}/github/create-repo:
+    post:
+      tags:
+        - plugins
+      summary: Создать GitHub репозиторий для проекта
+      description: |
+        Создает GitHub репозиторий для указанного проекта (только для GitHub плагина).
+        
+        **Реализация:** `api/routers/plugins.py:197-244`
+      operationId: createGitHubRepo
+      parameters:
+        - name: plugin_name
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [github]
+          description: Название плагина (должно быть 'github')
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project_id:
+                  type: string
+                  format: uuid
+              required:
+                - project_id
+      responses:
+        '200':
+          description: Репозиторий создан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          description: Неверное название плагина
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Плагин или проект не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка создания репозитория
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/analytics/user:
+    get:
+      tags:
+        - analytics
+      summary: Получить аналитику пользователя
+      description: |
+        Возвращает метрики аналитики для текущего пользователя.
+        
+        **Реализация:** `api/routers/analytics.py:12-31`
+      operationId: getUserAnalytics
+      responses:
+        '200':
+          description: Метрики пользователя
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                  metrics:
+                    type: object
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка получения аналитики
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/analytics/system:
+    get:
+      tags:
+        - analytics
+      summary: Получить системную аналитику
+      description: |
+        Возвращает общую системную аналитику (требует права администратора).
+        
+        **Реализация:** `api/routers/analytics.py:34-56`
+        
+        **⚠️ TODO:** Проверка прав администратора не реализована
+      operationId: getSystemAnalytics
+      responses:
+        '200':
+          description: Системные метрики
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metrics:
+                    type: object
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка получения аналитики
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/analytics/user/actions:
+    get:
+      tags:
+        - analytics
+      summary: Получить лог действий пользователя
+      description: |
+        Возвращает лог действий текущего пользователя.
+        
+        **Реализация:** `api/routers/analytics.py:59-80`
+      operationId: getUserActionLogs
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 1000
+          description: Максимальное количество записей
+      responses:
+        '200':
+          description: Лог действий
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                  logs:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка получения логов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/analytics/record:
+    post:
+      tags:
+        - analytics
+      summary: Записать действие пользователя
+      description: |
+        Записывает действие пользователя для аналитики.
+        
+        **Реализация:** `api/routers/analytics.py:83-108`
+      operationId: recordUserAction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                details:
+                  type: object
+                project_id:
+                  type: string
+              required:
+                - action
+      responses:
+        '200':
+          description: Действие записано
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка записи
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/analytics/export:
+    get:
+      tags:
+        - analytics
+      summary: Экспортировать аналитику
+      description: |
+        Экспортирует всю аналитику (требует права администратора).
+        
+        **Реализация:** `api/routers/analytics.py:111-131`
+        
+        **⚠️ TODO:** Проверка прав администратора не реализована
+      operationId: exportAnalytics
+      responses:
+        '200':
+          description: Экспортированные данные
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка экспорта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/usage/token:
+    get:
+      tags:
+        - usage
+      summary: Получить статистику использования токенов
+      description: |
+        Возвращает полную статистику использования токенов пользователя.
+        
+        **Реализация:** `api/routers/usage.py:11-29`
+      operationId: getTokenUsage
+      responses:
+        '200':
+          description: Статистика токенов
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usage:
+                    type: object
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка получения статистики
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/usage/token/provider/{provider}:
+    get:
+      tags:
+        - usage
+      summary: Получить статистику токенов для провайдера
+      description: |
+        Возвращает статистику использования токенов для конкретного провайдера.
+        
+        **Реализация:** `api/routers/usage.py:32-64`
+      operationId: getProviderUsage
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Название провайдера
+      responses:
+        '200':
+          description: Статистика провайдера
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  provider:
+                    type: string
+                  usage:
+                    type: object
+                  totals:
+                    type: object
+                    properties:
+                      total_tokens:
+                        type: integer
+                      total_requests:
+                        type: integer
+                      models_count:
+                        type: integer
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка получения статистики
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/usage/token/provider/{provider}/model/{model}:
+    get:
+      tags:
+        - usage
+      summary: Получить статистику токенов для модели
+      description: |
+        Возвращает статистику использования токенов для конкретной модели провайдера.
+        
+        **Реализация:** `api/routers/usage.py:67-93`
+      operationId: getModelUsage
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Название провайдера
+        - name: model
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Название модели
+      responses:
+        '200':
+          description: Статистика модели
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  usage:
+                    type: object
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка получения статистики
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/usage/token/reset:
+    post:
+      tags:
+        - usage
+      summary: Сбросить статистику токенов
+      description: |
+        Сбрасывает статистику использования токенов.
+        Может сбросить все или для конкретного провайдера/модели.
+        
+        **Реализация:** `api/routers/usage.py:96-132`
+        
+        **⚠️ ВНИМАНИЕ:** Использует синхронный db.commit() вместо async
+      operationId: resetTokenUsage
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                provider:
+                  type: string
+                model:
+                  type: string
+      responses:
+        '200':
+          description: Статистика сброшена
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка сброса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/usage/token/summary:
+    get:
+      tags:
+        - usage
+      summary: Получить сводку использования токенов
+      description: |
+        Возвращает агрегированную сводку использования токенов по всем провайдерам.
+        
+        **Реализация:** `api/routers/usage.py:135-178`
+      operationId: getTokenUsageSummary
+      responses:
+        '200':
+          description: Сводка токенов
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totals:
+                    type: object
+                    properties:
+                      providers:
+                        type: integer
+                      tokens:
+                        type: integer
+                      requests:
+                        type: integer
+                  providers:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        tokens:
+                          type: integer
+                        requests:
+                          type: integer
+                        models:
+                          type: integer
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка получения сводки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/user/github-token:
+    post:
+      tags:
+        - user
+      summary: Установить GitHub токен
+      description: |
+        Устанавливает GitHub access token для пользователя (шифруется перед сохранением).
+        
+        **Реализация:** `api/routers/user.py:22-37`
+      operationId: setGitHubToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+              required:
+                - token
+      responses:
+        '200':
+          description: Токен успешно установлен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/user/profile:
+    get:
+      tags:
+        - user
+      summary: Получить профиль пользователя
+      description: |
+        Возвращает профиль текущего пользователя.
+        
+        **Реализация:** `api/routers/user.py:39-50`
+        
+        **⚠️ ВНИМАНИЕ:** Эндпоинт НЕ async (def вместо async def)
+      operationId: getUserProfile
+      responses:
+        '200':
+          description: Профиль пользователя
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  email:
+                    type: string
+                    format: email
+                  tier:
+                    type: string
+                  projects_monthly_count:
+                    type: integer
+                  projects_total:
+                    type: integer
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /v1/user/gitverse-token:
+    post:
+      tags:
+        - gitverse
+      summary: Установить GitVerse токен
+      description: |
+        Устанавливает GitVerse access token для пользователя (шифруется перед сохранением).
+        
+        **Реализация:** `api/routers/gitverse.py:15-23`
+        
+        **⚠️ ВНИМАНИЕ:** 
+        - Эндпоинт НЕ async (def вместо async def)
+        - Использует синхронный get_db и db.commit()
+      operationId: setGitVerseToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+              required:
+                - token
+      responses:
+        '200':
+          description: Токен успешно установлен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /health/:
+    get:
+      tags:
+        - health
+      summary: Полная проверка здоровья системы
+      description: |
+        Возвращает детальную информацию о состоянии всех компонентов системы:
+        - База данных
+        - Redis
+        - Системные ресурсы
+        - API эндпоинты
+        
+        **Реализация:** `core/monitoring/health.py:360-368`
+      operationId: getFullHealth
+      responses:
+        '200':
+          description: Состояние системы
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemHealth'
+      security: []
+
+  /health/status:
+    get:
+      tags:
+        - health
+      summary: Простая проверка здоровья
+      description: |
+        Возвращает упрощенную информацию о статусе системы.
+        
+        **Реализация:** `core/monitoring/health.py:371-385`
+      operationId: getHealthStatus
+      responses:
+        '200':
+          description: Статус системы
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, degraded, unhealthy]
+                  timestamp:
+                    type: string
+                    format: date-time
+                  uptime_seconds:
+                    type: integer
+      security: []
+
+  /health/components/{component_name}:
+    get:
+      tags:
+        - health
+      summary: Проверка конкретного компонента
+      description: |
+        Возвращает состояние указанного компонента системы.
+        
+        **Реализация:** `core/monitoring/health.py:388-407`
+      operationId: getComponentHealth
+      parameters:
+        - name: component_name
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [database, redis, system, api]
+          description: Название компонента
+      responses:
+        '200':
+          description: Состояние компонента
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentHealth'
+        '404':
+          description: Компонент не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+
+  /health/metrics:
+    get:
+      tags:
+        - health
+      summary: Получить метрики системы
+      description: |
+        Возвращает метрики производительности и использования ресурсов.
+        
+        **Реализация:** `core/monitoring/health.py:410-448`
+      operationId: getHealthMetrics
+      responses:
+        '200':
+          description: Метрики системы
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  system:
+                    type: object
+                    properties:
+                      cpu_percent:
+                        type: number
+                      memory_percent:
+                        type: number
+                      disk_percent:
+                        type: number
+                  process:
+                    type: object
+                    properties:
+                      memory_mb:
+                        type: integer
+                      cpu_percent:
+                        type: number
+                      threads:
+                        type: integer
+                  health:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                      uptime_seconds:
+                        type: integer
+                      last_check:
+                        type: string
+                        format: date-time
+                  components:
+                    type: object
+      security: []
+
+  /health/test:
+    post:
+      tags:
+        - health
+      summary: Запустить тест здоровья
+      description: |
+        Запускает полную проверку здоровья всех компонентов.
+        
+        **Реализация:** `core/monitoring/health.py:451-459`
+      operationId: runHealthTest
+      responses:
+        '200':
+          description: Результаты теста
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemHealth'
+      security: []
+
+  /metrics:
+    get:
+      tags:
+        - health
+      summary: Prometheus метрики
+      description: |
+        Эндпоинт для сбора метрик Prometheus.
+        
+        **Реализация:** `api/main.py:113-114`
+      operationId: getPrometheusMetrics
+      responses:
+        '200':
+          description: Метрики в формате Prometheus
+          content:
+            text/plain:
+              schema:
+                type: string
+      security: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT токен в формате: Bearer <token>
+        
+        Получить токен можно через `/v1/auth/login` или `/v1/auth/register`
+
+  parameters:
+    ProjectId:
+      name: project_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Уникальный идентификатор проекта
+
+  schemas:
+    # Auth schemas
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: Email пользователя
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          description: |
+            Пароль должен содержать:
+            - Минимум 8 символов
+            - Минимум 1 заглавную букву
+            - Минимум 1 строчную букву
+            - Минимум 1 цифру
+            - Минимум 1 специальный символ
+          example: "SecurePass123!"
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          description: Пароль пользователя
+          example: "SecurePass123!"
+
+    AuthResponse:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - expires_in
+        - user_id
+        - email
+      properties:
+        access_token:
+          type: string
+          description: JWT access токен
+        refresh_token:
+          type: string
+          description: JWT refresh токен
+        token_type:
+          type: string
+          enum: [bearer]
+          default: bearer
+        expires_in:
+          type: integer
+          description: Время жизни access токена в секундах
+          example: 900
+        user_id:
+          type: integer
+          description: ID пользователя
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+
+    TokenRefreshRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+          description: Refresh токен
+
+    TokenRefreshResponse:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - expires_in
+      properties:
+        access_token:
+          type: string
+          description: Новый JWT access токен
+        token_type:
+          type: string
+          enum: [bearer]
+          default: bearer
+        expires_in:
+          type: integer
+          description: Время жизни токена в секундах
+          example: 900
+
+    UserResponse:
+      type: object
+      required:
+        - id
+        - email
+        - tier
+        - created_at
+        - projects_count
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        tier:
+          type: string
+          enum: [free, pro, enterprise]
+        created_at:
+          type: string
+          format: date-time
+        projects_count:
+          type: integer
+          minimum: 0
+
+    # Project schemas
+    ProjectCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Название проекта
+          example: "My Awesome Project"
+        description:
+          type: string
+          maxLength: 1000
+          description: Описание проекта
+          example: "A revolutionary web application"
+
+    ProjectUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Новое название проекта
+        description:
+          type: string
+          maxLength: 1000
+          description: Новое описание проекта
+
+    ProjectResponse:
+      type: object
+      required:
+        - id
+        - name
+        - created_at
+        - user_id
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        user_id:
+          type: integer
+
+    ProjectListResponse:
+      type: object
+      required:
+        - projects
+        - total
+      properties:
+        projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectResponse'
+        total:
+          type: integer
+          minimum: 0
+
+    ProjectDetailResponse:
+      type: object
+      required:
+        - project
+      properties:
+        project:
+          $ref: '#/components/schemas/ProjectResponse'
+
+    # API Keys schemas
+    ApiKeyCreate:
+      type: object
+      required:
+        - provider
+        - api_key
+      properties:
+        provider:
+          type: string
+          enum: [openai, anthropic, groq, openrouter]
+          description: Провайдер AI
+        api_key:
+          type: string
+          minLength: 10
+          maxLength: 200
+          description: API ключ провайдера
+        model:
+          type: string
+          description: Предпочитаемая модель (опционально)
+        settings:
+          type: object
+          additionalProperties: true
+          description: Дополнительные настройки
+
+    ApiKeyResponse:
+      type: object
+      required:
+        - provider
+        - display_key
+      properties:
+        provider:
+          type: string
+          enum: [openai, anthropic, groq, openrouter]
+        display_key:
+          type: string
+          description: Маскированный ключ (последние 4 символа)
+          example: "...-abc1"
+        model:
+          type: string
+          nullable: true
+        settings:
+          type: object
+          nullable: true
+
+    ApiKeySettingsUpdate:
+      type: object
+      properties:
+        model:
+          type: string
+          nullable: true
+        settings:
+          type: object
+          additionalProperties: true
+          nullable: true
+
+    TokenUsageResponse:
+      type: object
+      required:
+        - provider
+        - model
+        - total_tokens
+        - requests
+      properties:
+        provider:
+          type: string
+        model:
+          type: string
+        total_tokens:
+          type: integer
+          minimum: 0
+        requests:
+          type: integer
+          minimum: 0
+
+    # Models schemas
+    ModelInfo:
+      type: object
+      required:
+        - id
+        - name
+        - context
+      properties:
+        id:
+          type: string
+          description: ID модели
+        name:
+          type: string
+          description: Отображаемое название
+        context:
+          type: integer
+          description: Размер контекстного окна
+
+    ProviderModels:
+      type: object
+      required:
+        - models
+        - default
+      properties:
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelInfo'
+        default:
+          type: string
+          description: ID модели по умолчанию
+
+    # Plugin schemas
+    PluginInfo:
+      type: object
+      required:
+        - name
+        - version
+        - description
+        - enabled
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+
+    # Health schemas
+    ComponentHealth:
+      type: object
+      required:
+        - name
+        - status
+        - message
+        - response_time
+        - last_check
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        message:
+          type: string
+        response_time:
+          type: number
+          description: Время ответа в миллисекундах
+        last_check:
+          type: string
+          format: date-time
+        details:
+          type: object
+          nullable: true
+
+    SystemHealth:
+      type: object
+      required:
+        - status
+        - timestamp
+        - uptime
+        - components
+        - metrics
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        uptime:
+          type: number
+          description: Время работы в секундах
+        components:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ComponentHealth'
+        metrics:
+          type: object
+          properties:
+            uptime_seconds:
+              type: number
+            total_checks:
+              type: integer
+            healthy_checks:
+              type: integer
+            degraded_checks:
+              type: integer
+            unhealthy_checks:
+              type: integer
+
+    # Error schemas
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Описание ошибки
+        error_code:
+          type: string
+          description: Код ошибки (опционально)
+        timestamp:
+          type: string
+          format: date-time
+          description: Время возникновения ошибки
+
+    ValidationError:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            properties:
+              loc:
+                type: array
+                items:
+                  oneOf:
+                    - type: string
+                    - type: integer
+              msg:
+                type: string
+              type:
+                type: string
+
+security:
+  - BearerAuth: []
+
+x-discrepancies:
+  - issue: "Inconsistent async/sync session usage"
+    endpoints:
+      - "/v1/projects/{project_id}/preview/*"
+      - "/v1/user/profile"
+      - "/v1/user/gitverse-token"
+      - "/v1/usage/token/reset"
+    severity: "medium"
+    description: |
+      Некоторые эндпоинты используют синхронный get_db() вместо async get_async_db(),
+      что может привести к блокирующим операциям.
+    recommendation: |
+      Мигрировать все эндпоинты на async/await с get_async_db() для консистентности
+      и лучшей производительности.
+    
+  - issue: "Incomplete implementation"
+    endpoints:
+      - "/v1/projects/{project_id}/preview/stop"
+      - "/v1/projects/{project_id}/preview/status"
+    severity: "high"
+    description: |
+      Эндпоинты preview содержат TODO комментарии и возвращают хардкоженные данные.
+    recommendation: |
+      Завершить реализацию с реальным управлением процессами и статусами.
+    
+  - issue: "Missing authorization checks"
+    endpoints:
+      - "/v1/analytics/system"
+      - "/v1/analytics/export"
+    severity: "high"
+    description: |
+      Эндпоинты для администраторов не проверяют права доступа.
+    recommendation: |
+      Добавить проверку user.is_admin или аналогичный механизм авторизации.
+
+x-evolution-strategy:
+  versioning:
+    current: "v1"
+    approach: "URL-based versioning with /v1 prefix"
+    future: "Support v2 alongside v1 for gradual migration"
+    
+  backwards-compatibility:
+    - "Never remove fields from responses - only add new ones"
+    - "Always maintain support for old request formats"
+    - "Use deprecation headers for endpoints scheduled for removal"
+    - "Minimum 6 months deprecation notice before removal"
+    
+  safe-additions:
+    - "New optional request fields"
+    - "New response fields"
+    - "New endpoints"
+    - "New query parameters (optional)"
+    
+  breaking-changes-procedure:
+    - "Document in changelog with migration guide"
+    - "Add deprecation warning to API responses"
+    - "Provide migration endpoint in new version"
+    - "Maintain old version for minimum 12 months"
+    
+  recommended-additions:
+    - endpoint: "/v1/projects/{project_id}/export"
+      description: "Export project code as archive"
+      breaking: false
+      
+    - endpoint: "/v1/admin/users"
+      description: "User management for admins"
+      breaking: false
+      
+    - field: "ProjectResponse.tags"
+      description: "Project categorization"
+      breaking: false
+      
+    - field: "UserResponse.subscription"
+      description: "Subscription details"
+      breaking: false

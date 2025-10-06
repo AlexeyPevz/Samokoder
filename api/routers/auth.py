@@ -138,6 +138,22 @@ async def get_current_user(
     return user
 
 
+async def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Require admin privileges (P0-1).
+    
+    Raises:
+        HTTPException: If user is not an administrator
+    """
+    if not current_user.is_admin:
+        logger.warning(f"Unauthorized admin access attempt by user {current_user.id}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator privileges required"
+        )
+    return current_user
+
+
 @router.post("/auth/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 # @limiter.limit(get_rate_limit("auth"))
 async def register(

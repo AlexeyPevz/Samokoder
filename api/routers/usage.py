@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from samokoder.core.db.session import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from samokoder.core.db.session import get_async_db
 from samokoder.core.db.models.user import User
 from samokoder.api.routers.auth import get_current_user
 from typing import Dict, Any, List
@@ -11,7 +11,7 @@ router = APIRouter()
 @router.get("/usage/token")
 async def get_token_usage(
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)  # P2-1: FIXED - async session
 ):
     """
     Get user's token usage statistics
@@ -33,7 +33,7 @@ async def get_token_usage(
 async def get_provider_token_usage(
     provider: str,
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)  # P2-1: FIXED - async session
 ):
     """
     Get token usage statistics for a specific provider
@@ -69,7 +69,7 @@ async def get_model_token_usage(
     provider: str,
     model: str,
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)  # P2-1: FIXED - async session
 ):
     """
     Get token usage statistics for a specific provider and model
@@ -98,7 +98,7 @@ async def reset_token_usage(
     provider: str = None,
     model: str = None,
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)  # P2-1: FIXED - async session
 ):
     """
     Reset token usage statistics
@@ -111,7 +111,7 @@ async def reset_token_usage(
     """
     try:
         user.reset_token_usage(provider, model)
-        db.commit()
+        await db.commit()  # P2-1: FIXED - await commit
         
         if provider and model:
             return {
@@ -135,7 +135,7 @@ async def reset_token_usage(
 @router.get("/usage/token/summary")
 async def get_token_usage_summary(
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)  # P2-1: FIXED - async session
 ):
     """
     Get a summary of token usage statistics

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from samokoder.core.db.session import get_db
 from samokoder.core.db.models.user import User
 from samokoder.core.analytics.analytics_service import analytics_service
-from samokoder.api.routers.auth import get_current_user
+from samokoder.api.routers.auth import get_current_user, require_admin
 from typing import Dict, Any, List
 import json
 
@@ -33,20 +33,17 @@ async def get_user_analytics(
 
 @router.get("/analytics/system")
 async def get_system_analytics(
-    user: User = Depends(get_current_user),
+    admin: User = Depends(require_admin),  # P0-1: FIXED - Require admin privileges
     db: Session = Depends(get_db)
 ):
     """
-    Get overall system analytics metrics
+    Get overall system analytics metrics (ADMIN ONLY).
     
-    :param user: Current user (must be admin)
+    :param admin: Current admin user
     :param db: Database session
     :return: System analytics metrics
     """
     try:
-        # Check if user is admin (in a real implementation)
-        # if not user.is_admin:
-        #     raise HTTPException(status_code=403, detail="Access denied")
         
         metrics = await analytics_service.get_system_metrics()
         return {
@@ -110,20 +107,17 @@ async def record_user_action(
 
 @router.get("/analytics/export")
 async def export_analytics(
-    user: User = Depends(get_current_user),
+    admin: User = Depends(require_admin),  # P0-1: FIXED - Require admin privileges
     db: Session = Depends(get_db)
 ):
     """
-    Export all analytics data
+    Export all analytics data (ADMIN ONLY).
     
-    :param user: Current user (must be admin)
+    :param admin: Current admin user
     :param db: Database session
     :return: Exported analytics data
     """
     try:
-        # Check if user is admin (in a real implementation)
-        # if not user.is_admin:
-        #     raise HTTPException(status_code=403, detail="Access denied")
         
         data = await analytics_service.export_metrics()
         return data
