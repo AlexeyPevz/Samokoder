@@ -126,7 +126,7 @@ class BugHunter(ChatWithBreakdownMixin, BaseAgent):
         await self.ui.stop_app()
         test_instructions = self.current_state.current_iteration["bug_reproduction_description"]
         await self.ui.send_message(
-            "Start the app and test it by following these instructions:\n\n", source=pythagora_source
+            "Запустите приложение и протестируйте по следующим инструкциям:\n\n", source=samokoder_source
         )
         await self.send_message("")
         await self.ui.send_test_instructions(test_instructions, project_state_id=str(self.current_state.id))
@@ -175,7 +175,7 @@ class BugHunter(ChatWithBreakdownMixin, BaseAgent):
                 }
             )
             user_feedback = await self.ask_question(
-                "Please add any additional feedback that could help Pythagora solve this bug",
+                "Добавьте любые дополнительные комментарии, которые помогут самокодеру исправить баг",
                 buttons=buttons,
                 default="continue",
                 extra_info="collect_logs",

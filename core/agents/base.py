@@ -162,7 +162,7 @@ class BaseAgent:
                 "Would you like to retry the failed request?",
                 buttons={"yes": "Yes", "no": "No"},
                 buttons_only=True,
-                source=pythagora_source,
+                source=self.ui_source,
             )
             if answer.button == "yes":
                 return True
@@ -200,7 +200,7 @@ class BaseAgent:
             Agent-specific LLM client.
 
             For details on optional arguments to pass to the LLM client,
-            see `pythagora.llm.openai_client.OpenAIClient()`.
+            see `samokoder.llm.openai_client.OpenAIClient()`.
             """
             response, request_log = await llm_client(convo, **kwargs)
             await self.state_manager.log_llm_request(request_log, agent=self)

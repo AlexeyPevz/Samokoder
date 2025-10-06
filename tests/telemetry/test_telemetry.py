@@ -164,7 +164,7 @@ async def test_send_enabled_but_post_fails(mock_settings, mock_getenv, mock_http
 
     expected = {
         "pathId": "test-id",
-        "event": "pythagora-core-telemetry",
+        "event": "samokoder-core-telemetry",
         "data": telemetry.data,
     }
     mock_httpx_post.assert_awaited_once_with(telemetry.endpoint, json=expected)
