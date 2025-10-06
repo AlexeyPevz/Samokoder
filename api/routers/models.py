@@ -3,6 +3,8 @@ from typing import Dict
 
 router = APIRouter()
 
+# All models available - BYOK (Bring Your Own Key) model
+# Users provide their own API keys, so all models are accessible
 PROVIDER_MODELS = {
     "openai": {
         "models": [
@@ -48,12 +50,12 @@ PROVIDER_MODELS = {
 
 @router.get("/models", response_model=Dict[str, Dict])
 async def get_available_models():
-    """Получить список доступных моделей для каждого провайдера (без авторизации)"""
+    """Get list of available models for each provider (no auth required - BYOK model)"""
     return PROVIDER_MODELS
 
 @router.get("/models/{provider}", response_model=Dict)
 async def get_provider_models(provider: str):
-    """Получить список моделей для конкретного провайдера (без авторизации)"""
+    """Get list of models for a specific provider (no auth required - BYOK model)"""
     if provider not in PROVIDER_MODELS:
         raise HTTPException(status_code=404, detail=f"Provider {provider} not found")
     return PROVIDER_MODELS[provider]

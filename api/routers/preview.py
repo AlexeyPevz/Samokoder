@@ -19,6 +19,7 @@ from samokoder.core.config.constants import (
     PREVIEW_END_PORT,
     PREVIEW_MAX_DURATION_SECONDS,
 )
+from samokoder.core.api.middleware.tier_limits import require_deploy_access
 
 router = APIRouter()
 
@@ -29,7 +30,8 @@ preview_processes = {}
 async def start_preview(
     project_id: UUID, 
     user: User = Depends(get_current_user), 
-    db: AsyncSession = Depends(get_async_db)  # P2-1: FIXED - async session
+    db: AsyncSession = Depends(get_async_db),  # P2-1: FIXED - async session
+    _deploy_check = Depends(require_deploy_access)  # Tier-based deploy/preview access
 ):
     """Start preview server for a project (P1-1: IMPROVED)."""
     result = await db.execute(

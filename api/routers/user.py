@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Dict, Any
 import logging  # FIX: Replace print with logger
 
 from samokoder.core.db.session import get_async_db
 from samokoder.core.db.models.user import User
 from samokoder.core.config import get_config
 from samokoder.api.routers.auth import get_current_user
+from samokoder.core.api.middleware.tier_limits import get_tier_info
 
 logger = logging.getLogger(__name__)  # FIX: Logger instance
 router = APIRouter()
@@ -54,3 +56,11 @@ async def get_user_profile(user: User = Depends(get_current_user)):  # P2-1: FIX
         "projects_monthly_count": user.projects_monthly_count,
         "projects_total": user.projects_total
     }
+
+
+@router.get("/user/tier", response_model=Dict[str, Any])
+async def get_user_tier_info(tier_info: Dict = Depends(get_tier_info)):
+    """
+    Get detailed information about the current user's tier, including limits and available features.
+    """
+    return tier_info
