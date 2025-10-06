@@ -5,10 +5,13 @@ from datetime import datetime, timedelta
 import docker
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
 
 from samokoder.core.config import get_config
 from samokoder.core.config.validator import validate_config_security
 from samokoder.core.db.session import get_async_engine
+from samokoder.core.api.error_handlers import generic_exception_handler, validation_exception_handler
+from samokoder.core.api.middleware.security_headers import SecurityHeadersMiddleware
 from samokoder.api.routers.auth import router as auth_router
 from samokoder.api.routers.projects import router as projects_router
 from samokoder.api.routers.keys import router as keys_router
@@ -92,9 +95,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Samokoder SaaS API", version="1.0", lifespan=lifespan)
 
+# P1-5: Add security headers middleware
+app.add_middleware(SecurityHeadersMiddleware)
+
 # Add rate limiter state
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# P1-4: Add secure error handlers
+app.add_exception_handler(Exception, generic_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 # Metrics middleware
 app.middleware('http')(metrics_middleware)
@@ -105,17 +115,34 @@ app.mount('/metrics', metrics_app)
 
 import os
 
-# Get CORS origins from environment variable
+# P2-3: Strict CORS configuration
+config = get_config()
+
 cors_origins = os.environ.get("CORS_ORIGINS", "").split(",")
-if not cors_origins:
-    cors_origins = ["http://localhost:5173", "http://localhost:3000"]
+if not cors_origins or cors_origins == [""]:
+    if config.environment == "production":
+        # Production: only allow specific origins
+        cors_origins = ["https://samokoder.io", "https://app.samokoder.io"]
+    else:
+        # Development defaults
+        cors_origins = ["http://localhost:5173", "http://localhost:3000"]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],  # P2-3: Specific methods only
+    allow_headers=[  # P2-3: Specific headers only
+        "Content-Type",
+        "Authorization",
+        "Accept",
+        "Origin",
+        "User-Agent",
+        "DNT",
+        "Cache-Control",
+        "X-Requested-With"
+    ],
+    max_age=3600,  # Cache preflight requests
 )
 
 app.include_router(auth_router, prefix="/v1")

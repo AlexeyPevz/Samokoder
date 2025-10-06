@@ -6,6 +6,7 @@ const localApi = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,  // P0-2: Send httpOnly cookies automatically
   validateStatus: (status) => {
     return status >= 200 && status < 300;
   },
@@ -25,12 +26,9 @@ const isRefreshTokenEndpoint = (url: string): boolean => {
 const setupInterceptors = (apiInstance: AxiosInstance) => {
   apiInstance.interceptors.request.use(
     (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
-      // Всегда читаем токен из localStorage
-      const token = localStorage.getItem('accessToken');
-      if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-
+      // P0-2: Tokens are now in httpOnly cookies, sent automatically by browser
+      // No need to manually set Authorization header
+      // The cookies are sent automatically with withCredentials: true
       return config;
     },
     (error: AxiosError): Promise<AxiosError> => Promise.reject(error)
@@ -41,6 +39,7 @@ const setupInterceptors = (apiInstance: AxiosInstance) => {
     async (error: AxiosError): Promise<unknown> => {
       const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
+      // P0-2: Token refresh with httpOnly cookies
       // Only refresh token when we get a 401/403 error (token is invalid/expired)
       if (error.response?.status && [401, 403].includes(error.response.status) &&
           !originalRequest._retry &&
@@ -48,38 +47,23 @@ const setupInterceptors = (apiInstance: AxiosInstance) => {
         originalRequest._retry = true;
 
         try {
-          const refreshToken = localStorage.getItem('refreshToken');
-          if (!refreshToken) {
-            throw new Error('No refresh token available');
-          }
-
+          // P0-2: Refresh token is in httpOnly cookie, sent automatically
+          // Note: Backend needs to read refresh_token from cookie
           const response = await localApi.post(`/auth/refresh`, {
-            refreshToken,
+            // Empty body - refresh token comes from cookie
           });
 
-          if (response.data.success && response.data.data) {
-            const newAccessToken = response.data.data.accessToken;
-            const newRefreshToken = response.data.data.refreshToken;
-
-            // Валидация токенов перед сохранением
-            if (typeof newAccessToken === 'string' && newAccessToken.length > 0) {
-              localStorage.setItem('accessToken', newAccessToken);
-            }
-            if (typeof newRefreshToken === 'string' && newRefreshToken.length > 0) {
-              localStorage.setItem('refreshToken', newRefreshToken);
-            }
-
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-            }
+          // New tokens are set as httpOnly cookies by backend
+          // No need to manually store them
+          if (response.status === 200) {
+            // Retry the original request - new cookies are already set
+            return getApiInstance()(originalRequest);
           } else {
-            throw new Error('Invalid response from refresh token endpoint');
+            throw new Error('Failed to refresh token');
           }
-          return getApiInstance()(originalRequest);
         } catch (err) {
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('accessToken');
-          // Токены уже удалены из localStorage
+          // P0-2: Clear any client-side state and redirect
+          // Note: httpOnly cookies can only be cleared by backend or expiration
           window.location.href = '/login';
           return Promise.reject(err);
         }

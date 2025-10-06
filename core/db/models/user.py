@@ -31,7 +31,7 @@ class User(Base):
     api_keys: Mapped[dict] = mapped_column(JSON, default=dict)
     api_key_settings: Mapped[dict] = mapped_column(JSON, default=dict)  # Settings for each API key (provider, model, etc.)
     token_usage: Mapped[dict] = mapped_column(JSON, default=dict)  # Token usage tracking
-    github_token: Mapped[str] = mapped_column(String, nullable=True)
+    _github_token_encrypted: Mapped[str] = mapped_column("github_token", String, nullable=True)  # P2-2: Encrypted
     gitverse_token: Mapped[str] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -140,5 +140,29 @@ class User(Base):
         # Mark the JSON field as modified to ensure SQLAlchemy picks up the change
         from sqlalchemy.orm.attributes import flag_modified
         flag_modified(self, "token_usage")
+    
+    def set_encrypted_github_token(self, token: str, secret_key: bytes) -> None:
+        """
+        Encrypt and store GitHub token (P2-2: ASVS 6.2.1).
+        
+        :param token: GitHub personal access token
+        :param secret_key: Encryption key
+        """
+        from samokoder.core.security.crypto import CryptoService
+        crypto = CryptoService(secret_key)
+        self._github_token_encrypted = crypto.encrypt(token)
+    
+    def get_decrypted_github_token(self, secret_key: bytes) -> str:
+        """
+        Decrypt and return GitHub token (P2-2).
+        
+        :param secret_key: Decryption key
+        :return: Decrypted token or empty string if not set
+        """
+        if not self._github_token_encrypted:
+            return ""
+        from samokoder.core.security.crypto import CryptoService
+        crypto = CryptoService(secret_key)
+        return crypto.decrypt(self._github_token_encrypted)
 
 
