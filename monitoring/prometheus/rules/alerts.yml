@@ -175,6 +175,58 @@ groups:
           summary: "Low disk space"
           description: "Disk space on {{ $labels.path }} is {{ $value | humanizePercentage }} free"
 
+  - name: samokoder_saturation
+    interval: 30s
+    rules:
+      # File descriptor saturation
+      - alert: HighFileDescriptorUsage
+        expr: |
+          (
+            samokoder_file_descriptors_open
+            /
+            samokoder_file_descriptors_max
+          ) > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High file descriptor usage"
+          description: "File descriptor usage is {{ $value | humanizePercentage }}"
+
+      # Network connection saturation
+      - alert: HighNetworkConnections
+        expr: samokoder_network_connections_active{state="established"} > 5000
+        for: 10m
+        labels:
+          severity: warning
+          component: network
+        annotations:
+          summary: "High number of network connections"
+          description: "Active network connections: {{ $value }}"
+
+      # Database connection pool saturation
+      - alert: DatabaseConnectionPoolSaturated
+        expr: samokoder_db_connection_pool_saturation_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database connection pool saturation"
+          description: "Connection pool is {{ $value }}% saturated"
+
+      # Worker queue saturation
+      - alert: WorkerQueueSaturated
+        expr: samokoder_worker_queue_saturation_percent > 80
+        for: 10m
+        labels:
+          severity: warning
+          component: worker
+        annotations:
+          summary: "Worker queue saturation"
+          description: "Queue {{ $labels.queue_name }} is {{ $value }}% saturated"
+
   - name: samokoder_business
     interval: 60s
     rules:
@@ -201,3 +253,52 @@ groups:
         annotations:
           summary: "Authentication failure spike"
           description: "High number of failed auth attempts: {{ $value }} attempts/s"
+
+  - name: samokoder_slo
+    interval: 60s
+    rules:
+      # Error budget exhaustion
+      - alert: ErrorBudgetCritical
+        expr: samokoder_error_budget_remaining_percent < 10
+        for: 5m
+        labels:
+          severity: critical
+          component: slo
+        annotations:
+          summary: "Error budget critically low"
+          description: "Error budget for {{ $labels.slo_type }} is {{ $value }}% remaining"
+
+      # Error budget warning
+      - alert: ErrorBudgetLow
+        expr: samokoder_error_budget_remaining_percent < 25
+        for: 15m
+        labels:
+          severity: warning
+          component: slo
+        annotations:
+          summary: "Error budget low"
+          description: "Error budget for {{ $labels.slo_type }} is {{ $value }}% remaining"
+
+      # SLO violation - Availability
+      - alert: AvailabilitySLOViolation
+        expr: samokoder_availability_slo_current < samokoder_availability_slo_target
+        for: 5m
+        labels:
+          severity: critical
+          component: slo
+        annotations:
+          summary: "Availability SLO violation"
+          description: "Current availability {{ $value | humanizePercentage }} is below target"
+
+      # SLO violation - Latency
+      - alert: LatencySLOViolation
+        expr: |
+          histogram_quantile(0.95, rate(samokoder_http_request_duration_seconds_bucket[5m]))
+          > samokoder_latency_slo_target_seconds
+        for: 10m
+        labels:
+          severity: warning
+          component: slo
+        annotations:
+          summary: "Latency SLO violation"
+          description: "P95 latency {{ $value }}s exceeds target"

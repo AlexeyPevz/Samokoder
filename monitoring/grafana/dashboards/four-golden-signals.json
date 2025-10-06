@@ -1,0 +1,637 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 2, "w": 24, "x": 0, "y": 0},
+      "id": 100,
+      "title": "🔥 ЧЕТЫРЕ ЗОЛОТЫХ СИГНАЛА МОНИТОРИНГА (Four Golden Signals)",
+      "type": "row",
+      "collapsed": false
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 2},
+      "id": 1,
+      "targets": [
+        {
+          "expr": "sum(rate(samokoder_http_requests_total[5m]))",
+          "legendFormat": "Requests/sec",
+          "refId": "A"
+        }
+      ],
+      "title": "1️⃣ TRAFFIC (Трафик)",
+      "type": "stat",
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "green"},
+              {"value": 100, "color": "yellow"},
+              {"value": 500, "color": "red"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 2},
+      "id": 2,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(samokoder_http_request_duration_seconds_bucket[5m]))",
+          "legendFormat": "P95 Latency",
+          "refId": "A"
+        }
+      ],
+      "title": "2️⃣ LATENCY (Задержка P95)",
+      "type": "gauge",
+      "options": {
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "max": 10,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "green"},
+              {"value": 2, "color": "yellow"},
+              {"value": 5, "color": "red"}
+            ]
+          },
+          "mappings": []
+        }
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 2},
+      "id": 3,
+      "targets": [
+        {
+          "expr": "(sum(rate(samokoder_http_requests_total{status=~\"5..\"}[5m])) / sum(rate(samokoder_http_requests_total[5m]))) * 100",
+          "legendFormat": "Error Rate %",
+          "refId": "A"
+        }
+      ],
+      "title": "3️⃣ ERRORS (Ошибки %)",
+      "type": "gauge",
+      "options": {
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 10,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "green"},
+              {"value": 1, "color": "yellow"},
+              {"value": 5, "color": "red"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 2},
+      "id": 4,
+      "targets": [
+        {
+          "expr": "samokoder_system_cpu_usage_percent",
+          "legendFormat": "CPU %",
+          "refId": "A"
+        }
+      ],
+      "title": "4️⃣ SATURATION (Насыщение CPU)",
+      "type": "gauge",
+      "options": {
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "green"},
+              {"value": 70, "color": "yellow"},
+              {"value": 90, "color": "red"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 10},
+      "id": 101,
+      "title": "📊 TRAFFIC DETAILS",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 11},
+      "id": 5,
+      "targets": [
+        {
+          "expr": "sum(rate(samokoder_http_requests_total[5m])) by (method)",
+          "legendFormat": "{{method}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Request Rate by Method",
+      "type": "timeseries",
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"}
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 11},
+      "id": 6,
+      "targets": [
+        {
+          "expr": "sum(rate(samokoder_http_requests_total[5m])) by (status)",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Request Rate by Status Code",
+      "type": "timeseries",
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right"}
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 19},
+      "id": 102,
+      "title": "⏱️ LATENCY DETAILS",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+      "id": 7,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(samokoder_http_request_duration_seconds_bucket[5m]))",
+          "legendFormat": "P50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(samokoder_http_request_duration_seconds_bucket[5m]))",
+          "legendFormat": "P95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(samokoder_http_request_duration_seconds_bucket[5m]))",
+          "legendFormat": "P99",
+          "refId": "C"
+        }
+      ],
+      "title": "API Latency Percentiles",
+      "type": "timeseries",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+      "id": 8,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(samokoder_llm_request_duration_seconds_bucket[10m])) by (provider)",
+          "legendFormat": "{{provider}} P95",
+          "refId": "A"
+        }
+      ],
+      "title": "LLM Request Latency P95 by Provider",
+      "type": "timeseries",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 28},
+      "id": 103,
+      "title": "🚨 ERRORS DETAILS",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 29},
+      "id": 9,
+      "targets": [
+        {
+          "expr": "sum(rate(samokoder_http_requests_total{status=~\"5..\"}[5m])) by (status)",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ],
+      "title": "5xx Error Rate by Status Code",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 29},
+      "id": 10,
+      "targets": [
+        {
+          "expr": "sum(rate(samokoder_llm_request_errors_total[10m])) by (provider, error_type)",
+          "legendFormat": "{{provider}} - {{error_type}}",
+          "refId": "A"
+        }
+      ],
+      "title": "LLM Error Rate by Provider",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 37},
+      "id": 104,
+      "title": "📈 SATURATION DETAILS",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 38},
+      "id": 11,
+      "targets": [
+        {
+          "expr": "(samokoder_system_memory_usage_bytes{type=\"used\"} / samokoder_system_memory_usage_bytes{type=\"total\"}) * 100",
+          "legendFormat": "Memory %",
+          "refId": "A"
+        }
+      ],
+      "title": "Memory Saturation",
+      "type": "gauge",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "green"},
+              {"value": 80, "color": "yellow"},
+              {"value": 90, "color": "red"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 38},
+      "id": 12,
+      "targets": [
+        {
+          "expr": "(samokoder_system_disk_usage_bytes{type=\"used\", path=\"/\"} / samokoder_system_disk_usage_bytes{type=\"total\", path=\"/\"}) * 100",
+          "legendFormat": "Disk %",
+          "refId": "A"
+        }
+      ],
+      "title": "Disk Saturation",
+      "type": "gauge",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "green"},
+              {"value": 80, "color": "yellow"},
+              {"value": 90, "color": "red"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 38},
+      "id": 13,
+      "targets": [
+        {
+          "expr": "(samokoder_file_descriptors_open / samokoder_file_descriptors_max) * 100",
+          "legendFormat": "FD Usage %",
+          "refId": "A"
+        }
+      ],
+      "title": "File Descriptor Saturation",
+      "type": "gauge",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "green"},
+              {"value": 70, "color": "yellow"},
+              {"value": 85, "color": "red"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 38},
+      "id": 14,
+      "targets": [
+        {
+          "expr": "samokoder_network_connections_active{state=\"established\"}",
+          "legendFormat": "Network Connections",
+          "refId": "A"
+        }
+      ],
+      "title": "Active Network Connections",
+      "type": "stat",
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "green"},
+              {"value": 1000, "color": "yellow"},
+              {"value": 5000, "color": "red"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 46},
+      "id": 105,
+      "title": "🎯 SLO & ERROR BUDGET",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 47},
+      "id": 15,
+      "targets": [
+        {
+          "expr": "samokoder_error_budget_remaining_percent{slo_type=\"availability\"}",
+          "legendFormat": "Availability Budget",
+          "refId": "A"
+        }
+      ],
+      "title": "📊 Error Budget: Availability (Target: 99.9%)",
+      "type": "gauge",
+      "options": {
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "red"},
+              {"value": 20, "color": "yellow"},
+              {"value": 50, "color": "green"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 47},
+      "id": 16,
+      "targets": [
+        {
+          "expr": "samokoder_error_budget_remaining_percent{slo_type=\"latency\"}",
+          "legendFormat": "Latency Budget",
+          "refId": "A"
+        }
+      ],
+      "title": "⏱️ Error Budget: Latency (Target: P95 < 2s)",
+      "type": "gauge",
+      "options": {
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "red"},
+              {"value": 20, "color": "yellow"},
+              {"value": 50, "color": "green"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 47},
+      "id": 17,
+      "targets": [
+        {
+          "expr": "samokoder_error_budget_remaining_percent{slo_type=\"errors\"}",
+          "legendFormat": "Error Rate Budget",
+          "refId": "A"
+        }
+      ],
+      "title": "🚨 Error Budget: Error Rate (Target: < 1%)",
+      "type": "gauge",
+      "options": {
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": null, "color": "red"},
+              {"value": 20, "color": "yellow"},
+              {"value": 50, "color": "green"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 55},
+      "id": 18,
+      "targets": [
+        {
+          "expr": "samokoder_availability_slo_current",
+          "legendFormat": "Current Availability",
+          "refId": "A"
+        },
+        {
+          "expr": "samokoder_availability_slo_target",
+          "legendFormat": "SLO Target (99.9%)",
+          "refId": "B"
+        }
+      ],
+      "title": "Availability: Current vs Target",
+      "type": "timeseries",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0.99,
+          "max": 1.0
+        }
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 63},
+      "id": 106,
+      "title": "💾 DATABASE METRICS",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 64},
+      "id": 19,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(samokoder_db_query_duration_seconds_bucket[5m]))",
+          "legendFormat": "P95 Query Time",
+          "refId": "A"
+        }
+      ],
+      "title": "Database Query Latency P95",
+      "type": "timeseries",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 64},
+      "id": 20,
+      "targets": [
+        {
+          "expr": "rate(samokoder_db_errors_total[5m])",
+          "legendFormat": "{{error_type}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Database Error Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 72},
+      "id": 107,
+      "title": "🤖 LLM METRICS",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 73},
+      "id": 21,
+      "targets": [
+        {
+          "expr": "sum(rate(samokoder_llm_requests_total[10m])) by (provider)",
+          "legendFormat": "{{provider}}",
+          "refId": "A"
+        }
+      ],
+      "title": "LLM Requests by Provider",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 73},
+      "id": 22,
+      "targets": [
+        {
+          "expr": "sum(rate(samokoder_llm_tokens_consumed_total[10m])) by (provider, token_type)",
+          "legendFormat": "{{provider}} - {{token_type}}",
+          "refId": "A"
+        }
+      ],
+      "title": "LLM Token Consumption Rate",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 27,
+  "style": "dark",
+  "tags": ["samokoder", "golden-signals", "slo", "sre"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+  },
+  "timezone": "browser",
+  "title": "Samokoder - Four Golden Signals + SLO Dashboard",
+  "uid": "samokoder-golden-signals",
+  "version": 1
+}
