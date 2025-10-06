@@ -5,6 +5,7 @@ from uuid import UUID
 
 from arq.connections import RedisSettings
 
+from samokoder.core.log import get_logger
 # Import necessary components from the application
 from samokoder.core.agents.orchestrator import Orchestrator
 from samokoder.core.config import get_config
@@ -13,21 +14,23 @@ from samokoder.core.db.session import SessionManager
 from samokoder.core.state.state_manager import StateManager
 from samokoder.core.ui.base import UIBase, UserInput
 
+logger = get_logger(__name__)
+
 
 class ConsoleUI(UIBase):
     """A dummy UI that prints to the console, for use in the background worker."""
     async def send_message(self, message: str, *, source=None, **kwargs):
-        print(f"[worker-ui|{source or 'system'}]: {message}")
+        logger.debug(f"[worker-ui|{source or 'system'}]: {message}")
 
     async def start(self) -> bool: return True
     async def stop(self): pass
     async def ask_question(self, question: str, **kwargs) -> UserInput:
-        print(f"[worker-ui|question]: {question}")
+        logger.warning(f"[worker-ui|question]: {question} (non-interactive mode)")
         # Non-interactive, so we can't answer questions.
         # In a real implementation, this would need a way to signal back to the user.
         return UserInput(cancelled=True)
     async def send_project_stage(self, stage):
-        print(f"[worker-ui|project_stage]: {stage.get('name')}")
+        logger.info(f"[worker-ui|project_stage]: {stage.get('name')}")
     async def send_stream_chunk(self, chunk: str, **kwargs): pass
     async def send_process_status(self, status_code: int): pass
 
@@ -37,7 +40,7 @@ async def run_generation_task(ctx, project_id_str: str, user_id: int):
     """
     ARQ task to run the Samokoder agent for a project.
     """
-    print(f"[worker] Starting generation task for project {project_id_str} by user {user_id}")
+    logger.info(f"[worker] Starting generation task for project {project_id_str} by user {user_id}")
     
     ui = ConsoleUI()
     config = deepcopy(get_config())
@@ -48,7 +51,7 @@ async def run_generation_task(ctx, project_id_str: str, user_id: int):
         project = await db.get(Project, UUID(project_id_str))
 
         if not user or not project:
-            print(f"[worker] Error: User {user_id} or Project {project_id_str} not found.")
+            logger.error(f"[worker] Error: User {user_id} or Project {project_id_str} not found.")
             return
 
         # This logic is copied from gpt_pilot_integration.py
@@ -94,9 +97,9 @@ async def run_generation_task(ctx, project_id_str: str, user_id: int):
     success = False
     try:
         success = await orchestrator.run()
-        print(f"[worker] Task for project {project_id_str} finished. Success: {success}")
+        logger.info(f"[worker] Task for project {project_id_str} finished. Success: {success}")
     except Exception as e:
-        print(f"[worker] Error during task for project {project_id_str}: {e}")
+        logger.error(f"[worker] Error during task for project {project_id_str}: {e}", exc_info=True)
     finally:
         if sm.file_system and hasattr(sm.file_system, 'cleanup'):
             await sm.file_system.cleanup()
