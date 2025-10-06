@@ -26,7 +26,13 @@ class Settings(BaseSettings):
     environment: str = "development"
     
     # CORS
-    cors_origins: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    cors_allowed_origins: str = "http://localhost:3000,http://localhost:5173"
+    cors_allow_credentials: bool = True
+    
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """Parse CORS origins from comma-separated string"""
+        return [origin.strip() for origin in self.cors_allowed_origins.split(',') if origin.strip()]
     
     # Session Management
     session_secret_key: str
@@ -70,6 +76,32 @@ class Settings(BaseSettings):
     # AI Models
     default_model: str = "deepseek/deepseek-v3"
     default_provider: str = "openrouter"
+    
+    # Circuit Breaker Configuration
+    circuit_breaker_failure_threshold: int = 5
+    circuit_breaker_recovery_timeout: int = 60
+    circuit_breaker_success_threshold: int = 3
+    circuit_breaker_timeout: int = 30
+    circuit_breaker_ai_timeout: int = 60
+    circuit_breaker_db_timeout: int = 10
+    
+    # CSP Configuration
+    csp_connect_src: str = "'self' https://api.openai.com https://api.anthropic.com https://openrouter.ai"
+    csp_default_src: str = "'self'"
+    
+    @property
+    def csp_policy(self) -> str:
+        """Generate Content Security Policy header"""
+        return (
+            f"default-src {self.csp_default_src}; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: https:; "
+            f"connect-src {self.csp_connect_src}; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self'"
+        )
     
     # Project limits
     max_projects_per_user: int = 10

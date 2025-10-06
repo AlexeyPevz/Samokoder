@@ -18,12 +18,45 @@ class CircuitState(Enum):
 
 @dataclass
 class CircuitBreakerConfig:
-    """Circuit Breaker configuration"""
+    """Circuit Breaker configuration - values can be overridden from settings"""
     failure_threshold: int = 5          # Number of failures before opening
     recovery_timeout: int = 60          # Seconds to wait before trying again
     success_threshold: int = 3          # Successes needed to close from half-open
     timeout: int = 30                   # Timeout for individual calls
     expected_exception: tuple = (Exception,)  # Exceptions that count as failures
+
+def get_circuit_breaker_config(service_type: str = "default") -> CircuitBreakerConfig:
+    """
+    Get circuit breaker configuration for service type.
+    Loads from settings if available, falls back to defaults.
+    """
+    try:
+        from config.settings import settings
+        
+        configs = {
+            "ai": CircuitBreakerConfig(
+                failure_threshold=settings.circuit_breaker_failure_threshold,
+                recovery_timeout=settings.circuit_breaker_recovery_timeout,
+                success_threshold=settings.circuit_breaker_success_threshold,
+                timeout=settings.circuit_breaker_ai_timeout
+            ),
+            "database": CircuitBreakerConfig(
+                failure_threshold=settings.circuit_breaker_failure_threshold,
+                recovery_timeout=settings.circuit_breaker_recovery_timeout,
+                success_threshold=settings.circuit_breaker_success_threshold,
+                timeout=settings.circuit_breaker_db_timeout
+            ),
+            "default": CircuitBreakerConfig(
+                failure_threshold=settings.circuit_breaker_failure_threshold,
+                recovery_timeout=settings.circuit_breaker_recovery_timeout,
+                success_threshold=settings.circuit_breaker_success_threshold,
+                timeout=settings.circuit_breaker_timeout
+            )
+        }
+        return configs.get(service_type, configs["default"])
+    except (ImportError, AttributeError) as e:
+        logger.warning(f"Could not load circuit breaker config from settings: {e}, using defaults")
+        return CircuitBreakerConfig()
 
 class CircuitBreaker:
     """Circuit Breaker implementation with thread safety"""
