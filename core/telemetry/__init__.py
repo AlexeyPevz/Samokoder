@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+from httpx import Timeout
 
 from samokoder.core.config.config import get_config
 from samokoder.core.config.config import AgentLLMConfig
@@ -346,7 +347,9 @@ class Telemetry:
 
         log.debug(f"Telemetry.send(): sending telemetry data to {self.endpoint}")
         try:
-            async with httpx.AsyncClient() as client:
+            from samokoder.core.config.constants import HttpClientTimeouts as T
+            timeout = Timeout(connect=T.CONNECT, read=T.READ, write=T.WRITE, pool=T.POOL)
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 response = await client.post(self.endpoint, json=payload)
                 response.raise_for_status()
             self.clear_counters()
@@ -384,7 +387,9 @@ class Telemetry:
         log.debug(f"Sending trace event {name} to {self.endpoint}: {repr(payload)}")
 
         try:
-            async with httpx.AsyncClient() as client:
+            from samokoder.core.config.constants import HttpClientTimeouts as T
+            timeout = Timeout(connect=T.CONNECT, read=T.READ, write=T.WRITE, pool=T.POOL)
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 await client.post(self.endpoint, json=payload)
         except httpx.RequestError as e:
             log.error(f"Failed to send trace event {name}: {e}", exc_info=True)

@@ -41,7 +41,11 @@ logger = get_logger(__name__)
 async def cleanup_orphaned_containers() -> None:
     """Periodically clean up Docker containers left after sessions."""
     await asyncio.sleep(60)
-    client = docker.from_env()
+    try:
+        client = docker.from_env()
+    except Exception as exc:
+        logger.warning(f"Docker not available for cleanup, skipping: {exc}")
+        return
     while True:
         try:
             containers = client.containers.list(
@@ -81,8 +85,10 @@ async def lifespan(app: FastAPI):
         _ = get_async_engine(config.db.url)
         logger.info("Database engine initialized")
 
-        cleanup_task = asyncio.create_task(cleanup_orphaned_containers())
-        logger.info("Container cleanup task started")
+        cleanup_task = None
+        if os.getenv("ENABLE_CONTAINER_CLEANUP", "0") == "1":
+            cleanup_task = asyncio.create_task(cleanup_orphaned_containers())
+            logger.info("Container cleanup task started")
     except Exception as exc:
         logger.error(f"Error during startup: {exc}", exc_info=True)
         raise
@@ -92,11 +98,12 @@ async def lifespan(app: FastAPI):
     # Shutdown
     try:
         logger.info("Shutting down Samokoder API server...")
-        cleanup_task.cancel()
-        try:
-            await cleanup_task
-        except asyncio.CancelledError:
-            pass
+        if 'cleanup_task' in locals() and cleanup_task is not None:
+            cleanup_task.cancel()
+            try:
+                await cleanup_task
+            except asyncio.CancelledError:
+                pass
         
         # Dispose database engines to cleanly close all connections
         from samokoder.core.db.session import dispose_engines

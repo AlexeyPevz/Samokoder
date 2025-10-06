@@ -64,6 +64,14 @@ class LLMLimits(IntEnum):
     REQUEST_TIMEOUT = 60  # seconds
 
 
+class HttpClientTimeouts(IntEnum):
+    """HTTP client timeout configuration (seconds)."""
+    CONNECT = 5
+    READ = 30
+    WRITE = 30
+    POOL = 5
+
+
 class CacheLimits(IntEnum):
     """Cache configuration."""
     REDIS_KEY_TTL = 3600  # 1 hour
@@ -88,3 +96,10 @@ API_V1_PREFIX = "/v1"
 ENV_DEVELOPMENT = "development"
 ENV_STAGING = "staging"
 ENV_PRODUCTION = "production"
+
+# Preview execution policy
+# Allowed npm scripts for preview (in order of preference)
+PREVIEW_ALLOWED_SCRIPTS = ("preview", "dev", "start")
+PREVIEW_START_PORT = 3000
+PREVIEW_END_PORT = 3999
+PREVIEW_MAX_DURATION_SECONDS = 60 * 60  # 1 hour

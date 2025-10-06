@@ -32,6 +32,7 @@ from samokoder.core.api.models.auth import (
     TokenRefreshResponse,
 )
 from samokoder.core.api.models.base import UserResponse
+from httpx import Timeout
 from samokoder.core.config import get_config
 from samokoder.core.db.models.user import Tier, User
 from samokoder.core.db.models.revoked_tokens import RevokedToken
@@ -384,7 +385,9 @@ async def github_auth_callback(code: str, state: str, db: AsyncSession = Depends
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    async with httpx.AsyncClient() as client:
+    from samokoder.core.config.constants import HttpClientTimeouts as T
+    timeout = Timeout(connect=T.CONNECT, read=T.READ, write=T.WRITE, pool=T.POOL)
+    async with httpx.AsyncClient(timeout=timeout) as client:
         token_response = await client.post(
             "https://github.com/login/oauth/access_token",
             json={
