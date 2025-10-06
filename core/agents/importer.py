@@ -76,7 +76,7 @@ class Importer(BaseAgent):
             {
                 "id": uuid4().hex,
                 "name": "Import project",
-                "description": "Import an existing project into Pythagora",
+                "description": "Import an existing project into самокодер",
                 "tasks": [],
                 "completed": True,
                 "test_instructions": None,

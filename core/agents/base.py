@@ -9,10 +9,6 @@ from samokoder.core.proc.process_manager import ProcessManager
 from samokoder.core.state.state_manager import StateManager
 from samokoder.core.ui.base import AgentSource, UIBase, UserInput, samokoder_source
 
-source=samokoder_source,
-
-see `samokoder.llm.openai_client.OpenAIClient()`.
-
 log = get_logger(__name__)
 
 
@@ -162,7 +158,7 @@ class BaseAgent:
                 "Would you like to retry the failed request?",
                 buttons={"yes": "Yes", "no": "No"},
                 buttons_only=True,
-                source=pythagora_source,
+                source=samokoder_source,
             )
             if answer.button == "yes":
                 return True
@@ -200,7 +196,7 @@ class BaseAgent:
             Agent-specific LLM client.
 
             For details on optional arguments to pass to the LLM client,
-            see `pythagora.llm.openai_client.OpenAIClient()`.
+            see `samokoder.llm.openai_client.OpenAIClient()`.
             """
             response, request_log = await llm_client(convo, **kwargs)
             await self.state_manager.log_llm_request(request_log, agent=self)

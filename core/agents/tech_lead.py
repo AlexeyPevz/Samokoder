@@ -16,8 +16,6 @@ from samokoder.core.telemetry import telemetry
 from samokoder.core.templates.registry import PROJECT_TEMPLATES
 from samokoder.core.ui.base import ProjectStage, samokoder_source, success_source
 
-await self.ui.send_message("Thank you for using Samokoder!", source=samokoder_source)
-
 log = get_logger(__name__)
 
 
@@ -153,7 +151,7 @@ class TechLead(RelevantFilesMixin, BaseAgent):
         )
 
         if response.button == "end" or response.cancelled or not response.text:
-            await self.ui.send_message("Thank you for using Pythagora!", source=pythagora_source)
+            await self.ui.send_message("Thank you for using самокодер!", source=samokoder_source)
             return AgentResponse.exit(self)
 
         feature_description = response.text

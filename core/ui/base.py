@@ -20,7 +20,7 @@ class ProjectStage(str, Enum):
 
 
 class UIClosedError(Exception):
-    """The user interface has been closed (user stoped Pythagora)."""
+    """The user interface has been closed (user stopped самокодер)."""
 
 
 class UISource:
@@ -462,11 +462,7 @@ class UIBase:
         raise NotImplementedError()
 
 
-        """The user interface has been closed (user stoped Samokoder)."""
-
-samokoder_source = UISource("Samokoder", "samokoder")
-
-"samokoder_source",
+samokoder_source = UISource("самокодер", "samokoder")
 success_source = UISource("Congratulations", "success")
 
 
@@ -475,6 +471,6 @@ __all__ = [
     "AgentSource",
     "UserInput",
     "UIBase",
-    "pythagora_source",
+    "samokoder_source",
     "success_source",
 ]

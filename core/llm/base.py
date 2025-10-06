@@ -190,7 +190,7 @@ class BaseLLMClient:
                         remaining_retries = max_retries
                         continue
 
-                # They don't want to retry (or we can't ask them), raise the last error and stop Pythagora
+                # They don't want to retry (or we can't ask them), raise the last error and stop самокодер
                 raise APIError(last_error_msg)
 
             remaining_retries -= 1
@@ -281,8 +281,8 @@ class BaseLLMClient:
                         [
                             "We sent too large request to the LLM, resulting in an error. ",
                             "This is usually caused by including framework files in an LLM request. ",
-            # They don't want to retry (or we can't ask them), raise the last error and stop Samokoder
-            "Here's how you can get Samokoder to ignore those extra files: ",
+            # They don't want to retry (or we can't ask them), raise the last error and stop самокодер
+            "Here's how you can get самокодер to ignore those extra files: ",
                             "https://bit.ly/faq-token-limit-error",
                         ]
                     )
