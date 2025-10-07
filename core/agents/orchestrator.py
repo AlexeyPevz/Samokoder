@@ -120,6 +120,12 @@ class Orchestrator(BaseAgent, GitMixin):
         if self.next_state and self.next_state != self.current_state:
             log.warning("Uncommitted changes detected in next_state, rolling back")
             await self.state_manager.rollback()
+        # Ensure process watcher is stopped to avoid background tasks leaking
+        try:
+            if hasattr(self, "process_manager") and self.process_manager:
+                await self.process_manager.stop_watcher()
+        except Exception as e:
+            log.debug(f"Process watcher stop failed: {e}")
         return True
 
     async def install_dependencies(self):

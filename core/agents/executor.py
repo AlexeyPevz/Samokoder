@@ -134,7 +134,7 @@ class Executor(BaseAgent):
         await self.state_manager.log_command_run(exec_log)
 
         # FIXME: ErrorHandler isn't debugged with BugHunter - we should move all commands to run before testing and debug them with BugHunter
-        if True or llm_response.success:
+        if llm_response.success:
             return AgentResponse.done(self)
 
         return AgentResponse.error(

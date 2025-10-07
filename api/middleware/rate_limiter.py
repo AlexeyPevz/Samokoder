@@ -3,9 +3,9 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from redis import Redis
 from typing import Optional
 import os
+from samokoder.core.config import get_config
 
 
 def _get_identifier(request):
@@ -31,10 +31,11 @@ def _get_identifier(request):
     return f"ip:{get_remote_address(request)}"
 
 
-# Создаём limiter с Redis storage
+# Создаём limiter с Redis storage из конфигурации
+_redis_url = os.getenv("REDIS_URL") or get_config().redis_url
 limiter = Limiter(
     key_func=_get_identifier,
-    storage_uri=f"redis://{os.getenv('REDIS_HOST', 'localhost')}:{os.getenv('REDIS_PORT', '6379')}",
+    storage_uri=_redis_url,
     default_limits=["100/minute"],  # По умолчанию для аутентифицированных
     headers_enabled=True,  # Добавляет X-RateLimit-* заголовки
 )
