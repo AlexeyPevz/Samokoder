@@ -104,19 +104,32 @@ async def _get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    request: Request,
+    token: Optional[str] = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_async_db),
 ) -> User:
-    """Resolve the current user from the access token."""
+    """
+    Resolve the current user from the access token.
+    Supports both cookie-based (httpOnly) and Authorization header auth.
+    Cookie takes precedence for security.
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    # Try cookie first (more secure), then Authorization header as fallback
+    access_token = request.cookies.get("access_token")
+    if not access_token and token:
+        access_token = token
+    
+    if not access_token:
+        raise credentials_exception
+
     try:
         config = get_config()
-        payload = jwt.decode(token, config.secret_key, algorithms=["HS256"])
+        payload = jwt.decode(access_token, config.secret_key, algorithms=["HS256"])
         if payload.get("type") != "access":
             raise credentials_exception
         
@@ -138,6 +151,10 @@ async def get_current_user(
     user = await _get_user_by_email(db, email=email)
     if user is None:
         raise credentials_exception
+    
+    # Store user in request state for rate limiting
+    request.state.user = user
+    
     return user
 
 
@@ -279,13 +296,28 @@ async def login(
 @router.post("/auth/refresh", response_model=TokenRefreshResponse)
 @limiter.limit(get_rate_limit("auth"))  # P0-1: Add rate limiting
 async def refresh_token(
-    request: Request,  # P0-1: Required for rate limiting
-    payload: TokenRefreshRequest
+    request: Request,
+    response: Response,
+    payload: Optional[TokenRefreshRequest] = None,
+    db: AsyncSession = Depends(get_async_db)
 ):
-    """Issue a new access token based on refresh token."""
+    """
+    Issue a new access token based on refresh token.
+    Supports both cookie-based (httpOnly) and body-based refresh tokens.
+    Cookie takes precedence for security.
+    """
     config = get_config()
+    
+    # Try cookie first (more secure), then request body as fallback
+    refresh_token_str = request.cookies.get("refresh_token")
+    if not refresh_token_str and payload:
+        refresh_token_str = payload.refresh_token
+    
+    if not refresh_token_str:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing refresh token")
+    
     try:
-        decoded = jwt.decode(payload.refresh_token, config.app_secret_key, algorithms=["HS256"])
+        decoded = jwt.decode(refresh_token_str, config.app_secret_key, algorithms=["HS256"])
         if decoded.get("type") != "refresh":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
         email = decoded.get("sub")

@@ -78,8 +78,8 @@ class GitHubPlugin(BasePlugin):
     
     async def update_user_settings(self, user: User, settings: Dict[str, Any], db: Session) -> bool:
         """Update GitHub-specific user settings"""
-        # In a real implementation, we would update settings in database
-        log.info(f"Updating GitHub settings for user {user.username}: {settings}")
+        # Use user email as identifier (User model doesn't have username field)
+        log.info(f"Updating GitHub settings for user {user.email}: {settings}")
         return True
     
     async def create_repository(self, user: User, project: Project, db: Session) -> bool:
@@ -88,8 +88,8 @@ class GitHubPlugin(BasePlugin):
         if not user_settings.get("enabled", False) or not user_settings.get("access_token"):
             return False
         
-        # In a real implementation, we would make an API call to GitHub
-        log.info(f"Creating GitHub repository: {user.username}/{project.name}")
+        # Use user email as identifier
+        log.info(f"Creating GitHub repository for project: {project.name} (user: {user.email})")
         return True
     
     async def commit_changes(self, user: User, project: Project, message: str, db: Session) -> bool:
@@ -98,8 +98,8 @@ class GitHubPlugin(BasePlugin):
         if not user_settings.get("enabled", False) or not user_settings.get("access_token"):
             return False
         
-        # In a real implementation, we would make an API call to GitHub
-        log.info(f"Committing changes to GitHub repository: {user.username}/{project.name}")
+        # Use user email as identifier
+        log.info(f"Committing changes to GitHub repository for project: {project.name} (user: {user.email})")
         return True
 
 

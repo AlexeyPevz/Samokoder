@@ -271,10 +271,11 @@ async def get_preview_status(
     project_key = str(project_id)
     if project_key in preview_processes:
         process_info = preview_processes[project_key]
-        process = process_info.get("process")
         
-        # Check if process is still alive
-        if process and process.poll() is None:
+        # Check if container or process is still alive
+        if "container_id" in process_info:
+            # Container-based preview - assume running if in dict
+            # (container cleanup happens in TTL guard)
             return {
                 "status": {
                     "url": f"http://localhost:{process_info['port']}", 
@@ -283,8 +284,20 @@ async def get_preview_status(
                     "uptime_seconds": asyncio.get_event_loop().time() - process_info.get("started_at", 0)
                 }
             }
-        else:
-            # Process died
-            del preview_processes[project_key]
+        elif "process" in process_info:
+            # Process-based preview
+            process = process_info["process"]
+            if process and process.is_running:
+                return {
+                    "status": {
+                        "url": f"http://localhost:{process_info['port']}", 
+                        "status": "running",
+                        "started_at": process_info.get("started_at"),
+                        "uptime_seconds": asyncio.get_event_loop().time() - process_info.get("started_at", 0)
+                    }
+                }
+            else:
+                # Process died
+                del preview_processes[project_key]
     
     return {"status": {"status": "stopped", "url": None}}
