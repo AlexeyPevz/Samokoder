@@ -63,7 +63,7 @@ class NotificationService:
                     try:
                         await handler(user_id, title, message, data)
                     except Exception as e:
-                        print(f"Error sending notification: {e}")
+                        log.error(f"Error sending notification: {e}", exc_info=True)
     
     async def send_broadcast_notification(
         self, 
@@ -139,7 +139,7 @@ async def email_notification_handler(user_id: int, title: str, message: str, dat
         user = db.query(User).filter(User.id == user_id).first()
         if user and user.email:
             # In a real implementation, we would send an email
-            print(f"Sending email to {user.email}: {title} - {message}")
+            log.info(f"Sending email to {user.email}: {title} - {message}")
     finally:
         db.close()
 
@@ -147,7 +147,7 @@ async def email_notification_handler(user_id: int, title: str, message: str, dat
 async def push_notification_handler(user_id: int, title: str, message: str, data: Optional[Dict] = None):
     """Handler for sending push notifications"""
     # In a real implementation, we would send a push notification
-    print(f"Sending push notification to user {user_id}: {title} - {message}")
+    log.info(f"Sending push notification to user {user_id}: {title} - {message}")
 
 
 # Register handlers

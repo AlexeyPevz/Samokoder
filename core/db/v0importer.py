@@ -41,10 +41,10 @@ class LegacyDatabaseImporter:
         try:
             info = await self.load_legacy_database()
         except Exception as err:  # noqa
-            print(f"Failed to load legacy database {self.dbpath}: {err}")
+            log.error(f"Failed to load legacy database {self.dbpath}: {err}")
             return
         n = await self.save_to_new_database(info)
-        print(f"Successfully imported {n} projects from {self.dbpath}")
+        log.info(f"Successfully imported {n} projects from {self.dbpath}")
 
     async def load_legacy_database(self):
         async with aiosqlite.connect(self.dbpath) as conn:

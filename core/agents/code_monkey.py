@@ -452,7 +452,7 @@ class CodeMonkey(FileDiffMixin, BaseAgent):
         except Exception as e:
             # This should never happen but if it does, just use the new version from
             # the LLM and hope for the best
-            print(f"Error applying diff: {e}; hoping all changes are valid")
+            log.error(f"Error applying diff: {e}; using fallback content", exc_info=True)
             return fallback
 
         return fixed_content

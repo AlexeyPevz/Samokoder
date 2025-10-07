@@ -184,7 +184,7 @@ class BaseAgent:
             name = self.__class__.__name__
 
         config = get_config()
-        print(f"config type: {type(config)}")
+        log.debug(f"Getting LLM config for agent {name}, config type: {type(config)}")
 
         llm_config = config.llm_for_agent(name)
         client_class = BaseLLMClient.for_provider(llm_config.provider)

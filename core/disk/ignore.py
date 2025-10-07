@@ -91,7 +91,10 @@ class IgnoreMatcher:
 
         try:
             return bool(os.path.getsize(full_path) > self.ignore_size_threshold)
-        except:  # noqa
+        except (OSError, IOError) as e:
+            # File might not exist, be inaccessible, or have permission issues
+            # In all these cases, it's safer to ignore it
+            log.debug(f"Cannot get size for {full_path}: {e}")
             return True
 
     def _is_binary(self, full_path: str) -> bool:
@@ -116,9 +119,8 @@ class IgnoreMatcher:
             with open(full_path, "r", encoding="utf-8") as f:
                 f.read(128 * 1024)
             return False
-        except:  # noqa
-            # If we can't open the file for any reason (eg. PermissionError), it's
-            # best to ignore it anyway
+        except (UnicodeDecodeError, PermissionError, OSError, IOError):
+            # Binary file, permission denied, or file access error - ignore it
             return True
 
 
