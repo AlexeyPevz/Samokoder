@@ -1,3 +1,9 @@
+"""
+DEPRECATED: This file is a stub/mock implementation and is NOT used in production.
+The actual preview service is implemented in api/routers/preview.py
+
+This file should be removed in a future cleanup.
+"""
 import asyncio
 import os
 import subprocess
@@ -8,7 +14,12 @@ from sqlalchemy.orm import Session
 
 
 class PreviewService:
-    """Service for managing live previews of projects"""
+    """
+    DEPRECATED: Stub implementation - DO NOT USE
+    
+    Service for managing live previews of projects.
+    Use api/routers/preview.py endpoints instead.
+    """
     
     def __init__(self):
         self.running_previews: Dict[str, Dict] = {}  # project_id -> {process, port, url}

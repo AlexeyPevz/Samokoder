@@ -7,7 +7,10 @@ from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from samokoder.core.log import get_logger
 from samokoder.core.config import get_config
+
+log = get_logger(__name__)
 from samokoder.core.db.models.project import Project
 from samokoder.core.db.models.user import User
 from samokoder.core.db.session import get_async_db
@@ -36,6 +39,17 @@ async def get_current_user_ws(
         # Allow only short-lived WS tokens; keep backward compatibility with access for a while
         if token_type not in {"ws", "access"}:
             raise credentials_exception
+        
+        # FIX: Check if token is revoked (same as HTTP auth)
+        jti = payload.get("jti")
+        if jti:
+            from samokoder.core.db.models.revoked_tokens import RevokedToken
+            result_token = await db.execute(
+                select(RevokedToken).where(RevokedToken.jti == jti)
+            )
+            if result_token.scalars().first():
+                raise credentials_exception
+        
         email: str | None = payload.get("sub")
         if email is None:
             raise credentials_exception

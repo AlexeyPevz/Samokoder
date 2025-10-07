@@ -6,6 +6,10 @@ from time import time
 import psutil
 import os
 
+from samokoder.core.log import get_logger
+
+logger = get_logger(__name__)
+
 
 # ==================== Application Info ====================
 app_info = Info('samokoder_app', 'Samokoder application info')
@@ -229,7 +233,7 @@ def update_system_metrics():
         system_disk_usage_bytes.labels(path='/', type='free').set(disk.free)
         system_disk_usage_bytes.labels(path='/', type='total').set(disk.total)
     except Exception as e:
-        print(f"Error updating system metrics: {e}")
+        logger.error(f"Error updating system metrics: {e}", exc_info=True)
 
 
 def track_http_request(method: str, endpoint: str, status: int, duration: float):
@@ -300,7 +304,7 @@ def update_saturation_metrics():
             pass  # Need elevated permissions
             
     except Exception as e:
-        print(f"Error updating saturation metrics: {e}")
+        logger.error(f"Error updating saturation metrics: {e}", exc_info=True)
 
 
 def update_slo_metrics(current_error_rate: float, current_p95_latency: float):
@@ -342,4 +346,4 @@ def update_slo_metrics(current_error_rate: float, current_p95_latency: float):
         error_budget_remaining_percent.labels(slo_type='errors').set(error_budget)
         
     except Exception as e:
-        print(f"Error updating SLO metrics: {e}")
+        logger.error(f"Error updating SLO metrics: {e}", exc_info=True)
