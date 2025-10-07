@@ -259,7 +259,7 @@ class Project(Base):
     @staticmethod
     async def delete_by_id(
         session: "AsyncSession", 
-        project_id: GUID
+        project_id: UUID  # FIX: Use UUID instead of undefined GUID
     ) -> bool:
         """
         Удалить проект по ID.

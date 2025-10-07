@@ -236,7 +236,4 @@ app.include_router(health_router, prefix="/health", tags=["health"])
 def root() -> dict[str, str]:
     return {"message": "Samokoder SaaS API ready", "version": "1.0"}
 
-
-@app.get("/health")
-def health_check() -> dict[str, str]:
-    return {"status": "ok"}
+# FIX: Removed duplicate /health endpoint - already included via health_router

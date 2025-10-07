@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Integer, JSON, DateTime
+from sqlalchemy import String, Integer, JSON, DateTime, Boolean
 from enum import Enum as PythonEnum
 from sqlalchemy.types import Enum as SQLAlchemyEnum
 from cryptography.fernet import Fernet
@@ -26,7 +26,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String, nullable=False)
     tier: Mapped[Tier] = mapped_column(SQLAlchemyEnum(Tier), default=Tier.FREE, nullable=False)
-    is_admin: Mapped[bool] = mapped_column(Integer, default=False, nullable=False)  # P0-1: Admin role flag
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)  # P0-1: FIXED - Admin role flag
     projects_monthly_count: Mapped[int] = mapped_column(Integer, default=0)
     projects_total: Mapped[int] = mapped_column(Integer, default=0)
     api_keys: Mapped[dict] = mapped_column(JSON, default=dict)

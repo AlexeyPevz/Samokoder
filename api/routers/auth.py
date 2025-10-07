@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/auth/login", auto_error=False)  # FIX: Include /v1 prefix
 
 # FIX: Use constants from config instead of magic numbers
 ACCESS_TOKEN_EXPIRE_MINUTES = SecurityLimits.ACCESS_TOKEN_EXPIRE_MINUTES
@@ -362,13 +362,22 @@ async def refresh_token(
 
 @router.post("/auth/logout")
 async def logout(
-    token: str = Depends(oauth2_scheme),
+    request: Request,
+    token: Optional[str] = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_async_db)
 ):
-    """Revoke the current access token (P1-1)."""
+    """Revoke the current access token (P1-1). Supports both cookie and Authorization header."""
+    # Try cookie first (more secure), then Authorization header as fallback
+    access_token = request.cookies.get("access_token")
+    if not access_token and token:
+        access_token = token
+    
+    if not access_token:
+        return {"message": "Successfully logged out"}
+    
     try:
         config = get_config()
-        payload = jwt.decode(token, config.secret_key, algorithms=["HS256"])
+        payload = jwt.decode(access_token, config.secret_key, algorithms=["HS256"])
         jti = payload.get("jti")
         exp = payload.get("exp")
         user_email = payload.get("sub")

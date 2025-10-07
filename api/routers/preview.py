@@ -67,8 +67,9 @@ async def start_preview(
     if not script_name:
         raise HTTPException(status_code=400, detail="No allowed preview scripts found (preview/dev/start)")
 
-    # Pick a port deterministically in allowed range
-    port = PREVIEW_START_PORT + (abs(hash(str(project.id))) % (PREVIEW_END_PORT - PREVIEW_START_PORT))
+    # Pick a port deterministically in allowed range (stable across restarts)
+    # FIX: Use uuid.int instead of hash() for stable port assignment
+    port = PREVIEW_START_PORT + (int(project.id.int) % (PREVIEW_END_PORT - PREVIEW_START_PORT))
 
     # Ensure env with PORT and NODE_ENV
     env = {

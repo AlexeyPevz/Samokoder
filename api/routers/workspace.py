@@ -7,7 +7,10 @@ from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from samokoder.core.log import get_logger
 from samokoder.core.config import get_config
+
+log = get_logger(__name__)
 from samokoder.core.db.models.project import Project
 from samokoder.core.db.models.user import User
 from samokoder.core.db.session import get_async_db

@@ -1651,7 +1651,7 @@ paths:
         
         **Реализация:** `api/routers/analytics.py:34-56`
         
-        **⚠️ TODO:** Проверка прав администратора не реализована
+        **✅ FIXED:** Проверка прав администратора реализована через require_admin
       operationId: getSystemAnalytics
       responses:
         '200':
@@ -1795,7 +1795,7 @@ paths:
         
         **Реализация:** `api/routers/analytics.py:111-131`
         
-        **⚠️ TODO:** Проверка прав администратора не реализована
+        **✅ FIXED:** Проверка прав администратора реализована через require_admin
       operationId: exportAnalytics
       responses:
         '200':
@@ -2844,9 +2844,9 @@ x-discrepancies:
       - "/v1/projects/{project_id}/preview/status"
     severity: "high"
     description: |
-      Эндпоинты preview содержат TODO комментарии и возвращают хардкоженные данные.
+      ✅ FIXED: Preview endpoints fully implemented with Docker/process management, TTL guards, and security limits.
     recommendation: |
-      Завершить реализацию с реальным управлением процессами и статусами.
+      Consider moving preview_processes from in-memory to Redis for horizontal scaling (already noted as P1-1 TODO).
     
   - issue: "Missing authorization checks"
     endpoints:
