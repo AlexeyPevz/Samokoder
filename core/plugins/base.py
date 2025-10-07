@@ -99,7 +99,7 @@ class PluginManager:
                     elif event == "deploy":
                         await plugin.on_project_deploy(project, user, db)
                 except Exception as e:
-                    print(f"Error in plugin {plugin.name} during {event} event: {e}")
+                    log.error(f"Error in plugin {plugin.name} during {event} event: {e}", exc_info=True)
     
     async def get_project_info_from_plugins(self, project: Project, user: User, db: Session) -> Dict[str, Any]:
         """Get project information from all plugins"""
@@ -110,7 +110,7 @@ class PluginManager:
                     info = await plugin.get_project_info(project, user, db)
                     project_info[plugin_name] = info
                 except Exception as e:
-                    print(f"Error getting project info from plugin {plugin_name}: {e}")
+                    log.error(f"Error getting project info from plugin {plugin_name}: {e}", exc_info=True)
         return project_info
 
 

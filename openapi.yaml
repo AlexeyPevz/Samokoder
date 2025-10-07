@@ -932,9 +932,9 @@ paths:
       description: |
         Останавливает dev сервер превью.
         
-        **Реализация:** `api/routers/preview.py:27-35`
+        **Реализация:** `api/routers/preview.py:209-251`
         
-        **⚠️ TODO:** Реализация не завершена
+        Останавливает контейнер или процесс preview сервера для проекта.
       operationId: stopPreview
       parameters:
         - $ref: '#/components/parameters/ProjectId'
@@ -973,9 +973,9 @@ paths:
       description: |
         Возвращает текущий статус превью проекта.
         
-        **Реализация:** `api/routers/preview.py:37-45`
+        **Реализация:** `api/routers/preview.py:253-288`
         
-        **⚠️ TODO:** Реализация возвращает хардкоженные данные
+        Проверяет статус preview процесса и возвращает информацию о порте и uptime.
       operationId: getPreviewStatus
       parameters:
         - $ref: '#/components/parameters/ProjectId'

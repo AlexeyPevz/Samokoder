@@ -2,7 +2,8 @@ import os
 from arq import create_pool
 from arq.connections import RedisSettings
 from fastapi import WebSocket
-from samokoder.core.db.models import User, Project, Project, Project, Project, Project, Project, Project, Project, Project, Project, Project
+from samokoder.core.db.models import User, Project
+from samokoder.api.ws_ui import WebSocketUI
 from sqlalchemy.orm import Session
 
 async def run_samokoder_for_project(

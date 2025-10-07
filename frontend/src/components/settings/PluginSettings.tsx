@@ -30,7 +30,7 @@ export function PluginSettings() {
       const data = await pluginService.getPlugins()
       setPlugins(data.plugins)
     } catch (error) {
-      console.error("Error loading plugins:", error)
+      // Error loading plugins - handled by UI
       toast({
         title: "Ошибка",
         description: "Не удалось загрузить плагины",
@@ -51,7 +51,7 @@ export function PluginSettings() {
         accessToken: data.settings.accessToken || ""
       })
     } catch (error) {
-      console.error("Error loading GitHub settings:", error)
+      // Error loading GitHub settings - handled by UI
     }
   }
 
@@ -75,7 +75,7 @@ export function PluginSettings() {
         description: `Плагин ${enabled ? "включен" : "выключен"}`
       })
     } catch (error) {
-      console.error("Error toggling plugin:", error)
+      // Error toggling plugin - handled by UI
       toast({
         title: "Ошибка",
         description: "Не удалось изменить состояние плагина",
@@ -92,7 +92,7 @@ export function PluginSettings() {
         description: "Настройки GitHub сохранены"
       })
     } catch (error) {
-      console.error("Error updating GitHub settings:", error)
+      // Error updating GitHub settings - handled by UI
       toast({
         title: "Ошибка",
         description: "Не удалось сохранить настройки GitHub",
@@ -109,7 +109,7 @@ export function PluginSettings() {
         description: "Репозиторий GitHub создан"
       })
     } catch (error) {
-      console.error("Error creating GitHub repository:", error)
+      // Error creating GitHub repository - handled by UI
       toast({
         title: "Ошибка",
         description: "Не удалось создать репозиторий GitHub",

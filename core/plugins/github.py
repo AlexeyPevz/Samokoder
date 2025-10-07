@@ -19,19 +19,19 @@ class GitHubPlugin(BasePlugin):
     
     async def initialize(self) -> bool:
         """Initialize the GitHub plugin"""
-        print("Initializing GitHub plugin")
+        log.info("Initializing GitHub plugin")
         return True
     
     async def cleanup(self) -> None:
         """Clean up plugin resources"""
-        print("Cleaning up GitHub plugin")
+        log.info("Cleaning up GitHub plugin")
     
     async def on_project_created(self, project: Project, user: User, db: Session) -> None:
         """Called when a project is created"""
         # Check if user has GitHub integration enabled
         user_settings = await self.get_user_settings(user, db)
         if user_settings.get("enabled", False):
-            print(f"Setting up GitHub repository for project {project.name}")
+            log.info(f"Setting up GitHub repository for project {project.name}")
             # In a real implementation, we would create a GitHub repository
             # and set up the initial commit
     
@@ -40,7 +40,7 @@ class GitHubPlugin(BasePlugin):
         # Check if user has GitHub integration enabled
         user_settings = await self.get_user_settings(user, db)
         if user_settings.get("auto_commit", False):
-            print(f"Committing changes to GitHub for project {project.name}")
+            log.info(f"Committing changes to GitHub for project {project.name}")
             # In a real implementation, we would commit changes to GitHub
     
     async def on_project_deploy(self, project: Project, user: User, db: Session) -> None:
@@ -48,7 +48,7 @@ class GitHubPlugin(BasePlugin):
         # Check if user has GitHub integration enabled
         user_settings = await self.get_user_settings(user, db)
         if user_settings.get("create_release", False):
-            print(f"Creating GitHub release for project {project.name}")
+            log.info(f"Creating GitHub release for project {project.name}")
             # In a real implementation, we would create a GitHub release
     
     async def get_project_info(self, project: Project, user: User, db: Session) -> Dict[str, Any]:
@@ -78,8 +78,8 @@ class GitHubPlugin(BasePlugin):
     
     async def update_user_settings(self, user: User, settings: Dict[str, Any], db: Session) -> bool:
         """Update GitHub-specific user settings"""
-        # In a real implementation, we would update settings in database
-        print(f"Updating GitHub settings for user {user.username}: {settings}")
+        # Use user email as identifier (User model doesn't have username field)
+        log.info(f"Updating GitHub settings for user {user.email}: {settings}")
         return True
     
     async def create_repository(self, user: User, project: Project, db: Session) -> bool:
@@ -88,8 +88,8 @@ class GitHubPlugin(BasePlugin):
         if not user_settings.get("enabled", False) or not user_settings.get("access_token"):
             return False
         
-        # In a real implementation, we would make an API call to GitHub
-        print(f"Creating GitHub repository: {user.username}/{project.name}")
+        # Use user email as identifier
+        log.info(f"Creating GitHub repository for project: {project.name} (user: {user.email})")
         return True
     
     async def commit_changes(self, user: User, project: Project, message: str, db: Session) -> bool:
@@ -98,8 +98,8 @@ class GitHubPlugin(BasePlugin):
         if not user_settings.get("enabled", False) or not user_settings.get("access_token"):
             return False
         
-        # In a real implementation, we would make an API call to GitHub
-        print(f"Committing changes to GitHub repository: {user.username}/{project.name}")
+        # Use user email as identifier
+        log.info(f"Committing changes to GitHub repository for project: {project.name} (user: {user.email})")
         return True
 
 

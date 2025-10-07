@@ -43,7 +43,7 @@ export function AnalyticsDashboard() {
       const actionLogsData = await analyticsService.getUserActionLogs(50)
       setActionLogs(actionLogsData.logs)
     } catch (error) {
-      console.error("Error loading analytics:", error)
+      // Error loading analytics - handled by UI
       toast({
         title: "Ошибка",
         description: "Не удалось загрузить аналитику",

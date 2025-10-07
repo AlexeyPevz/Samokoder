@@ -112,8 +112,7 @@ export const getAvailableModels = async (): Promise<ProviderModels> => {
     const response = await api.get('/models');
     return response.data;
   } catch (error: unknown) {
-    console.error('Error fetching models:', error);
-    // Возвращаем пустой объект если не удалось загрузить
+    // Error fetching models - return empty object
     return {};
   }
 };

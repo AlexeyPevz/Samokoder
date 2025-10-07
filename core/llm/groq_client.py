@@ -67,10 +67,13 @@ class GroqClient(BaseLLMClient):
             await self.stream_handler(None)
 
         if prompt_tokens == 0 and completion_tokens == 0:
-            # FIXME: Here we estimate Groq tokens using the same method as for OpenAI....
+            # NOTE: Groq doesn't always return token counts, so we estimate using OpenAI's tiktoken
+            # This is an approximation - Groq uses different models (Llama, Mixtral) with different tokenizers
+            # For more accurate billing, use Groq's reported token counts when available
             # See https://cookbook.openai.com/examples/how_to_count_tokens_with_tiktoken
             prompt_tokens = sum(3 + len(tokenizer.encode(msg["content"])) for msg in convo.messages)
             completion_tokens = len(tokenizer.encode(response_str))
+            log.debug(f"Estimated Groq tokens (may be inaccurate): prompt={prompt_tokens}, completion={completion_tokens}")
 
         return response_str, prompt_tokens, completion_tokens
 

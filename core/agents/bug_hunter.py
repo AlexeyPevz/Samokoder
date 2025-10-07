@@ -16,6 +16,11 @@ from samokoder.core.ui.base import ProjectStage, samokoder_source
 
 log = get_logger(__name__)
 
+# Constants for UI button texts - keep in sync with extension
+BUTTON_TEXT_BUG_FIXED = "Bug is fixed"
+BUTTON_TEXT_CONTINUE = "Continue without feedback"
+BUTTON_TEXT_PAIR_PROGRAMMING = "Start Pair Programming"
+
 
 class HuntConclusionType(str, Enum):
     ADD_LOGS = magic_words.ADD_LOGS
@@ -164,10 +169,11 @@ class BugHunter(ChatWithBreakdownMixin, BaseAgent):
                 awaiting_bug_reproduction = True
 
         if awaiting_bug_reproduction:
+            # NOTE: These button texts are used by the extension - keep constants in sync
             buttons = {
-                "done": "Bug is fixed",
-                "continue": "Continue without feedback",  # DO NOT CHANGE THIS TEXT without changing it in the extension (it is hardcoded)
-                "start_pair_programming": "Start Pair Programming",
+                "done": BUTTON_TEXT_BUG_FIXED,
+                "continue": BUTTON_TEXT_CONTINUE,
+                "start_pair_programming": BUTTON_TEXT_PAIR_PROGRAMMING,
             }
             await self.ui.send_project_stage(
                 {

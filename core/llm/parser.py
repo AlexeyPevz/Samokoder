@@ -167,11 +167,31 @@ class CodeBlockParser(MultiCodeBlockParser):
 
     def __call__(self, text: str) -> str:
         blocks = super().__call__(text)
-        # FIXME: if there are more than 1 code block, this means the output actually contains ```,
-        # so re-parse this with that in mind
-        if len(blocks) != 1:
-            raise ValueError(f"Expected a single code block, got {len(blocks)}")
-        return blocks[0]
+        if len(blocks) == 0:
+            raise ValueError("Expected at least one code block, got none")
+        elif len(blocks) == 1:
+            return blocks[0]
+        else:
+            # Multiple code blocks found - could be legitimate if the code contains ```
+            # Try to intelligently merge or select the right one
+            log.warning(f"Found {len(blocks)} code blocks, attempting to handle multiple blocks")
+            
+            # If blocks are small and look like they're part of one block split by ```, merge them
+            total_lines = sum(len(block.split('\n')) for block in blocks)
+            if total_lines < 100:  # Heuristic: small blocks are more likely fragments
+                # Merge with ``` separator (the content that split them)
+                merged = '\n```\n'.join(blocks)
+                log.info(f"Merged {len(blocks)} code blocks into one")
+                return merged
+            else:
+                # For large blocks, take the first substantial one
+                substantial_blocks = [b for b in blocks if len(b.strip()) > 10]
+                if substantial_blocks:
+                    log.info(f"Selecting first substantial block out of {len(blocks)}")
+                    return substantial_blocks[0]
+                else:
+                    # Fall back to first block
+                    return blocks[0]
 
 
 class OptionalCodeBlockParser:

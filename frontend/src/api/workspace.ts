@@ -10,7 +10,9 @@ class WorkspaceSocket {
         this.socket = new WebSocket(`${protocol}://${host}/api/v1/ws/${projectId}?token=${token}`);
 
         this.socket.onopen = () => {
-            console.log('WebSocket connection established');
+            if (import.meta.env.DEV) {
+                console.log('WebSocket connection established');
+            }
         };
 
         this.socket.onmessage = (event) => {
@@ -20,12 +22,16 @@ class WorkspaceSocket {
                     this.onMessageCallback(message);
                 }
             } catch (e) {
-                console.error('Error parsing WebSocket message:', e);
+                if (import.meta.env.DEV) {
+                    console.error('Error parsing WebSocket message:', e);
+                }
             }
         };
 
         this.socket.onclose = () => {
-            console.log('WebSocket connection closed');
+            if (import.meta.env.DEV) {
+                console.log('WebSocket connection closed');
+            }
         };
 
         this.socket.onerror = (error) => {

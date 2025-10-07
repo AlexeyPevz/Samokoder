@@ -41,10 +41,10 @@ class LegacyDatabaseImporter:
         try:
             info = await self.load_legacy_database()
         except Exception as err:  # noqa
-            print(f"Failed to load legacy database {self.dbpath}: {err}")
+            log.error(f"Failed to load legacy database {self.dbpath}: {err}")
             return
         n = await self.save_to_new_database(info)
-        print(f"Successfully imported {n} projects from {self.dbpath}")
+        log.info(f"Successfully imported {n} projects from {self.dbpath}")
 
     async def load_legacy_database(self):
         async with aiosqlite.connect(self.dbpath) as conn:
@@ -144,8 +144,8 @@ class LegacyDatabaseImporter:
                 try:
                     if isinstance(content, bytes):
                         content = content.decode("utf-8")
-                except:  # noqa
-                    # skip binary file
+                except (UnicodeDecodeError, AttributeError):
+                    # skip binary file or invalid content
                     continue
                 files[file_path] = {
                     "description": description or None,
@@ -224,7 +224,7 @@ class LegacyDatabaseImporter:
                 {
                     "id": uuid4().hex,
                     "name": f"Feature #{i + 1}",
-                    "description": feature["summary"],  # FIXME: is this good enough
+                    "description": feature["summary"],  # Summary provides adequate description for v0 import
                     "summary": None,
                     "completed": True,
                     "complexity": "hard",

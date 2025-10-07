@@ -171,9 +171,18 @@ class LocalDiskVFS(VirtualFileSystem):
         if not os.path.isfile(full_path):
             raise ValueError(f"File not found: {path}")
 
-        # TODO: do we want error handling here?
-        with open(full_path, "r", encoding="utf-8") as f:
-            return f.read()
+        try:
+            with open(full_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except UnicodeDecodeError as e:
+            log.error(f"Failed to decode file {path}: {e}")
+            raise ValueError(f"File {path} is not a valid UTF-8 text file")
+        except PermissionError as e:
+            log.error(f"Permission denied reading file {path}: {e}")
+            raise ValueError(f"Permission denied: {path}")
+        except Exception as e:
+            log.error(f"Failed to read file {path}: {e}", exc_info=True)
+            raise
 
     def remove(self, path: str):
         if self.ignore_matcher.ignore(path):
@@ -218,8 +227,9 @@ class DockerVFS(VirtualFileSystem):
     and command execution within a container.
     """
 
-    def __init__(self, container_name: str):
+    def __init__(self, container_name: str, root: str = '/workspace'):
         self.container_name = container_name
+        self.root = root  # Set root BEFORE using it
         self.client = docker.from_env()
         
         try:
@@ -241,10 +251,7 @@ class DockerVFS(VirtualFileSystem):
                     log.error("The 'samokoder-execution:latest' image was not found.")
                     raise ValueError("Execution environment image not found. Please build it using 'docker-compose build execution-environment'")
                 
-                # Note: DockerVFS requires 'root' attribute to be set before calling containers.run
-                # But __init__ doesn't set it before this point - this is a bug!
-                # For now, we'll use a placeholder and log a warning
-                workspace_path = getattr(self, 'root', '/workspace')
+                workspace_path = self.root
                 
                 self.container = self.client.containers.run(
                     image="samokoder-execution:latest",

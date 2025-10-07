@@ -21,8 +21,8 @@ class OpenAIClient(BaseLLMClient):
 
     def _init_client(self):
         self.client = AsyncOpenAI(
-            api_key=self.config.openai.api_key,
-            base_url=self.config.openai.base_url,
+            api_key=self.config.api_key,
+            base_url=self.config.base_url,
             default_headers={
                 "HTTP-Referer": "https://app.samokoder.com",
                 "X-Title": "самокодер"

@@ -47,9 +47,11 @@ services:
       - ALL                      # Drop all capabilities
     cap_add:
       - NET_BIND_SERVICE         # Only needed for port 8000
-    read_only: false             # TODO: Enable after fixing writable paths
+    read_only: true              # Enable read-only filesystem
     tmpfs:
       - /tmp                     # Writable /tmp
+      - /app/.cache              # Cache directory
+      - /root/.cache             # Root cache directory
     deploy:
       resources:
         limits:
@@ -100,9 +102,11 @@ services:
       - ALL
     cap_add:
       - NET_BIND_SERVICE
-    read_only: false  # TODO: Enable after fixing writable paths
+    read_only: true   # Enable read-only filesystem
     tmpfs:
       - /tmp
+      - /app/.cache
+      - /root/.cache
     deploy:
       resources:
         limits:

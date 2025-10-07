@@ -85,7 +85,7 @@ export function TokenUsageStats() {
       
       setUsageData(sortedData)
     } catch (error) {
-      console.error("Error loading token usage data:", error)
+      // Error loading token usage data - handled by UI
       toast({
         title: "Ошибка",
         description: "Не удалось загрузить данные об использовании токенов",

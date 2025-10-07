@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from typing import Any, Callable, Optional
 
 from samokoder.core.agents.response import AgentResponse
@@ -184,12 +185,25 @@ class BaseAgent:
             name = self.__class__.__name__
 
         config = get_config()
-        print(f"config type: {type(config)}")
+        log.debug(f"Getting LLM config for agent {name}")
 
-        llm_config = config.llm_for_agent(name)
-        client_class = BaseLLMClient.for_provider(llm_config.provider)
+        # Get agent-specific config (model, temperature, provider)
+        agent_config = config.llm_for_agent(name)
+        
+        # Get provider-specific config with API keys
+        provider_config = getattr(config.llm, agent_config.provider.value)
+        
+        # Create a combined config object for the client
+        # Clients expect ProviderConfig with model and temperature added
+        combined_config = SimpleNamespace(
+            **provider_config.model_dump(),
+            model=agent_config.model,
+            temperature=agent_config.temperature,
+        )
+        
+        client_class = BaseLLMClient.for_provider(agent_config.provider)
         stream_handler = self.stream_handler if stream_output else None
-        llm_client = client_class(llm_config, stream_handler=stream_handler, error_handler=self.error_handler)
+        llm_client = client_class(combined_config, stream_handler=stream_handler, error_handler=self.error_handler)
 
         async def client(convo, **kwargs) -> Any:
             """

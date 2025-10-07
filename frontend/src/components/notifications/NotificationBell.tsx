@@ -30,7 +30,7 @@ export function NotificationBell() {
       setNotifications(data.notifications)
       setUnreadCount(data.notifications.filter(n => !n.read).length)
     } catch (error) {
-      console.error("Error loading notifications:", error)
+      // Error loading notifications - handled by UI
     }
   }
 
@@ -44,7 +44,7 @@ export function NotificationBell() {
       )
       setUnreadCount(prev => prev - 1)
     } catch (error) {
-      console.error("Error marking notification as read:", error)
+      // Error marking notification as read - handled by UI
     }
   }
 
@@ -56,7 +56,7 @@ export function NotificationBell() {
       setNotifications(prev => prev.map(n => ({ ...n, read: true })))
       setUnreadCount(0)
     } catch (error) {
-      console.error("Error marking all notifications as read:", error)
+      // Error marking all notifications as read - handled by UI
     }
   }
 

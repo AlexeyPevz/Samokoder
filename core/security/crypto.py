@@ -42,10 +42,15 @@ class CryptoService:
         try:
             derived_key = _derive_fernet_key(secret_key)
             self.fernet = Fernet(derived_key)
-        except Exception:
+        except (ValueError, TypeError) as e:
             # As a fallback, try to use the provided value as a Fernet key directly
             # to maintain backward compatibility if a proper Fernet key is supplied.
-            self.fernet = Fernet(secret_key if isinstance(secret_key, bytes) else secret_key.encode())
+            log.debug(f"Failed to derive key, trying direct Fernet key: {e}")
+            try:
+                self.fernet = Fernet(secret_key if isinstance(secret_key, bytes) else secret_key.encode())
+            except Exception as e:
+                log.error(f"Failed to initialize Fernet with provided key: {e}")
+                raise ValueError(f"Invalid secret key format: {e}")
 
     def encrypt(self, plaintext: str) -> str:
         """

@@ -8,6 +8,8 @@ from samokoder.core.api.middleware.tier_limits import require_git_push_access
 from typing import Dict, Any, List
 import json
 
+# Note: This router uses sync Session (get_db) for plugin compatibility
+# TODO: Migrate plugins to async when plugin system is refactored
 router = APIRouter()
 
 @router.get("/plugins")

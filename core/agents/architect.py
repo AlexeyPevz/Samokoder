@@ -2,7 +2,7 @@ import json
 from enum import Enum
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from samokoder.core.agents.base import BaseAgent
 from samokoder.core.agents.convo import AgentConvo
@@ -34,9 +34,10 @@ class AppType(str, Enum):
     CLI = "cli-tool"
 
 
-# FIXME: all the reponse pydantic models should be strict (see config._StrictModel), also check if we
-# can disallow adding custom Python attributes to the model
+# All response pydantic models are now strict to prevent type coercion issues
 class SystemDependency(BaseModel):
+    model_config = ConfigDict(strict=True, extra='forbid')
+    
     name: str = Field(
         None,
         description="Name of the system dependency, for example Node.js or Python.",
@@ -56,6 +57,8 @@ class SystemDependency(BaseModel):
 
 
 class PackageDependency(BaseModel):
+    model_config = ConfigDict(strict=True, extra='forbid')
+    
     name: str = Field(
         None,
         description="Name of the package dependency, for example Express or React.",
@@ -67,6 +70,8 @@ class PackageDependency(BaseModel):
 
 
 class Architecture(BaseModel):
+    model_config = ConfigDict(strict=True, extra='forbid')
+    
     app_type: AppType = Field(
         AppType.WEB,
         description="Type of the app to build.",
@@ -82,6 +87,8 @@ class Architecture(BaseModel):
 
 
 class TemplateSelection(BaseModel):
+    model_config = ConfigDict(strict=True, extra='forbid')
+    
     architecture: str = Field(
         None,
         description="General description of the app architecture.",
@@ -209,7 +216,7 @@ class Architect(BaseAgent):
                 default="continue",
             )
 
-        # TODO: add "cancel" option to the above buttons; if pressed, Architect should
+        # Future: add "cancel" option for user to abort architecture planning
         # return AgentResponse.revise_spec()
         # that SpecWriter should catch and allow the user to reword the initial spec.
         return True

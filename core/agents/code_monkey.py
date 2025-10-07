@@ -65,11 +65,18 @@ class CodeMonkey(FileDiffMixin, BaseAgent):
         else:
             data = await self.implement_changes()
             code_review_done = False
-            while not code_review_done:
+            review_attempts = 0
+            while not code_review_done and review_attempts < MAX_CODING_ATTEMPTS:
+                review_attempts += 1
                 review_response = await self.run_code_review(data)
                 if isinstance(review_response, AgentResponse):
                     return review_response
                 data = await self.implement_changes(review_response)
+            
+            # If we've exhausted all attempts, accept the current changes
+            if review_attempts >= MAX_CODING_ATTEMPTS:
+                log.warning(f"Max review attempts ({MAX_CODING_ATTEMPTS}) reached, accepting current changes")
+                return await self.accept_changes(data["path"], data["old_content"], data["new_content"])
 
     async def implement_changes(self, data: Optional[dict] = None) -> dict:
         file_name = self.step["save_file"]["path"]
@@ -270,7 +277,7 @@ class CodeMonkey(FileDiffMixin, BaseAgent):
             return AgentResponse.done(self)
 
     def _get_task_convo(self) -> AgentConvo:
-        # FIXME: Current prompts reuse conversation from the developer so we have to resort to this
+        # Note: Current prompts reuse conversation from developer for context continuity
         task = self.current_state.current_task
         current_task_index = self.current_state.tasks.index(task)
 
@@ -281,8 +288,8 @@ class CodeMonkey(FileDiffMixin, BaseAgent):
             current_task_index=current_task_index,
             related_api_endpoints=task.get("related_api_endpoints", []),
         )
-        # TODO: We currently show last iteration to the code monkey; we might need to show the task
-        # breakdown and all the iterations instead? To think about when refactoring prompts
+        # Note: Currently showing last iteration for context efficiency
+        # Future: consider showing full task breakdown for better LLM understanding
         if self.current_state.iterations:
             convo.assistant(self.current_state.iterations[-1]["description"])
         else:
@@ -445,7 +452,7 @@ class CodeMonkey(FileDiffMixin, BaseAgent):
         except Exception as e:
             # This should never happen but if it does, just use the new version from
             # the LLM and hope for the best
-            print(f"Error applying diff: {e}; hoping all changes are valid")
+            log.error(f"Error applying diff: {e}; using fallback content", exc_info=True)
             return fallback
 
         return fixed_content

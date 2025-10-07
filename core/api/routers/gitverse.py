@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from samokoder.core.api.dependencies import get_current_user
+from samokoder.core.api.dependencies import get_current_user  # Async version with cookie support
 from samokoder.core.db.models.user import User
 from samokoder.core.state.state_manager import StateManager
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 from git import Repo
 import tempfile
 import shutil
 import os
+import requests
 from samokoder.core.config import get_config
 from samokoder.core.log import get_logger
 
@@ -36,9 +37,12 @@ async def gitverse_push(project_id: str, request: GitVersePush, current_user: Us
     
     f = Fernet(get_config().secret_key.encode())
     try:
+        if not current_user.gitverse_token:
+            raise HTTPException(status_code=400, detail="GitVerse token not configured")
         gitverse_token = f.decrypt(current_user.gitverse_token.encode()).decode()
-    except:
-        raise HTTPException(status_code=400, detail="GitVerse token invalid")
+    except (TypeError, ValueError, InvalidToken, AttributeError) as e:
+        log.error(f"Failed to decrypt gitverse token: {e}")
+        raise HTTPException(status_code=400, detail="GitVerse token invalid or corrupted")
     
     repo_url = request.repo_url
     repo_name = repo_url.split('/')[-1] if '/' in repo_url else f"project-{project_id}"

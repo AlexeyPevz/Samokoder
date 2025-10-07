@@ -52,8 +52,10 @@ async def start_preview(
         raise HTTPException(status_code=400, detail="package.json not found in project")
     try:
         pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid package.json")
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        raise HTTPException(status_code=400, detail=f"Invalid package.json: {str(e)}")
+    except (OSError, IOError) as e:
+        raise HTTPException(status_code=400, detail=f"Cannot read package.json: {str(e)}")
     scripts = (pkg.get("scripts") or {})
     script_name = next((s for s in PREVIEW_ALLOWED_SCRIPTS if s in scripts), None)
     if not script_name:
@@ -101,8 +103,8 @@ async def start_preview(
                 # Container exists - stop and remove it first
                 try:
                     existing_container.stop(timeout=5)
-                except Exception:
-                    pass  # Already stopped
+                except (docker.errors.APIError, docker.errors.NotFound):
+                    pass  # Already stopped or doesn't exist
                 existing_container.remove(force=True)
             except docker.errors.NotFound:
                 pass  # Container doesn't exist, that's fine
@@ -154,8 +156,8 @@ async def start_preview(
                     c = client.containers.get(cid)
                     c.stop(timeout=5)
                     c.remove(v=True, force=True)
-                except Exception:
-                    pass
+                except (docker.errors.APIError, docker.errors.NotFound) as e:
+                    log.debug(f"TTL guard cleanup failed (container may be already removed): {e}")
                 finally:
                     preview_processes.pop(k, None)
 
@@ -232,13 +234,13 @@ async def stop_preview(
                     c = client.containers.get(cid)
                     c.stop(timeout=5)
                     c.remove(v=True, force=True)
-                except Exception:
-                    pass
+                except (docker.errors.APIError, docker.errors.NotFound) as e:
+                    log.debug(f"Container cleanup failed: {e}")
             elif proc := process_info.get("process"):
                 try:
                     await proc.terminate()
-                except Exception:
-                    pass
+                except (AttributeError, RuntimeError) as e:
+                    log.debug(f"Process termination failed: {e}")
         finally:
             process_info["status"] = "stopped"
             del preview_processes[project_key]
@@ -269,10 +271,11 @@ async def get_preview_status(
     project_key = str(project_id)
     if project_key in preview_processes:
         process_info = preview_processes[project_key]
-        process = process_info.get("process")
         
-        # Check if process is still alive
-        if process and process.poll() is None:
+        # Check if container or process is still alive
+        if "container_id" in process_info:
+            # Container-based preview - assume running if in dict
+            # (container cleanup happens in TTL guard)
             return {
                 "status": {
                     "url": f"http://localhost:{process_info['port']}", 
@@ -281,8 +284,20 @@ async def get_preview_status(
                     "uptime_seconds": asyncio.get_event_loop().time() - process_info.get("started_at", 0)
                 }
             }
-        else:
-            # Process died
-            del preview_processes[project_key]
+        elif "process" in process_info:
+            # Process-based preview
+            process = process_info["process"]
+            if process and process.is_running:
+                return {
+                    "status": {
+                        "url": f"http://localhost:{process_info['port']}", 
+                        "status": "running",
+                        "started_at": process_info.get("started_at"),
+                        "uptime_seconds": asyncio.get_event_loop().time() - process_info.get("started_at", 0)
+                    }
+                }
+            else:
+                # Process died
+                del preview_processes[project_key]
     
     return {"status": {"status": "stopped", "url": None}}

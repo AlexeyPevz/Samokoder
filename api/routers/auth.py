@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 # FIX: Use constants from config instead of magic numbers
 ACCESS_TOKEN_EXPIRE_MINUTES = SecurityLimits.ACCESS_TOKEN_EXPIRE_MINUTES
@@ -104,19 +104,32 @@ async def _get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    request: Request,
+    token: Optional[str] = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_async_db),
 ) -> User:
-    """Resolve the current user from the access token."""
+    """
+    Resolve the current user from the access token.
+    Supports both cookie-based (httpOnly) and Authorization header auth.
+    Cookie takes precedence for security.
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    # Try cookie first (more secure), then Authorization header as fallback
+    access_token = request.cookies.get("access_token")
+    if not access_token and token:
+        access_token = token
+    
+    if not access_token:
+        raise credentials_exception
+
     try:
         config = get_config()
-        payload = jwt.decode(token, config.secret_key, algorithms=["HS256"])
+        payload = jwt.decode(access_token, config.secret_key, algorithms=["HS256"])
         if payload.get("type") != "access":
             raise credentials_exception
         
@@ -138,6 +151,10 @@ async def get_current_user(
     user = await _get_user_by_email(db, email=email)
     if user is None:
         raise credentials_exception
+    
+    # Store user in request state for rate limiting
+    request.state.user = user
+    
     return user
 
 
@@ -161,6 +178,7 @@ async def require_admin(current_user: User = Depends(get_current_user)) -> User:
 @limiter.limit(get_rate_limit("auth"))  # FIX: Добавлен rate limit для защиты от bruteforce/email enumeration
 async def register(
     request: Request,
+    response: Response,
     payload: Annotated[RegisterRequest, Body()],
     db: AsyncSession = Depends(get_async_db),
 ) -> AuthResponse:
@@ -184,7 +202,27 @@ async def register(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Registration failed") from exc
 
     config = get_config()
-    return _create_auth_response(user, config)
+    auth_response = _create_auth_response(user, config)
+    
+    # Set httpOnly cookies for tokens (same as login)
+    response.set_cookie(
+        key="access_token",
+        value=auth_response.access_token,
+        httponly=True,
+        secure=config.environment == "production",
+        samesite="strict",
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=auth_response.refresh_token,
+        httponly=True,
+        secure=config.environment == "production",
+        samesite="strict",
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+    )
+    
+    return auth_response
 
 
 @router.post("/auth/login", response_model=AuthResponse)
@@ -279,13 +317,28 @@ async def login(
 @router.post("/auth/refresh", response_model=TokenRefreshResponse)
 @limiter.limit(get_rate_limit("auth"))  # P0-1: Add rate limiting
 async def refresh_token(
-    request: Request,  # P0-1: Required for rate limiting
-    payload: TokenRefreshRequest
+    request: Request,
+    response: Response,
+    payload: Optional[TokenRefreshRequest] = None,
+    db: AsyncSession = Depends(get_async_db)
 ):
-    """Issue a new access token based on refresh token."""
+    """
+    Issue a new access token based on refresh token.
+    Supports both cookie-based (httpOnly) and body-based refresh tokens.
+    Cookie takes precedence for security.
+    """
     config = get_config()
+    
+    # Try cookie first (more secure), then request body as fallback
+    refresh_token_str = request.cookies.get("refresh_token")
+    if not refresh_token_str and payload:
+        refresh_token_str = payload.refresh_token
+    
+    if not refresh_token_str:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing refresh token")
+    
     try:
-        decoded = jwt.decode(payload.refresh_token, config.app_secret_key, algorithms=["HS256"])
+        decoded = jwt.decode(refresh_token_str, config.app_secret_key, algorithms=["HS256"])
         if decoded.get("type") != "refresh":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
         email = decoded.get("sub")
