@@ -1,9 +1,12 @@
 from samokoder.core.plugins.base import BasePlugin
 from samokoder.core.db.models.user import User
 from samokoder.core.db.models.project import Project
+from samokoder.core.log import get_logger
 from sqlalchemy.orm import Session
 from typing import Dict, Any
 import json
+
+log = get_logger(__name__)
 
 
 class GitHubPlugin(BasePlugin):
@@ -58,8 +61,10 @@ class GitHubPlugin(BasePlugin):
             return {}
         
         # In a real implementation, we would fetch GitHub repository info
+        # FIX: User doesn't have username field, use email as identifier
+        github_username = user_settings.get("github_username", user.email.split('@')[0])
         return {
-            "repository_url": f"https://github.com/{user.username}/{project.name}",
+            "repository_url": f"https://github.com/{github_username}/{project.name}",
             "branch": "main",
             "last_commit": "abc123",
             "status": "connected"

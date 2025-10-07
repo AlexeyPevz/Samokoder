@@ -48,7 +48,11 @@ async def add_api_key(
     crypto: CryptoService = Depends(get_crypto),
 ):
     encrypted_key = crypto.encrypt(key_data.api_key)
-    display_key = f"...-{key_data.api_key[-4:]}"
+    # FIX: Handle short keys safely (< 4 characters)
+    if len(key_data.api_key) >= 4:
+        display_key = f"...-{key_data.api_key[-4:]}"
+    else:
+        display_key = "***"  # Don't reveal short keys
     
     # The api_keys field is a JSON field. We need to handle it as a dictionary.
     if current_user.api_keys is None:
