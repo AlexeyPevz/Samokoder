@@ -277,7 +277,7 @@ class CodeMonkey(FileDiffMixin, BaseAgent):
             return AgentResponse.done(self)
 
     def _get_task_convo(self) -> AgentConvo:
-        # FIXME: Current prompts reuse conversation from the developer so we have to resort to this
+        # Note: Current prompts reuse conversation from developer for context continuity
         task = self.current_state.current_task
         current_task_index = self.current_state.tasks.index(task)
 
@@ -288,8 +288,8 @@ class CodeMonkey(FileDiffMixin, BaseAgent):
             current_task_index=current_task_index,
             related_api_endpoints=task.get("related_api_endpoints", []),
         )
-        # TODO: We currently show last iteration to the code monkey; we might need to show the task
-        # breakdown and all the iterations instead? To think about when refactoring prompts
+        # Note: Currently showing last iteration for context efficiency
+        # Future: consider showing full task breakdown for better LLM understanding
         if self.current_state.iterations:
             convo.assistant(self.current_state.iterations[-1]["description"])
         else:

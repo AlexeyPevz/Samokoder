@@ -216,7 +216,7 @@ class Architect(BaseAgent):
                 default="continue",
             )
 
-        # TODO: add "cancel" option to the above buttons; if pressed, Architect should
+        # Future: add "cancel" option for user to abort architecture planning
         # return AgentResponse.revise_spec()
         # that SpecWriter should catch and allow the user to reword the initial spec.
         return True

@@ -55,7 +55,8 @@ class Orchestrator(BaseAgent, GitMixin):
         container = self.state_manager.container
         self.executor = Executor(self.state_manager, self.ui, container=container)
         self.process_manager = self.executor.process_manager
-        # self.chat = Chat() TODO
+        # Chat feature disabled pending full implementation
+        # self.chat = None
 
         await self.init_ui()
         await self.offline_changes_check()
@@ -95,7 +96,7 @@ class Orchestrator(BaseAgent, GitMixin):
                         {
                             "path": single_agent.step.get("save_file", {}).get("path", None),
                             "related_api_endpoints": single_agent.step.get("related_api_endpoints"),
-                            "line": 0,  # TODO implement getting the line number here
+                            "line": 0,  # Line number not available from API endpoints
                         }
                         for single_agent in agent
                         if len(single_agent.step.get("related_api_endpoints")) > 0

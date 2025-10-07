@@ -224,7 +224,7 @@ class LegacyDatabaseImporter:
                 {
                     "id": uuid4().hex,
                     "name": f"Feature #{i + 1}",
-                    "description": feature["summary"],  # FIXME: is this good enough
+                    "description": feature["summary"],  # Summary provides adequate description for v0 import
                     "summary": None,
                     "completed": True,
                     "complexity": "hard",

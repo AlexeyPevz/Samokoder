@@ -260,7 +260,7 @@ async def metrics_middleware(request: Request, call_next: Callable) -> Response:
         if response.status_code == 429:
             rate_limit_hits_total.labels(
                 endpoint=endpoint,
-                limit_type='unknown'  # TODO: extract from response if available
+                limit_type=response.headers.get('X-RateLimit-Type', 'unknown')
             ).inc()
         
         return response
