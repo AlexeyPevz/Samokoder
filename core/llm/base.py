@@ -109,9 +109,9 @@ class BaseLLMClient:
             return
             
         try:
-            # Get database session
-            db: Session = next(get_db())
-            try:
+            # Get database session using async context manager
+            from samokoder.core.db.session import SessionManager
+            async with SessionManager().get_session() as db:
                 # Record token usage for the user
                 self.user.record_token_usage(
                     provider=self.provider.value,
@@ -120,9 +120,7 @@ class BaseLLMClient:
                 )
                 
                 # Commit changes
-                db.commit()
-            finally:
-                db.close()
+                await db.commit()
         except Exception as e:
             log.error(f"Error recording token usage: {e}")
     async def __call__(

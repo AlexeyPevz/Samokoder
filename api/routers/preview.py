@@ -30,6 +30,9 @@ router = APIRouter()
 # In-memory storage for preview processes (P1-1: TODO - move to Redis for production)
 preview_processes = {}
 
+# Track active TTL guard tasks to prevent resource leaks
+_active_ttl_tasks = set()
+
 @router.post("/projects/{project_id}/preview/start")
 async def start_preview(
     project_id: UUID, 
@@ -154,17 +157,22 @@ async def start_preview(
             )
 
             async def _ttl_guard_container(cid: str, k: str):
-                await asyncio.sleep(PREVIEW_MAX_DURATION_SECONDS)
                 try:
-                    c = client.containers.get(cid)
-                    c.stop(timeout=5)
-                    c.remove(v=True, force=True)
-                except (docker.errors.APIError, docker.errors.NotFound) as e:
-                    log.debug(f"TTL guard cleanup failed (container may be already removed): {e}")
+                    await asyncio.sleep(PREVIEW_MAX_DURATION_SECONDS)
+                    try:
+                        c = client.containers.get(cid)
+                        c.stop(timeout=5)
+                        c.remove(v=True, force=True)
+                    except (docker.errors.APIError, docker.errors.NotFound) as e:
+                        log.debug(f"TTL guard cleanup failed (container may be already removed): {e}")
+                    finally:
+                        preview_processes.pop(k, None)
                 finally:
-                    preview_processes.pop(k, None)
+                    # Remove task from tracking set when done
+                    _active_ttl_tasks.discard(asyncio.current_task())
 
-            asyncio.create_task(_ttl_guard_container(container.id, key))
+            task = asyncio.create_task(_ttl_guard_container(container.id, key))
+            _active_ttl_tasks.add(task)
             preview_processes[key] = {
                 "container_id": container.id,
                 "port": port,
@@ -182,7 +190,10 @@ async def start_preview(
                         await proc.terminate()
                 finally:
                     preview_processes.pop(k, None)
-            asyncio.create_task(_ttl_guard(process, key))
+                    # Remove task from tracking set when done
+                    _active_ttl_tasks.discard(asyncio.current_task())
+            task = asyncio.create_task(_ttl_guard(process, key))
+            _active_ttl_tasks.add(task)
             preview_processes[key] = {
                 "process": process,
                 "port": port,
@@ -201,7 +212,10 @@ async def start_preview(
                     await proc.terminate()
             finally:
                 preview_processes.pop(k, None)
-        asyncio.create_task(_ttl_guard(process, key))
+                # Remove task from tracking set when done
+                _active_ttl_tasks.discard(asyncio.current_task())
+        task = asyncio.create_task(_ttl_guard(process, key))
+        _active_ttl_tasks.add(task)
         preview_processes[key] = {
             "process": process,
             "port": port,

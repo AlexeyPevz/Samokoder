@@ -31,25 +31,26 @@ class ErrorFixingAgent(BaseAgent):
         :return: True if errors were fixed successfully
         """
         try:
-            # Get project from database
-            db: Session = next(get_db())
-            project = db.query(Project).filter(Project.id == project_id).first()
-            if not project:
-                await self.ui.send_message("Project not found", source="system")
-                return False
+            # Get project from database using async session
+            from samokoder.core.db.session import SessionManager
+            from sqlalchemy import select
+            async with SessionManager().get_session() as db:
+                result = await db.execute(select(Project).where(Project.id == project_id))
+                project = result.scalars().first()
+                if not project:
+                    await self.ui.send_message("Project not found", source="system")
+                    return False
 
-            # Analyze errors and create fixing plan
-            fixing_plan = await self._create_fixing_plan(errors)
+                # Analyze errors and create fixing plan
+                fixing_plan = await self._create_fixing_plan(errors)
 
-            # Execute fixing plan
-            success = await self._execute_fixing_plan(fixing_plan, project)
+                # Execute fixing plan
+                success = await self._execute_fixing_plan(fixing_plan, project)
 
-            return success
+                return success
         except Exception as e:
             await self.ui.send_message(f"Error while fixing: {str(e)}", source="system")
             return False
-        finally:
-            db.close()
 
     async def _create_fixing_plan(self, errors: List[Dict]) -> List[Dict]:
         """

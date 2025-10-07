@@ -78,18 +78,18 @@ class ErrorDetectionService:
         :param project_id: Project ID
         :return: Project type (javascript, python, etc.)
         """
-        # Get project from database
-        db: Session = next(get_db())
-        try:
-            project = db.query(Project).filter(Project.id == project_id).first()
+        # Get project from database using async session
+        from samokoder.core.db.session import SessionManager
+        from sqlalchemy import select
+        async with SessionManager().get_session() as db:
+            result = await db.execute(select(Project).where(Project.id == project_id))
+            project = result.scalars().first()
             if not project:
                 return "unknown"
             
             # For now, we'll return a default type
             # In a real implementation, we would analyze project files
             return "javascript"
-        finally:
-            db.close()
     
     def _get_line_number(self, text: str, position: int) -> int:
         """
