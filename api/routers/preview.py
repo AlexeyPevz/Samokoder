@@ -52,8 +52,10 @@ async def start_preview(
         raise HTTPException(status_code=400, detail="package.json not found in project")
     try:
         pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid package.json")
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        raise HTTPException(status_code=400, detail=f"Invalid package.json: {str(e)}")
+    except (OSError, IOError) as e:
+        raise HTTPException(status_code=400, detail=f"Cannot read package.json: {str(e)}")
     scripts = (pkg.get("scripts") or {})
     script_name = next((s for s in PREVIEW_ALLOWED_SCRIPTS if s in scripts), None)
     if not script_name:
