@@ -133,15 +133,15 @@ notification_service = NotificationService()
 # Example handlers
 async def email_notification_handler(user_id: int, title: str, message: str, data: Optional[Dict] = None):
     """Handler for sending email notifications"""
-    # Get user from database
-    db: Session = next(get_db())
-    try:
-        user = db.query(User).filter(User.id == user_id).first()
+    # Get user from database using async session
+    from samokoder.core.db.session import SessionManager
+    async with SessionManager().get_session() as db:
+        from sqlalchemy import select
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalars().first()
         if user and user.email:
             # In a real implementation, we would send an email
             log.info(f"Sending email to {user.email}: {title} - {message}")
-    finally:
-        db.close()
 
 
 async def push_notification_handler(user_id: int, title: str, message: str, data: Optional[Dict] = None):

@@ -10,7 +10,10 @@ import os
 from pathlib import Path
 import docker
 
+from samokoder.core.log import get_logger
 from samokoder.core.db.session import get_async_db
+
+log = get_logger(__name__)
 from samokoder.core.db.models.project import Project
 from samokoder.core.db.models.user import User
 from samokoder.api.routers.auth import get_current_user
