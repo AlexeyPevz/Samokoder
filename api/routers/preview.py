@@ -12,6 +12,7 @@ import docker
 import psutil
 
 from redis.asyncio import Redis as AsyncRedis
+from typing import Optional
 
 from samokoder.core.log import get_logger
 from samokoder.core.db.session import get_async_db
@@ -31,7 +32,7 @@ from samokoder.core.api.middleware.tier_limits import require_deploy_access
 router = APIRouter()
 
 # Redis-backed storage for preview processes (P1-1: moved from in-memory)
-_redis_client: AsyncRedis | None = None
+_redis_client: Optional[AsyncRedis] = None
 REDIS_PREVIEW_PREFIX = "preview:process:"
 
 
@@ -50,7 +51,7 @@ async def _save_preview_state(project_id: UUID, state: dict, ttl_seconds: int) -
     await r.set(key, json.dumps(state), ex=int(ttl_seconds) + 300)
 
 
-async def _load_preview_state(project_id: UUID) -> dict | None:
+async def _load_preview_state(project_id: UUID) -> Optional[dict]:
     r = await _get_redis()
     key = f"{REDIS_PREVIEW_PREFIX}{project_id}"
     raw = await r.get(key)
