@@ -115,7 +115,10 @@ class Orchestrator(BaseAgent, GitMixin):
                 response = await self.handle_done(agent, response)
                 continue
 
-        # TODO: rollback changes to "next" so they aren't accidentally committed?
+        # Rollback any uncommitted changes to prevent data corruption
+        if self.next_state and self.next_state != self.current_state:
+            log.warning("Uncommitted changes detected in next_state, rolling back")
+            await self.state_manager.rollback()
         return True
 
     async def install_dependencies(self):
