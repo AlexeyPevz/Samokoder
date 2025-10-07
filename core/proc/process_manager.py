@@ -258,10 +258,12 @@ class ProcessManager:
             # Note: timeout is not directly supported by exec_run in the same way.
             # The underlying API call has a timeout, but it's for the API request, not the command execution.
             # For long-running commands, a different approach (like `exec_run` with `stream=True`) would be needed.
+            # Merge default environment with provided overrides
+            env_merged = {**self.default_env, **(env or {})}
             exit_code, (stdout, stderr) = self.container.exec_run(
-                cmd, 
+                cmd,
                 workdir=f"/workspace/{cwd}",
-                environment=env
+                environment=env_merged,
             )
             
             stdout_str = stdout.decode('utf-8', errors='ignore')

@@ -112,9 +112,9 @@ class PromptConfig(BaseModel):
     paths: list[str] = ["core/prompts"]
 
 class LogConfig(BaseModel):
-    level: str = "DEBUG"
-    format: str = "% (asctime)s %(levelname)s [%(name)s] %(message)s"
-    output: Optional[str] = "samokoder.log"
+    level: str = "INFO"
+    format: str = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
+    output: Optional[str] = None
 
 class FileSystemConfig(BaseModel):
     type: str = "local"
