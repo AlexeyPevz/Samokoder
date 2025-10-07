@@ -315,19 +315,28 @@ class ProcessManager:
 
         return (process.stdout, process.stderr)
 
-    async def start_hot_reload_process(self, cmd: str, watch_paths: list[str]):
+    async def start_hot_reload_process(self, cmd: str, watch_paths: list[str], ui_callback=None):
         """
         Start a process with hot-reloading enabled.
 
+        NOTE: Hot-reloading is not fully implemented. This starts a process
+        but does not watch for file changes.
+
         :param cmd: Command to run.
         :param watch_paths: List of paths to watch for changes.
+        :param ui_callback: Optional async callback for UI messages.
+        :return: Started process
         """
         # TODO: Implement hot-reloading using a file watcher like 'watchdog'.
         # This is a placeholder implementation.
 
-        # 1. Start the initial process
+        # Start the initial process
         process = await self.start_process(cmd, bg=True)
-        await self.ui.send_message(f"Started process `{cmd}` with hot-reload (PID: {process.pid}).", source="system")
+        
+        if ui_callback:
+            await ui_callback(f"Started process `{cmd}` (PID: {process.pid}). Hot-reload not yet implemented.")
+        else:
+            log.info(f"Started process `{cmd}` (PID: {process.pid}). Hot-reload not yet implemented.")
 
         # 2. In a real implementation, a file watcher would be set up here.
         # Example using a hypothetical watcher:
@@ -342,6 +351,6 @@ class ProcessManager:
         # watcher = HypotheticalFileWatcher(watch_paths, on_change)
         # await watcher.start()
 
-        # For now, we just log a message indicating that hot-reload is not fully implemented.
-        await self.ui.send_message("Hot-reload is not fully implemented. The process will not restart on file changes.", source="system")
+        # For now, log that hot-reload is not fully implemented
+        log.warning("Hot-reload not fully implemented. The process will not restart on file changes.")
 

@@ -178,6 +178,7 @@ async def require_admin(current_user: User = Depends(get_current_user)) -> User:
 @limiter.limit(get_rate_limit("auth"))  # FIX: Добавлен rate limit для защиты от bruteforce/email enumeration
 async def register(
     request: Request,
+    response: Response,
     payload: Annotated[RegisterRequest, Body()],
     db: AsyncSession = Depends(get_async_db),
 ) -> AuthResponse:
@@ -201,7 +202,27 @@ async def register(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Registration failed") from exc
 
     config = get_config()
-    return _create_auth_response(user, config)
+    auth_response = _create_auth_response(user, config)
+    
+    # Set httpOnly cookies for tokens (same as login)
+    response.set_cookie(
+        key="access_token",
+        value=auth_response.access_token,
+        httponly=True,
+        secure=config.environment == "production",
+        samesite="strict",
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=auth_response.refresh_token,
+        httponly=True,
+        secure=config.environment == "production",
+        samesite="strict",
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+    )
+    
+    return auth_response
 
 
 @router.post("/auth/login", response_model=AuthResponse)
