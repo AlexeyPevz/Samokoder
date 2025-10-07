@@ -103,8 +103,8 @@ async def start_preview(
                 # Container exists - stop and remove it first
                 try:
                     existing_container.stop(timeout=5)
-                except Exception:
-                    pass  # Already stopped
+                except (docker.errors.APIError, docker.errors.NotFound):
+                    pass  # Already stopped or doesn't exist
                 existing_container.remove(force=True)
             except docker.errors.NotFound:
                 pass  # Container doesn't exist, that's fine
@@ -156,8 +156,8 @@ async def start_preview(
                     c = client.containers.get(cid)
                     c.stop(timeout=5)
                     c.remove(v=True, force=True)
-                except Exception:
-                    pass
+                except (docker.errors.APIError, docker.errors.NotFound) as e:
+                    log.debug(f"TTL guard cleanup failed (container may be already removed): {e}")
                 finally:
                     preview_processes.pop(k, None)
 
@@ -234,13 +234,13 @@ async def stop_preview(
                     c = client.containers.get(cid)
                     c.stop(timeout=5)
                     c.remove(v=True, force=True)
-                except Exception:
-                    pass
+                except (docker.errors.APIError, docker.errors.NotFound) as e:
+                    log.debug(f"Container cleanup failed: {e}")
             elif proc := process_info.get("process"):
                 try:
                     await proc.terminate()
-                except Exception:
-                    pass
+                except (AttributeError, RuntimeError) as e:
+                    log.debug(f"Process termination failed: {e}")
         finally:
             process_info["status"] = "stopped"
             del preview_processes[project_key]

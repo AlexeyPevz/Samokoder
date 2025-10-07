@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from typing import Any, Callable, Optional
 
 from samokoder.core.agents.response import AgentResponse
@@ -194,7 +195,6 @@ class BaseAgent:
         
         # Create a combined config object for the client
         # Clients expect ProviderConfig with model and temperature added
-        from types import SimpleNamespace
         combined_config = SimpleNamespace(
             **provider_config.model_dump(),
             model=agent_config.model,

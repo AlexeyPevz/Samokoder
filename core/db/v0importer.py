@@ -144,8 +144,8 @@ class LegacyDatabaseImporter:
                 try:
                     if isinstance(content, bytes):
                         content = content.decode("utf-8")
-                except:  # noqa
-                    # skip binary file
+                except (UnicodeDecodeError, AttributeError):
+                    # skip binary file or invalid content
                     continue
                 files[file_path] = {
                     "description": description or None,

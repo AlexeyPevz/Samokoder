@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from samokoder.core.api.dependencies import get_current_user
+from samokoder.core.api.dependencies import get_current_user  # Async version with cookie support
 from samokoder.core.db.models.user import User
 from samokoder.core.state.state_manager import StateManager
 from cryptography.fernet import Fernet, InvalidToken

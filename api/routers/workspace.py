@@ -104,7 +104,8 @@ async def websocket_endpoint(
     except Exception as exc:  # pragma: no cover - runtime errors reported to client
         try:
             await websocket.send_text(f"Error: {exc}")
-        except Exception:
-            pass
+        except (RuntimeError, WebSocketDisconnect):
+            # WebSocket already closed, can't send error message
+            log.error(f"WebSocket error and failed to send error message: {exc}")
     finally:
         manager.disconnect(str(user.id))

@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 # FIX: Use constants from config instead of magic numbers
 ACCESS_TOKEN_EXPIRE_MINUTES = SecurityLimits.ACCESS_TOKEN_EXPIRE_MINUTES
