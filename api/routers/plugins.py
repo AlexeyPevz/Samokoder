@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from samokoder.core.db.session import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from samokoder.core.db.session import get_async_db
 from samokoder.core.db.models.user import User
 from samokoder.core.plugins.base import plugin_manager
 from samokoder.api.routers.auth import get_current_user
@@ -15,7 +15,7 @@ router = APIRouter()
 @router.get("/plugins")
 async def get_plugins(
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Get all available plugins
@@ -38,14 +38,16 @@ async def get_plugins(
             "plugins": plugin_list
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting plugins: {str(e)}")
+        from samokoder.core.log import get_logger
+        get_logger(__name__).error(f"Error getting plugins: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error getting plugins")
 
 
 @router.get("/plugins/{plugin_name}")
 async def get_plugin_info(
     plugin_name: str,
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Get information about a specific plugin
@@ -69,14 +71,16 @@ async def get_plugin_info(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting plugin info: {str(e)}")
+        from samokoder.core.log import get_logger
+        get_logger(__name__).error(f"Error getting plugin info: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error getting plugin info")
 
 
 @router.post("/plugins/{plugin_name}/enable")
 async def enable_plugin(
     plugin_name: str,
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Enable a plugin
@@ -99,14 +103,16 @@ async def enable_plugin(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error enabling plugin: {str(e)}")
+        from samokoder.core.log import get_logger
+        get_logger(__name__).error(f"Error enabling plugin: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error enabling plugin")
 
 
 @router.post("/plugins/{plugin_name}/disable")
 async def disable_plugin(
     plugin_name: str,
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Disable a plugin
@@ -129,14 +135,16 @@ async def disable_plugin(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error disabling plugin: {str(e)}")
+        from samokoder.core.log import get_logger
+        get_logger(__name__).error(f"Error disabling plugin: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error disabling plugin")
 
 
 @router.get("/plugins/{plugin_name}/settings")
 async def get_plugin_settings(
     plugin_name: str,
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Get user settings for a plugin
@@ -159,7 +167,9 @@ async def get_plugin_settings(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting plugin settings: {str(e)}")
+        from samokoder.core.log import get_logger
+        get_logger(__name__).error(f"Error getting plugin settings: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error getting plugin settings")
 
 
 @router.post("/plugins/{plugin_name}/settings")
@@ -167,7 +177,7 @@ async def update_plugin_settings(
     plugin_name: str,
     settings: Dict[str, Any],
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Update user settings for a plugin
@@ -194,7 +204,9 @@ async def update_plugin_settings(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error updating plugin settings: {str(e)}")
+        from samokoder.core.log import get_logger
+        get_logger(__name__).error(f"Error updating plugin settings: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error updating plugin settings")
 
 
 @router.post("/plugins/{plugin_name}/github/create-repo")
@@ -202,7 +214,7 @@ async def create_github_repo(
     plugin_name: str,
     project_id: str,
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     _git_check = Depends(require_git_push_access)  # Tier-based git operations access
 ):
     """
@@ -225,10 +237,18 @@ async def create_github_repo(
         
         # Get project
         from samokoder.core.db.models.project import Project
-        project = db.query(Project).filter(
-            Project.id == project_id,
-            Project.user_id == user.id
-        ).first()
+        result = await db.execute(
+            Project.__table__.select().where(
+                Project.id == project_id,
+                Project.user_id == user.id,
+            )
+        )
+        row = result.first()
+        if row:
+            from samokoder.core.db.models.project import Project as ProjectModel
+            project = await db.get(ProjectModel, project_id)
+        else:
+            project = None
         
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
@@ -245,4 +265,6 @@ async def create_github_repo(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error creating GitHub repository: {str(e)}")
+        from samokoder.core.log import get_logger
+        get_logger(__name__).error(f"Error creating GitHub repository: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error creating GitHub repository")

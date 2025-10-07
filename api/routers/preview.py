@@ -70,6 +70,7 @@ async def _delete_preview_state(project_id: UUID) -> None:
 
 # Track active TTL guard tasks to prevent resource leaks (per-instance)
 _active_ttl_tasks = set()
+_ttl_task_keys: dict[str, asyncio.Task] = {}
 
 @router.post("/projects/{project_id}/preview/start")
 async def start_preview(
@@ -214,8 +215,13 @@ async def start_preview(
                     # Remove task from tracking set when done
                     _active_ttl_tasks.discard(asyncio.current_task())
 
+            # Cancel previous TTL task if exists (restart case)
+            old_task = _ttl_task_keys.pop(key, None)
+            if old_task:
+                old_task.cancel()
             task = asyncio.create_task(_ttl_guard_container(container.id, key))
             _active_ttl_tasks.add(task)
+            _ttl_task_keys[key] = task
             await _save_preview_state(
                 project_id,
                 {
@@ -241,8 +247,12 @@ async def start_preview(
                     await _delete_preview_state(project_id)
                     # Remove task from tracking set when done
                     _active_ttl_tasks.discard(asyncio.current_task())
+            old_task = _ttl_task_keys.pop(key, None)
+            if old_task:
+                old_task.cancel()
             task = asyncio.create_task(_ttl_guard(process, key))
             _active_ttl_tasks.add(task)
+            _ttl_task_keys[key] = task
             await _save_preview_state(
                 project_id,
                 {
@@ -268,8 +278,12 @@ async def start_preview(
                 await _delete_preview_state(project_id)
                 # Remove task from tracking set when done
                 _active_ttl_tasks.discard(asyncio.current_task())
+        old_task = _ttl_task_keys.pop(key, None)
+        if old_task:
+            old_task.cancel()
         task = asyncio.create_task(_ttl_guard(process, key))
         _active_ttl_tasks.add(task)
+        _ttl_task_keys[key] = task
         await _save_preview_state(
             project_id,
             {
@@ -320,6 +334,11 @@ async def stop_preview(
                     pass
         finally:
             await _delete_preview_state(project_id)
+            # Cancel and remove TTL task for this preview
+            key = str(project_id)
+            task = _ttl_task_keys.pop(key, None)
+            if task:
+                task.cancel()
         return {
             "success": True,
             "message": "Preview stopped successfully",
