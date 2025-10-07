@@ -65,11 +65,18 @@ class CodeMonkey(FileDiffMixin, BaseAgent):
         else:
             data = await self.implement_changes()
             code_review_done = False
-            while not code_review_done:
+            review_attempts = 0
+            while not code_review_done and review_attempts < MAX_CODING_ATTEMPTS:
+                review_attempts += 1
                 review_response = await self.run_code_review(data)
                 if isinstance(review_response, AgentResponse):
                     return review_response
                 data = await self.implement_changes(review_response)
+            
+            # If we've exhausted all attempts, accept the current changes
+            if review_attempts >= MAX_CODING_ATTEMPTS:
+                log.warning(f"Max review attempts ({MAX_CODING_ATTEMPTS}) reached, accepting current changes")
+                return await self.accept_changes(data["path"], data["old_content"], data["new_content"])
 
     async def implement_changes(self, data: Optional[dict] = None) -> dict:
         file_name = self.step["save_file"]["path"]

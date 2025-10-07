@@ -71,7 +71,7 @@ export function APIKeyManager() {
       const apiKeys = await getApiKeys()
       setKeys(apiKeys)
     } catch (error) {
-      console.error('Error loading API keys:', error)
+      // Error loading API keys - handled by UI
       toast({
         title: "Ошибка",
         description: "Не удалось загрузить API ключи",
@@ -87,7 +87,7 @@ export function APIKeyManager() {
       const usage = await getAllTokenUsage()
       setTokenUsage(usage)
     } catch (error) {
-      console.error('Error loading token usage:', error)
+      // Error loading token usage - handled by UI
     }
   }
 
@@ -113,7 +113,7 @@ export function APIKeyManager() {
         description: `API ключ для ${newApiProvider} добавлен.`
       })
     } catch (error) {
-      console.error('Error adding API key:', error)
+      // Error adding API key - handled by UI
       toast({
         title: "Ошибка",
         description: error instanceof Error ? error.message : "Не удалось добавить ключ",
@@ -133,7 +133,7 @@ export function APIKeyManager() {
         description: `Настройки для ${provider} обновлены.`
       })
     } catch (error) {
-      console.error('Error updating API key settings:', error)
+      // Error updating API key settings - handled by UI
       toast({
         title: "Ошибка",
         description: "Не удалось обновить настройки",
@@ -151,7 +151,7 @@ export function APIKeyManager() {
         description: `Ключ для ${provider} удален.`
       })
     } catch (error) {
-      console.error('Error deleting API key:', error)
+      // Error deleting API key - handled by UI
       toast({
         title: "Ошибка",
         description: "Не удалось удалить ключ",

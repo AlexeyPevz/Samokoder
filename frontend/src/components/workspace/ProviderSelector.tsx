@@ -75,7 +75,7 @@ export function ProviderSelector() {
       })
       setSelectedProviders(initialSelected)
     } catch (error) {
-      console.error('Error loading API keys:', error)
+      // Error loading API keys
       toast({
         title: "Ошибка",
         description: "Не удалось загрузить API ключи",
@@ -91,7 +91,7 @@ export function ProviderSelector() {
       const usage = await getAllTokenUsage()
       setTokenUsage(usage)
     } catch (error) {
-      console.error('Error loading token usage:', error)
+      // Error loading token usage
     }
   }
 
@@ -111,7 +111,7 @@ export function ProviderSelector() {
         description: `Модель для ${provider} обновлена.`
       })
     } catch (error) {
-      console.error('Error updating model:', error)
+      // Error updating model
       toast({
         title: "Ошибка",
         description: "Не удалось обновить модель",

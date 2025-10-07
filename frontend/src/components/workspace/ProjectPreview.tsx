@@ -54,7 +54,7 @@ export default function ProjectPreview({ project, onSendCommand, buildLogs, buil
       const summary = await getTokenUsageSummary();
       setTokenUsage(summary);
     } catch (error) {
-      console.error("Error loading token usage:", error);
+      // Error loading token usage
     }
   };
 
@@ -80,7 +80,7 @@ export default function ProjectPreview({ project, onSendCommand, buildLogs, buil
       setIsPreviewRunning(true);
       project.previewUrl = previewInfo.url;
     } catch (error) {
-      console.error("Error starting preview:", error);
+      // Error starting preview
     } finally {
       setIsLoadingPreview(false);
     }
@@ -94,7 +94,7 @@ export default function ProjectPreview({ project, onSendCommand, buildLogs, buil
       setIsPreviewRunning(false);
       project.previewUrl = undefined;
     } catch (error) {
-      console.error("Error stopping preview:", error);
+      // Error stopping preview
     } finally {
       setIsLoadingPreview(false);
     }

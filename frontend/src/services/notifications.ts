@@ -114,7 +114,7 @@ class NotificationService {
   // Request notification permissions (for browser notifications)
   async requestNotificationPermission(): Promise<boolean> {
     if (!('Notification' in window)) {
-      console.log('This browser does not support desktop notification');
+      // Browser doesn't support desktop notifications
       return false;
     }
     

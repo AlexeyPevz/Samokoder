@@ -43,10 +43,10 @@ export default function Workspace() {
           setMessages(prev => [...prev, chatMessage])
         } else if (message.type === "project_stage") {
           // Handle project stage updates
-          console.log("Project stage:", message.stage)
+          // Project stage updated
         } else if (message.type === "question") {
           // Handle questions from Samokoder
-          console.log("Question from Samokoder:", message.question)
+          // Question received from Samokoder
         } else if (message.type === "process_output") {
           setBuildLogs(prev => prev + message.data)
           setBuildStatus("building")
@@ -75,7 +75,7 @@ export default function Workspace() {
       // Временно пустой массив сообщений
       setMessages([])
     } catch (error) {
-      console.error('Error loading workspace data:', error)
+      // Error loading workspace data
       toast({
         title: "Ошибка",
         description: "Не удалось загрузить данные проекта",

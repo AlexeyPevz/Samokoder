@@ -29,13 +29,17 @@ class HumanInput(BaseAgent):
             file = item["file"]
             line = item["line"]
 
-            # FIXME: this is an ugly hack, we shouldn't need to know how to get to VFS and
-            # anyways the full path is only available for local vfs, so this is doubly wrong;
-            # instead, we should just send the relative path to the extension and it should
-            # figure out where its local files are and how to open it.
-            full_path = self.state_manager.file_system.get_full_path(file)
-
+            # Send relative path to UI - let the client figure out the absolute path
+            # This works correctly for all VFS types (local, docker, memory)
             await self.send_message(f"Input required on {file}:{line}")
+            
+            # Try to get full path, but fall back to relative if not available
+            try:
+                full_path = self.state_manager.file_system.get_full_path(file)
+            except (AttributeError, NotImplementedError):
+                # For VFS types that don't support full paths, use relative
+                full_path = file
+            
             await self.ui.open_editor(full_path, line)
             await self.ask_question(
                 f"Please open {file} and modify line {line} according to the instructions.",

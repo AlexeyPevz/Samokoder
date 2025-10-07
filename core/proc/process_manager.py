@@ -80,8 +80,20 @@ class LocalProcess:
         except asyncio.TimeoutError:
             log.debug(f"Process {self.cmd} still running after {timeout}s, terminating")
             await self.terminate()
-            # FIXME: this may still hang if we don't manage to kill the process.
-            retcode = await self._process.wait()
+            # Try to wait for termination with timeout to prevent hanging
+            try:
+                retcode = await asyncio.wait_for(self._process.wait(), timeout=5.0)
+            except asyncio.TimeoutError:
+                log.error(f"Process {self.cmd} didn't terminate gracefully, force killing")
+                if self._process and self._process.returncode is None:
+                    try:
+                        self._process.kill()
+                        retcode = await asyncio.wait_for(self._process.wait(), timeout=2.0)
+                    except asyncio.TimeoutError:
+                        log.error(f"Process {self.cmd} couldn't be killed, marking as zombie")
+                        retcode = -1
+                else:
+                    retcode = self._process.returncode if self._process else -1
 
         return retcode
 

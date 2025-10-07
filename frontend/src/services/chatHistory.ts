@@ -22,7 +22,7 @@ class ChatHistoryService {
       }
       return []
     } catch (error) {
-      console.error("Error loading chat sessions:", error)
+      // Error loading chat sessions
       return []
     }
   }
@@ -37,7 +37,7 @@ class ChatHistoryService {
       }
       return null
     } catch (error) {
-      console.error("Error loading chat session:", error)
+      // Error loading chat session
       return null
     }
   }
@@ -60,7 +60,7 @@ class ChatHistoryService {
       // Save to localStorage
       localStorage.setItem(this.storageKey, JSON.stringify(allSessions))
     } catch (error) {
-      console.error("Error saving chat session:", error)
+      // Error saving chat session
     }
   }
   
@@ -102,7 +102,7 @@ class ChatHistoryService {
         localStorage.setItem(this.storageKey, JSON.stringify(allSessions))
       }
     } catch (error) {
-      console.error("Error deleting chat session:", error)
+      // Error deleting chat session
     }
   }
   
